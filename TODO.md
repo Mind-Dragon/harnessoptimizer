@@ -1,87 +1,85 @@
-# Hermes Optimizer v1.0 TODO
+# Hermes Optimizer Phase 0 TODO
 
-Version 1.0 is the Hermes-only release. The job here is to make the optimizer able to inspect Hermes runtime state, turn that into structured findings, and recommend concrete config or workflow fixes.
+Phase 0 is the discovery and loop-skeleton phase for Hermes only.
+The job is to find every Hermes source of truth, define the runtime loop, and make the inventory reproducible before we start deeper parsing.
 
 ## Goal
 
-Build a Hermes-focused optimizer that:
-- discovers Hermes config, session, log, cache, and database locations
-- parses those files for errors and action items
-- normalizes repeated signals into actionable issues
-- proposes ranked optimizations
-- enriches provider/model data from live sources when endpoint details matter
+Build the smallest useful Hermes foundation that can:
+- discover Hermes config, session, log, cache, database, and runtime/gateway locations
+- record those locations in a canonical inventory
+- establish the scan loop: discover -> parse -> enrich -> rank -> report -> verify -> repeat
+- prove the tool can locate the right surfaces before it tries to interpret them
 
-## Workstream 1: Source discovery
+## TODO
 
-- [ ] Inventory every Hermes config file, session directory, log directory, cache directory, and database path
-- [ ] Verify discovered paths against the live machine, not just docs
-- [ ] Add the discovered paths to the Hermes source adapter registry
-- [ ] Keep a machine-readable path map in the repo
+### 1) Discover Hermes truth sources
 
-## Workstream 2: Local parsing
+- [ ] Identify every Hermes config file in use on the live machine
+- [ ] Identify Hermes session directories and file types
+- [ ] Identify Hermes log directories and file types
+- [ ] Identify Hermes cache/state directories that affect runs
+- [ ] Identify Hermes database files or durable state files
+- [ ] Identify Hermes gateway/runtime surfaces and status commands
+- [ ] Record the discovered paths in a machine-readable inventory file
 
-- [ ] Parse Hermes config files for invalid values, missing fields, stale model names, and bad endpoints
-- [ ] Parse session files for errors, warnings, retries, crashes, stalls, and repeated failures
-- [ ] Parse logs for auth failures, provider failures, timeouts, and congestion
-- [ ] Parse any Hermes databases that store recent run state or catalog data
-- [ ] Normalize repeated signals so the same issue is counted once with samples
+### 2) Verify source locations against the live environment
 
-## Workstream 3: Issue shaping
+- [ ] Confirm each discovered path exists on the current machine
+- [ ] Distinguish authoritative paths from fallback or legacy paths
+- [ ] Capture any path that is referenced by runtime output but not yet documented
+- [ ] Add a note for each source: config, session, log, cache, db, runtime, gateway
 
-- [ ] Turn raw findings into structured issue records
-- [ ] Group issues by category, fingerprint, and source path
-- [ ] Attach severity, confidence, and lane to each issue
-- [ ] Preserve raw text snippets for auditability
+### 3) Define the Hermes loop
 
-## Workstream 4: Optimizations
+- [ ] Create the outer execution loop contract
+- [ ] Define the order of operations: discover -> parse -> enrich -> rank -> report -> verify -> repeat
+- [ ] Add a checkpoint or run marker so repeated runs can compare results
+- [ ] Keep the loop explicit and testable, not hidden inside one big script
 
-Each issue should land in one of these buckets:
-- [ ] Critical
-- [ ] Important
-- [ ] Good ideas
-- [ ] Nice to have
-- [ ] Whatever
+### 4) Establish baseline fixtures
 
-Rules:
-- Critical means the harness is broken or dangerously misconfigured
-- Important means the harness is working but unreliable, stale, or wasteful
-- Good ideas improve quality, maintainability, or clarity
-- Nice to have is optional polish
-- Whatever is speculative and low confidence
+- [ ] Save representative Hermes config samples
+- [ ] Save representative Hermes session samples
+- [ ] Save representative Hermes log samples
+- [ ] Save at least one example of runtime/gateway status output
+- [ ] Keep fixtures small and deterministic
 
-## Workstream 5: Provider/model enrichment
+### 5) Add the first scanner skeleton
 
-- [ ] Use live search to find provider/model details from Hugging Face, ModelScope, or provider docs
-- [ ] Verify model names against the provider website and the provider API endpoint
-- [ ] Detect wrong-endpoint-right-key failures separately from auth failures
-- [ ] Capture the provider’s real endpoint, model ID, and auth style in the canonical record
-- [ ] Prefer live truth over cloned repos or stale docs when the two disagree
+- [ ] Add a source inventory loader
+- [ ] Add a file/type classifier for discovered paths
+- [ ] Add stub scanners for config, session, log, database, and runtime sources
+- [ ] Make the scanner return structured records even before deeper parsing exists
 
-## Workstream 6: Reporting
+### 6) Add phase 0 validation
 
-- [ ] Write JSON output for machines
-- [ ] Write Markdown output for humans
-- [ ] Include discovered paths, issues, optimizations, and provider/model facts
-- [ ] Keep reports deterministic and diff-friendly
+- [ ] Write tests that prove discovered paths are captured correctly
+- [ ] Write tests that prove the loop order is stable
+- [ ] Write tests that prove runtime/gateway sources are included in the inventory
+- [ ] Write tests that prove the scanner can operate on fixtures without crashing
 
-## Workstream 7: Validation
+### 7) Define phase 0 exit criteria
 
-- [ ] Add tests for Hermes path discovery
-- [ ] Add tests for config parsing
-- [ ] Add tests for session/log scanning
-- [ ] Add tests for issue ranking
-- [ ] Add tests for provider enrichment and endpoint mismatch detection
+- [ ] Hermes source inventory is complete enough to trust
+- [ ] Gateway/runtime surfaces are included in discovery
+- [ ] The loop is explicit and repeatable
+- [ ] Baseline fixtures exist
+- [ ] Scanner skeleton runs end to end on Hermes-only data
 
-## v1.0 done when
+## Done when
 
-- Hermes paths are discovered from the live environment
-- Hermes config/session/log/database parsing works
-- issues are grouped and ranked
-- reports are generated automatically
-- provider/model lookups are grounded in live truth
-- tests cover the above
+Phase 0 is done when the project can answer:
+- where Hermes actually reads and writes state
+- how the Hermes runtime/gateway is observed
+- what files the optimizer should inspect on every run
+- how the optimizer repeats the same discovery loop reliably
 
-## Notes
+## Not yet
 
-Do not add OpenClaw or OpenCode logic to v1.0 beyond shared abstractions.
-Those belong to v1.1 and v1.2.
+Do not build the deeper logic here yet:
+- no full config repair rules
+- no provider enrichment logic
+- no live endpoint matching
+- no ranking engine beyond the inventory and loop scaffolding
+- no OpenClaw or OpenCode work
