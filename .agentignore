@@ -1,0 +1,12 @@
+# Ignore local build, cache, and generated artifacts
+.git/
+.pytest_cache/
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+.mypy_cache/
+coverage/
+reports/
+catalog.db
+*.db
