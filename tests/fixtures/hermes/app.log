@@ -1,0 +1,7 @@
+2025-01-15 08:00:00 INFO Hermes started
+2025-01-15 08:01:00 INFO Provider openai selected for lane=coding
+2025-01-15 08:02:00 ERROR Auth failure for provider anthropic: 401 Unauthorized
+2025-01-15 08:03:00 WARNING Retry attempt 1/3 for openai
+2025-01-15 08:04:00 ERROR Exception in worker thread: timeout after 30s
+2025-01-15 08:05:00 INFO Gateway health check OK
+2025-01-15 08:06:00 ERROR Provider openai timeout after 30 retries

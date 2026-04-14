@@ -1,0 +1,9 @@
+{
+  "session_id": "002",
+  "status": "ok",
+  "provider": "anthropic",
+  "model": "claude-3-5-sonnet-20241022",
+  "duration_ms": 8500,
+  "retries": 0,
+  "created_at": "2025-01-15T11:00:00Z"
+}

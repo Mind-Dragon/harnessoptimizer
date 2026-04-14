@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [{name = "Hermes"}]
-dependencies = []
+dependencies = ["PyYAML>=6.0"]
 
 [project.scripts]
 hermesoptimizer = "hermesoptimizer.run_standalone:main"

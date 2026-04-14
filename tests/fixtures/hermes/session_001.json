@@ -1,0 +1,10 @@
+{
+  "session_id": "001",
+  "status": "error",
+  "error": "provider timeout",
+  "provider": "openai",
+  "model": "gpt-4o",
+  "duration_ms": 32000,
+  "retries": 3,
+  "created_at": "2025-01-15T10:00:00Z"
+}
