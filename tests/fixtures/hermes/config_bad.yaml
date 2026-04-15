@@ -1,0 +1,33 @@
+version: "1.0"
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    auth_type: bearer
+    auth_key_env: OPENAI_API_KEY
+    model: gpt-4o
+    lane: coding
+  bad_provider:
+    # Missing base_url, auth_key_env, model
+    auth_type: bearer
+    lane: bad_lane
+  stale_provider:
+    base_url: http://internal.corp:8000/v1
+    auth_type: bearer
+    auth_key_env: STALE_KEY
+    model: old-model-v1
+    lane: stale_lane
+  insecure_provider:
+    base_url: http://httpbin.org/anything
+    auth_type: bearer
+    auth_key_env: INSECURE_KEY
+    model: some-model
+    lane: test_lane
+gateway:
+  enabled: true
+  port: 8080
+  status_command: echo "gateway running"
+log:
+  level: info
+  path: ~/.hermes/logs
+session:
+  path: ~/.hermes/sessions

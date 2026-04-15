@@ -1,0 +1,10 @@
+{
+  "session_id": "crash_001",
+  "status": "crashed",
+  "error": "Worker process crashed: segmentation fault",
+  "provider": "openai",
+  "model": "gpt-4o",
+  "duration_ms": 1500,
+  "retries": 0,
+  "created_at": "2025-01-15T12:00:00Z"
+}
