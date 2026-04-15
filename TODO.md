@@ -26,7 +26,7 @@ This file records the implementation work that was completed and the validation 
 
 ## Second-pass TODO
 
-- [ ] Add an explicit escalation rule for OAuth-only recommendations.
+- [x] Add an explicit escalation rule for OAuth-only recommendations.
   - Verify: if live provider docs recommend OAuth, the report bubbles that to human instead of auto-suggesting a direct-key fix, because direct keys are expected to live in `~/.vault` and OAuth is the exception.
 - [ ] Expand live-truth coverage to additional providers/endpoints when the real docs or APIs demand it.
   - Verify: each new live source is represented by a real probe or doc fetch and classified into auth / endpoint / stale-model buckets.

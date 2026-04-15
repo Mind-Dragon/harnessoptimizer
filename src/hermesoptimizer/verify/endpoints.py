@@ -191,6 +191,7 @@ class LiveTruthAdapter:
             context_window=context_window,
             source_url=source_url_value,
             confidence=confidence,
+            auth_type=payload.get("auth_type"),
         )
 
 
@@ -205,6 +206,7 @@ def _merge_truth_records(base: ProviderTruthRecord, live: ProviderTruthRecord) -
         context_window=live.context_window or base.context_window,
         source_url=live.source_url or base.source_url,
         confidence=live.confidence or base.confidence,
+        auth_type=live.auth_type or base.auth_type,
     )
 
 
@@ -356,13 +358,21 @@ def verify_endpoint_with_live(
 
     status_code, _, probe_msg = probe_endpoint_live(endpoint)
     if status_code in {401, 403}:
+        details = {"source_url": rec.source_url}
+        message = probe_msg
+        if rec.requires_human_auth():
+            details["escalation"] = "human"
+            message = (
+                f"OAuth-only provider '{provider}' requires human sign-off. "
+                f"{probe_msg}"
+            )
         return EndpointCheckResult(
             provider=provider,
             model=model,
             configured_endpoint=endpoint,
             status=EndpointCheckStatus.AUTH_FAILURE,
-            message=probe_msg,
-            details={"source_url": rec.source_url},
+            message=message,
+            details=details,
         )
     if status_code is not None and status_code != 200:
         return EndpointCheckResult(

@@ -17,6 +17,7 @@ class ProviderTruthRecord:
     context_window: int = 0
     source_url: str | None = None
     confidence: str = "medium"
+    auth_type: str | None = None
 
     def is_model_known(self, model: str) -> bool:
         return model in self.known_models
@@ -26,6 +27,9 @@ class ProviderTruthRecord:
 
     def is_endpoint_canonical(self, endpoint: str) -> bool:
         return self.canonical_endpoint.rstrip("/") == endpoint.rstrip("/")
+
+    def requires_human_auth(self) -> bool:
+        return (self.auth_type or "").strip().lower() == "oauth"
 
 
 @dataclass
@@ -71,6 +75,7 @@ def _dict_to_record(d: dict[str, Any]) -> ProviderTruthRecord:
         context_window=d.get("context_window", 0),
         source_url=d.get("source_url"),
         confidence=d.get("confidence", "medium"),
+        auth_type=d.get("auth_type"),
     )
 
 
@@ -98,5 +103,6 @@ def dump_provider_truth(store: ProviderTruthStore, path: str | Path) -> None:
             "context_window": rec.context_window,
             "source_url": rec.source_url,
             "confidence": rec.confidence,
+            "auth_type": rec.auth_type,
         }
     Path(path).write_text(yaml.dump(data, sort_keys=False), encoding="utf-8")

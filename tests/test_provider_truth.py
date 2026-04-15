@@ -32,6 +32,7 @@ def test_provider_truth_roundtrip(tmp_path: Path) -> None:
             context_window=128000,
             source_url="https://platform.openai.com/docs",
             confidence="high",
+            auth_type="oauth",
         )
     )
     path = tmp_path / "truth.yaml"
@@ -39,6 +40,7 @@ def test_provider_truth_roundtrip(tmp_path: Path) -> None:
     loaded = load_provider_truth(path)
     assert loaded.get("openai") is not None
     assert loaded.get("openai").canonical_endpoint == "https://api.openai.com/v1"
+    assert loaded.get("openai").auth_type == "oauth"
 
 
 def test_verify_endpoint_detects_rkwe_and_stale_model() -> None:
@@ -121,6 +123,38 @@ def test_verify_endpoint_with_live_truth_distinguishes_auth_failure(monkeypatch)
         result = verify_endpoint_with_live("openai", "https://api.openai.com/v1", "gpt-5", store)
         assert result.status == EndpointCheckStatus.AUTH_FAILURE
         assert "401" in result.message or "unauthorized" in result.message.lower()
+    finally:
+        reset_http_get()
+
+
+def test_verify_endpoint_with_live_truth_escalates_oauth_to_human(monkeypatch) -> None:
+    monkeypatch.setenv("HERMES_LIVE_TRUTH_ENABLED", "1")
+    store = ProviderTruthStore()
+    store.add(
+        ProviderTruthRecord(
+            provider="openai",
+            canonical_endpoint="https://api.openai.com/v1",
+            known_models=["gpt-5"],
+            deprecated_models=["gpt-4"],
+            auth_type="oauth",
+            source_url="https://truth.local/openai.json",
+            confidence="high",
+        )
+    )
+
+    def fake_http_get(url: str):
+        if url == "https://truth.local/openai.json":
+            return 200, '{"provider":"openai","canonical_endpoint":"https://api.openai.com/v1","known_models":["gpt-5"],"deprecated_models":["gpt-4"],"auth_type":"oauth","source_url":"https://truth.local/openai.json"}'
+        if url == "https://api.openai.com/v1":
+            return 401, "unauthorized"
+        return 404, "not found"
+
+    try:
+        set_http_get(fake_http_get)
+        result = verify_endpoint_with_live("openai", "https://api.openai.com/v1", "gpt-5", store)
+        assert result.status == EndpointCheckStatus.AUTH_FAILURE
+        assert result.details.get("escalation") == "human"
+        assert "oauth" in result.message.lower()
     finally:
         reset_http_get()
 
