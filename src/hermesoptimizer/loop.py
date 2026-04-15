@@ -26,8 +26,9 @@ from hermesoptimizer.sources.hermes_config import scan_config_paths
 from hermesoptimizer.sources.hermes_diagnosis import Diagnosis, diagnose_all
 from hermesoptimizer.sources.hermes_discover import discover_live_paths, load_inventory
 from hermesoptimizer.sources.hermes_logs import scan_log_paths
-from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_runtime_paths
+from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_runtime_paths, scan_cli_status
 from hermesoptimizer.sources.hermes_sessions import scan_session_files
+from hermesoptimizer.sources.hermes_auth import scan_auth_files
 from hermesoptimizer.sources.provider_truth import ProviderTruthStore, load_provider_truth
 from hermesoptimizer.verify.endpoints import EndpointCheckResult, verify_provider_truth
 
@@ -125,8 +126,12 @@ def parse(state: LoopState, config: LoopConfig) -> LoopState:
                 findings.extend(scan_log_paths([path]))
             elif category == "runtime":
                 findings.extend(scan_runtime_paths([path]))
+            elif category == "auth":
+                findings.extend(scan_auth_files([path]))
             elif category == "gateway" and entry.command:
                 findings.extend(scan_gateway_health([entry.command]))
+            elif category == "cli" and entry.command:
+                findings.extend(scan_cli_status([entry.command]))
 
     return _clone_state(state, findings=findings)
 

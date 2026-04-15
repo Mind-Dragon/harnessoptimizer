@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from hermesoptimizer.sources.provider_truth import (
     ProviderTruthRecord,
     ProviderTruthStore,
+    canonical_provider_name,
     dump_provider_truth,
     load_provider_truth,
 )
@@ -41,6 +44,50 @@ def test_provider_truth_roundtrip(tmp_path: Path) -> None:
     assert loaded.get("openai") is not None
     assert loaded.get("openai").canonical_endpoint == "https://api.openai.com/v1"
     assert loaded.get("openai").auth_type == "oauth"
+
+
+def test_provider_truth_rejects_duplicate_canonical_family() -> None:
+    store = ProviderTruthStore()
+    store.add(
+        ProviderTruthRecord(
+            provider="kimi",
+            canonical_endpoint="https://api.example.com/v1",
+            known_models=["kimi-k2"],
+        )
+    )
+
+    with pytest.raises(ValueError):
+        store.add(
+            ProviderTruthRecord(
+                provider="kimi-for-coding",
+                canonical_endpoint="https://api.example.com/v1",
+                known_models=["kimi-k2"],
+            )
+        )
+
+
+def test_provider_truth_accepts_qwen_alias_lookup() -> None:
+    store = ProviderTruthStore()
+    store.add(
+        ProviderTruthRecord(
+            provider="bailian",
+            canonical_endpoint="https://coding.dashscope.aliyuncs.com/v1",
+            known_models=["qwen3.6-plus"],
+        )
+    )
+    assert store.get("qwen") is not None
+    assert store.get("bailian").canonical_endpoint == "https://coding.dashscope.aliyuncs.com/v1"
+
+
+def test_canonical_provider_name_normalizes_common_aliases() -> None:
+    assert canonical_provider_name("openai-codex") == "openai"
+    assert canonical_provider_name("alibaba-coding-plan") == "qwen"
+    assert canonical_provider_name("z.ai") == "zai"
+    assert canonical_provider_name("zai-chat") == "zai"
+    assert canonical_provider_name("x.ai") == "xai"
+
+
+
 
 
 def test_verify_endpoint_detects_rkwe_and_stale_model() -> None:

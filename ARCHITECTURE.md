@@ -11,11 +11,12 @@ The core does four things:
 - keeps the analysis model shared across harnesses
 
 The adapters do the harness-specific work:
-- discover config/session/log/database paths
+- discover config, session, log, database, and runtime paths
 - parse those sources
 - extract errors and action items
-- enrich provider/model data from live sources
+- enrich provider and model data from live sources
 - classify and rank optimizations
+- verify runtime health when a harness exposes a live status surface
 
 ## The big idea
 
@@ -24,24 +25,24 @@ It is a harness intelligence layer.
 
 That means every version uses the same rule:
 1. find the source of truth on disk or in the runtime
-2. compare it to live provider truth when provider details matter
+2. compare it to live provider or runtime truth when health and identity matter
 3. normalize the evidence
 4. rank what should change
 5. report it in a way a human can act on
 
 ## Versioned scope
 
-### v1.0 — Hermes
+### v1.0 — Hermes analysis baseline
 
-Hermes is the first adapter because it is local, structured, and the fastest way to prove the system.
+Hermes v1.0 is the first adapter because it is local, structured, and the fastest way to prove the system.
 
-Hermes v1.0 should read:
+Hermes v1.0 reads:
 - `~/.hermes/config.yaml`
 - `~/.hermes/logs/`
 - `~/.hermes/sessions/`
-- any Hermes-related databases or caches that store recent state
+- Hermes-local databases and caches that store recent state
 
-It should detect:
+It detects:
 - config drift
 - stale provider names
 - session failures
@@ -49,13 +50,39 @@ It should detect:
 - retries and stalls
 - recurring noise that hides actual problems
 
-It should output:
+It outputs:
 - raw evidence
 - grouped findings
 - prioritized optimizations
 - provider/model lookup results when a model name or endpoint needs validation
 
-### v1.1 — OpenClaw
+### v1.1 — Hermes runtime hygiene and provider cleanup
+
+v1.1 hardens the Hermes adapter so a new session starts cleanly and stays honest.
+
+The adapter must inspect:
+- gateway health
+- CLI status
+- provider registry entries
+- session bootstrap data
+- config integrity
+- logs that show blank providers, duplicate providers, stale aliases, auth failures, or endpoint failures
+
+Canonical providers are env-backed:
+- `base_url` comes from config/env resolution, not stale embedded model fields
+- `api_key` comes from env resolution, not stale embedded model fields
+- any `model.base_url` or `model.api_key` that still appears in config is treated as stale and stripped before reuse
+- if a canonical provider is duplicated in a user-defined `providers:` block, the canonical entry wins and the duplicate is collapsed away
+- provider-specific env overrides that conflict with canonical routing are treated as stale inputs for the canonical path
+
+The key v1.1 problem class is the misleading one:
+- the gateway is up, but the CLI state is stale
+- or the CLI looks fine, but the gateway is unhealthy
+- or the provider key is valid, but the alias list is polluted with duplicates or blanks
+- or the session is new, but it inherited invalid data from stale state
+- or a removed credential reappears because another source re-seeded it
+
+### v1.2 — OpenClaw gateway and config diagnosis
 
 OpenClaw adds a gateway and more direct provider plumbing.
 
@@ -66,11 +93,7 @@ That means the adapter must inspect:
 - plugin allowlists and entries
 - logs that show auth or endpoint failures
 
-The key OpenClaw problem class is the misleading one:
-- the key is right, but the endpoint is wrong
-- or the endpoint is right, but the model name is stale
-
-### v1.2 — OpenCode
+### v1.3 — OpenCode provider routing and worktree behavior
 
 OpenCode adds another layer of agent config and provider mapping.
 
@@ -79,7 +102,7 @@ The adapter must understand:
 - model aliases
 - auth file locations
 - worktree or runtime metadata
-- task/agent failures that are not actually provider failures
+- task or agent failures that are not actually provider failures
 
 ### Later versions
 
@@ -87,19 +110,21 @@ Future harnesses should only need:
 - a new adapter
 - a path inventory
 - parsers
-- a provider truth check if applicable
+- a live truth check if applicable
 - the shared ranking and reporting pipeline
 
 ## Data flow
 
 1. Discover files and runtime sources.
 2. Read config, session, log, cache, and database files.
-3. Extract errors and action items.
-4. Deduplicate repeated signals.
-5. Enrich model and endpoint details from live sources.
-6. Assign a priority bucket.
-7. Save normalized records and findings.
-8. Export reports.
+3. Check gateway and CLI status when the harness exposes them.
+4. Extract errors and action items.
+5. Normalize provider aliases and deduplicate repeated signals.
+6. Enrich model, endpoint, and runtime details from live sources.
+7. Assign a priority bucket.
+8. Save normalized records and findings.
+9. Export reports.
+10. Re-check health after a repair or config change.
 
 ## Priority model
 
@@ -115,28 +140,29 @@ The goal is to separate fire from friction.
 
 ## Source-of-truth rules
 
-For model names and endpoint details, prefer live truth over local memory.
+For provider names, runtime health, and endpoint details, prefer live truth over local memory.
 
 Use this hierarchy:
-1. provider website / docs
-2. provider endpoint or model list
+1. live gateway or CLI status
+2. provider website, docs, or endpoint list
 3. local config and runtime files
 4. cloned docs or cached text
 
-If the website and endpoint disagree, that is not a contradiction to ignore.
-That is a versioning signal.
+If the live status and local config disagree, that is not a contradiction to ignore.
+That is the failure signal.
 
-## Why browser-based lookup matters
+## Why live lookup matters
 
-Some providers block or distort bot scraping.
-Some provider pages lag behind their APIs.
-Some API surfaces know about a model before the public docs do.
+Some provider pages lag behind runtime reality.
+Some aliases exist in old configs but are invalid in the current registry.
+Some endpoints are reachable but point at stale or unsupported routes.
 
 So the architecture allows multiple lookup methods:
 - standard search engines
 - live browser sessions
 - provider docs
-- provider API/model listings
+- provider API or model listings
+- Hermes CLI and gateway status commands
 
 The system should treat those as evidence sources, not as interchangeable copies.
 
@@ -144,9 +170,7 @@ The system should treat those as evidence sources, not as interchangeable copies
 
 - `src/hermesoptimizer/catalog.py` — SQLite schema and CRUD
 - `src/hermesoptimizer/sources/` — harness-specific source readers
-- `src/hermesoptimizer/scrape/` — external enrichment collectors
-- `src/hermesoptimizer/route/` — lightweight classification and routing
-- `src/hermesoptimizer/validate/` — normalization and lane assignment
+- `src/hermesoptimizer/verify/` — live status and endpoint verification helpers
 - `src/hermesoptimizer/report/` — JSON and Markdown export
 - `src/hermesoptimizer/run_hermes_mode.py` — Hermes entry point
 - `src/hermesoptimizer/run_standalone.py` — CLI entry point
@@ -158,14 +182,14 @@ The system should treat those as evidence sources, not as interchangeable copies
 - keep harness adapters independent
 - keep the report format stable across versions
 - make it easy to add new adapters without rewriting the core
+- keep health checks explicit, named, and verifiable
 
 ## Practical interpretation
 
 What you mean by this project is:
 
-"Build a system that watches the harnesses we use to run Hermes work, learns where their real files and real endpoints live, detects when they are misconfigured or stale, and recommends the smallest useful fix in priority order."
+"Build a system that watches the harnesses we use to run Hermes work, learns where their real files and real health surfaces live, detects when they are misconfigured or stale, and recommends the smallest useful fix in priority order."
 
-That is the clean version.
 The slightly more operational version is:
 
-"Stop guessing at where the config lives, stop trusting stale model names, stop treating endpoint mistakes like auth problems, and make the tool tell us what to change first."
+"Stop guessing at where the config lives, stop trusting stale provider aliases, stop treating endpoint mistakes like auth problems, and make the tool tell us what to change first."

@@ -6,6 +6,31 @@ from typing import Any
 
 import yaml
 
+_PROVIDER_ALIASES: dict[str, str] = {
+    "kimi-for-coding": "kimi",
+    "kimi-coding": "kimi",
+    "kimi-coding-cn": "kimi",
+    "bailian": "qwen",
+    "bailian-coding": "qwen",
+    "alibaba-bailian": "qwen",
+    "alibaba-coding-plan": "qwen",
+    "alibaba-coding": "qwen",
+    "alibaba": "qwen",
+    "tongyi": "qwen",
+    "openai-codex": "openai",
+    "zai-chat": "zai",
+    "z.ai": "zai",
+    "z-ai": "zai",
+    "x.ai": "xai",
+    "x-ai": "xai",
+    "minimax-cn": "minimax",
+}
+
+
+def canonical_provider_name(provider: str) -> str:
+    name = (provider or "").strip().lower()
+    return _PROVIDER_ALIASES.get(name, name)
+
 
 @dataclass(slots=True)
 class ProviderTruthRecord:
@@ -36,30 +61,47 @@ class ProviderTruthRecord:
 class ProviderTruthStore:
     records: dict[str, ProviderTruthRecord] = field(default_factory=dict)
 
-    def add(self, record: ProviderTruthRecord) -> None:
-        self.records[record.provider] = record
+    def add(self, record: ProviderTruthRecord, *, replace: bool = False) -> None:
+        canonical = canonical_provider_name(record.provider)
+        normalized = ProviderTruthRecord(
+            provider=canonical,
+            canonical_endpoint=record.canonical_endpoint,
+            known_models=list(record.known_models),
+            deprecated_models=list(record.deprecated_models),
+            capabilities=list(record.capabilities),
+            context_window=record.context_window,
+            source_url=record.source_url,
+            confidence=record.confidence,
+            auth_type=record.auth_type,
+        )
+        existing = self.records.get(canonical)
+        if existing is not None and not replace:
+            raise ValueError(
+                f"duplicate provider family '{canonical}' from '{record.provider}' conflicts with existing '{existing.provider}'"
+            )
+        self.records[canonical] = normalized
 
     def get(self, provider: str) -> ProviderTruthRecord | None:
-        return self.records.get(provider)
+        return self.records.get(canonical_provider_name(provider))
 
     def providers(self) -> list[str]:
         return list(self.records.keys())
 
     def check_right_key_wrong_endpoint(self, provider: str, endpoint: str) -> tuple[bool, str]:
-        rec = self.records.get(provider)
+        rec = self.get(provider)
         if rec is None or rec.is_endpoint_canonical(endpoint):
             return False, ""
-        return True, f"Endpoint mismatch for provider '{provider}': expected '{rec.canonical_endpoint}' but got '{endpoint}'"
+        return True, f"Endpoint mismatch for provider '{rec.provider}': expected '{rec.canonical_endpoint}' but got '{endpoint}'"
 
     def check_stale_model(self, provider: str, model: str) -> tuple[bool, str]:
-        rec = self.records.get(provider)
+        rec = self.get(provider)
         if rec is None:
             return False, ""
         if rec.is_model_known(model):
             return False, ""
         if rec.is_model_deprecated(model):
-            return True, f"Model '{model}' for provider '{provider}' is deprecated"
-        return True, f"Model '{model}' for provider '{provider}' is not in known model list"
+            return True, f"Model '{model}' for provider '{rec.provider}' is deprecated"
+        return True, f"Model '{model}' for provider '{rec.provider}' is not in known model list"
 
     def all_records(self) -> list[ProviderTruthRecord]:
         return list(self.records.values())
@@ -87,7 +129,7 @@ def load_provider_truth(path: str | Path) -> ProviderTruthStore:
     store = ProviderTruthStore()
     for provider_name, rec_data in data.items():
         if isinstance(rec_data, dict):
-            store.add(_dict_to_record({"provider": provider_name, **rec_data}))
+            store.add(_dict_to_record({"provider": provider_name, **rec_data}), replace=False)
     return store
 
 

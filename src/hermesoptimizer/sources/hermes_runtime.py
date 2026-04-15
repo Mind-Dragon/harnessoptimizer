@@ -134,6 +134,77 @@ def scan_gateway_health(commands: list[str]) -> list[Finding]:
     return findings
 
 
+def scan_cli_status(commands: list[str]) -> list[Finding]:
+    """
+    Phase 1 scan of Hermes CLI health by running configured status commands.
+
+    For each command in the list, runs it and produces findings based on output.
+    """
+    findings: list[Finding] = []
+    unhealthy_markers = ["not logged in", "not configured", "error", "failed", "unauthorized", "denied"]
+    healthy_markers = ["status", "healthy", "ok", "logged in", "running"]
+
+    for cmd in commands:
+        returncode, stdout, stderr = _run_command(cmd)
+        combined = f"{stdout}\n{stderr}".strip()
+
+        if returncode != 0:
+            findings.append(
+                Finding(
+                    file_path=cmd,
+                    line_num=None,
+                    category="cli-signal",
+                    severity="critical",
+                    kind="cli-down",
+                    fingerprint=f"cli:{cmd[:40]}",
+                    sample_text=combined[:240] or f"exit code {returncode}",
+                    count=1,
+                    confidence="high",
+                    router_note=f"CLI command failed: exit {returncode}",
+                    lane=None,
+                )
+            )
+            continue
+
+        lowered = combined.lower()
+        if any(marker in lowered for marker in unhealthy_markers):
+            findings.append(
+                Finding(
+                    file_path=cmd,
+                    line_num=None,
+                    category="cli-signal",
+                    severity="high",
+                    kind="cli-unhealthy",
+                    fingerprint=f"cli:{cmd[:40]}",
+                    sample_text=combined[:240],
+                    count=1,
+                    confidence="medium",
+                    router_note="CLI status reports unhealthy state",
+                    lane=None,
+                )
+            )
+        elif any(marker in lowered for marker in healthy_markers):
+            pass
+        else:
+            findings.append(
+                Finding(
+                    file_path=cmd,
+                    line_num=None,
+                    category="cli-signal",
+                    severity="low",
+                    kind="cli-unhealthy",
+                    fingerprint=f"cli:{cmd[:40]}",
+                    sample_text=combined[:240],
+                    count=1,
+                    confidence="low",
+                    router_note="CLI status output ambiguous",
+                    lane=None,
+                )
+            )
+
+    return findings
+
+
 def scan_runtime_paths(paths: list[str | Path]) -> list[Finding]:
     """
     Phase 1 scan of runtime paths for evidence of running Hermes processes.

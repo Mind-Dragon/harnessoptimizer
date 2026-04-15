@@ -19,6 +19,7 @@ from hermesoptimizer.catalog import Finding
 from hermesoptimizer.sources.hermes_config import scan_config, scan_config_paths
 from hermesoptimizer.sources.hermes_sessions import scan_session, scan_session_files
 from hermesoptimizer.sources.hermes_logs import scan_log, scan_log_paths
+from hermesoptimizer.sources.hermes_auth import scan_auth, scan_auth_files
 from hermesoptimizer.sources.hermes_diagnosis import (
     Diagnosis,
     diagnose,
@@ -27,7 +28,7 @@ from hermesoptimizer.sources.hermes_diagnosis import (
     Severity,
     Confidence,
 )
-from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_runtime_paths
+from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_runtime_paths, scan_cli_status
 from hermesoptimizer.loop import (
     LoopConfig,
     LoopState,
@@ -131,6 +132,14 @@ def phase1_loop(tmp_path: Path) -> Phase1Loop:
         "  - path: tests/fixtures/hermes/app.log\n"
         "    type: log\n"
         "    authoritative: true\n"
+        "auth:\n"
+        "  - path: tests/fixtures/hermes/auth.json\n"
+        "    type: auth\n"
+        "    authoritative: true\n"
+        "cli:\n"
+        "  - command: echo Hermes Agent Status not logged in\n"
+        "    type: cli\n"
+        "    authoritative: true\n"
         "cache: []\n"
         "db: []\n"
         "runtime: []\n"
@@ -177,6 +186,136 @@ class TestScanConfig:
         stale = [f for f in findings if f.kind == "config-stale-provider"]
         assert len(stale) >= 1
         assert any("stale_provider" in f.sample_text or "old-model" in f.sample_text for f in stale)
+
+    def test_config_rejects_duplicate_provider_family(self, tmp_path: Path) -> None:
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nproviders:\n  kimi:\n    base_url: https://api.example.com/v1\n    auth_type: bearer\n    auth_key_env: KIMI_API_KEY\n    model: kimi-k2\n    lane: coding\n  kimi-for-coding:\n    base_url: https://api.example.com/v1\n    auth_type: bearer\n    auth_key_env: KIMI_API_KEY\n    model: kimi-k2\n    lane: coding\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        duplicates = [f for f in findings if f.kind == "config-duplicate-provider"]
+        assert len(duplicates) == 1
+        assert "kimi-for-coding" in duplicates[0].sample_text
+
+    def test_config_rejects_duplicate_canonical_aliases(self, tmp_path: Path) -> None:
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nproviders:\n  zai:\n    base_url: https://open.bigmodel.cn/api/paas/v4/\n    auth_type: bearer\n    auth_key_env: ZAI_API_KEY\n    model: glm-4.5\n    lane: coding\n  z.ai:\n    base_url: https://open.bigmodel.cn/api/paas/v4/\n    auth_type: bearer\n    auth_key_env: ZAI_API_KEY\n    model: glm-4.5\n    lane: coding\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        duplicates = [f for f in findings if f.kind == "config-duplicate-provider"]
+        assert len(duplicates) == 1
+        assert "z.ai" in duplicates[0].sample_text
+
+    def test_config_accepts_qwen36_plus_model(self, tmp_path: Path) -> None:
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nproviders:\n  bailian:\n    base_url: https://coding.dashscope.aliyuncs.com/v1\n    auth_type: bearer\n    auth_key_env: BAILIAN_API_KEY\n    model: qwen3.6-plus\n    lane: coding\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        stale = [f for f in findings if f.kind == "config-stale-provider"]
+        assert stale == []
+
+    def test_config_accepts_alibaba_model_scopes(self, tmp_path: Path) -> None:
+        accepted_models = [
+            "qwen3-max",
+            "qwen3-coder-plus",
+            "qwen3-vl-plus",
+            "qwen3-omni-plus",
+            "qwen3-livetranslate-flash",
+            "qwen3-asr-flash-realtime",
+            "qwen-plus-latest",
+            "qwen-flash-2025-07-28",
+            "qwen-image-2.0-pro",
+            "qwq-32b",
+            "qvq-max",
+            "wan2.6-t2i",
+            "z-image-turbo",
+            "cosyvoice-v3-plus",
+            "fun-asr",
+            "paraformer-v2",
+            "tongyi-intent-detect-v3",
+            "text-embedding-v4",
+            "qwen-mt-plus",
+        ]
+        for index, model_name in enumerate(accepted_models):
+            config = tmp_path / f"config-{index}.yaml"
+            config.write_text(
+                f"""version: \"1.0\"\nproviders:\n  bailian:\n    base_url: https://coding.dashscope.aliyuncs.com/v1\n    auth_type: bearer\n    auth_key_env: BAILIAN_API_KEY\n    model: {model_name}\n    lane: coding\n""",
+                encoding="utf-8",
+            )
+            findings = scan_config(config)
+            stale = [f for f in findings if f.kind == "config-stale-provider"]
+            assert stale == [], model_name
+
+    def test_config_flags_stale_model_base_url_and_api_key(self, tmp_path: Path) -> None:
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nmodel:\n  provider: kimi-coding\n  base_url: https://api.moonshot.ai/v1\n  api_key: sk-kimi-abc123\nproviders:\n  kimi-coding:\n    base_url: https://api.moonshot.ai/v1\n    auth_type: bearer\n    auth_key_env: KIMI_API_KEY\n    model: kimi-k2.5\n    lane: coding\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        stale_fields = [f for f in findings if f.kind == "config-stale-model-field"]
+        assert len(stale_fields) == 2
+        assert any("model.base_url" in f.sample_text for f in stale_fields)
+        assert any("model.api_key" in f.sample_text for f in stale_fields)
+        assert any("stale value was cleared" in f.router_note for f in stale_fields)
+
+    def test_config_flags_conflicting_env_override(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("KIMI_BASE_URL", "https://api.moonshot.ai")
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nproviders:\n  kimi-coding:\n    base_url: https://api.kimi.com/coding/v1\n    auth_type: bearer\n    auth_key_env: KIMI_API_KEY\n    model: kimi-k2.5\n    lane: coding\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        conflicts = [f for f in findings if f.kind == "config-env-override-conflict"]
+        assert len(conflicts) == 1
+        assert "KIMI_BASE_URL" in conflicts[0].sample_text
+
+    def test_config_flags_model_provider_alias_and_duplicate_fallbacks(self, tmp_path: Path) -> None:
+        config = tmp_path / "config.yaml"
+        config.write_text(
+            """version: \"1.0\"\nmodel:\n  provider: openai-codex\n  base_url: https://chatgpt.com/backend-api/codex\nfallback_providers:\n  - provider: openai-codex\n    model: gpt-5.4-mini\n  - provider: kimi-coding\n    model: kimi-k2.5\nproviders: {}\n""",
+            encoding="utf-8",
+        )
+        findings = scan_config(config)
+        stale = [f for f in findings if f.kind == "config-stale-provider"]
+        duplicates = [f for f in findings if f.kind == "config-duplicate-provider"]
+        assert any("model:provider" in f.fingerprint for f in stale)
+        assert any("fallback-alias" in f.fingerprint for f in stale)
+        assert len(duplicates) == 1
+        assert "fallback provider 'openai-codex'" in duplicates[0].sample_text
+
+    def test_scan_auth_flags_reseeded_and_blank_sources(self, tmp_path: Path) -> None:
+        auth = tmp_path / "auth.json"
+        auth.write_text(
+            """{\n  \"credential_pool\": {\n    \"openai-codex\": [\n      {\"source\": \"manual:device_code\", \"label\": \"openai-codex-oauth-1\", \"auth_type\": \"oauth\"}\n    ],\n    \"copilot\": [\n      {\"source\": \"gh_cli\", \"label\": \"gh auth token\", \"auth_type\": \"api_key\"}\n    ],\n    \"alibaba-coding-plan\": [\n      {\"source\": \"env:DASHSCOPE_API_KEY\", \"label\": \"DASHSCOPE_API_KEY\", \"auth_type\": \"api_key\"}\n    ],\n    \"alibaba\": [\n      {\"source\": \"config:alibaba\", \"label\": \"alibaba\", \"auth_type\": \"api_key\"}\n    ],\n    \"blank\": [\n      {\"source\": \"\", \"label\": \"blank\", \"auth_type\": \"api_key\"}\n    ]\n  }\n}\n""",
+            encoding="utf-8",
+        )
+        findings = scan_auth(auth)
+        kinds = [f.kind for f in findings]
+        assert "auth-reseeded-credential" in kinds
+        assert "auth-blank-source" in kinds
+        assert "auth-stale-provider" in kinds
+        assert "auth-duplicate-provider" in kinds
+
+    def test_scan_auth_files_delegates_to_scan_auth(self, tmp_path: Path) -> None:
+        auth = tmp_path / "auth.json"
+        auth.write_text('{"credential_pool": {}}', encoding="utf-8")
+        findings = scan_auth_files([auth])
+        assert isinstance(findings, list)
+
+    def test_scan_cli_status_distinguishes_ok_down_and_unhealthy(self) -> None:
+        ok = scan_cli_status(["printf 'Hermes Agent Status\n  Provider: OpenAI Codex\n  Status: running\n'"])
+        unhealthy = scan_cli_status(["printf 'Hermes Agent Status\n  Qwen OAuth ✗ not logged in\n'"])
+        down = scan_cli_status(["bash -lc 'exit 2'"])
+        assert ok == []
+        assert any(f.kind == "cli-unhealthy" for f in unhealthy)
+        assert any(f.kind == "cli-down" for f in down)
 
     def test_scan_config_paths_delegates_to_scan_config(self, bad_config: Path) -> None:
         findings = scan_config_paths([bad_config])
@@ -383,6 +522,12 @@ class TestPhase1Loop:
         final_state = phase1_loop.run(state)
         crash_findings = [f for f in final_state.findings if f.kind == "session-crash"]
         assert len(crash_findings) >= 1
+
+    def test_phase1_loop_captures_auth_and_cli_signals(self, phase1_loop: Phase1Loop) -> None:
+        state = phase1_loop.initial_state()
+        final_state = phase1_loop.run(state)
+        assert any(f.category == "auth-signal" for f in final_state.findings)
+        assert any(f.category == "cli-signal" for f in final_state.findings)
 
     def test_phase1_loop_runs_end_to_end(self, phase1_loop: Phase1Loop) -> None:
         state = phase1_loop.initial_state()

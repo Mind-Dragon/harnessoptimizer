@@ -107,6 +107,10 @@ _DIAGNOSIS_MAP: dict[str, tuple[str, str, str, str | None, str | None]] = {
     "log-runtime-failure":      (DiagnosisKind.LOG_RUNTIME_FAILURE,    Severity.MEDIUM, Confidence.MEDIUM, "runtime-exception",                       "review exception stack trace"),
     "gateway-down":             (DiagnosisKind.GATEWAY_DOWN,           Severity.CRITICAL, Confidence.HIGH, "gateway-not-responding",                  "start the Hermes gateway service"),
     "gateway-unhealthy":        (DiagnosisKind.GATEWAY_UNHEALTHY,      Severity.HIGH,   Confidence.MEDIUM, "gateway-health-check-failed",             "check gateway /health endpoint"),
+    "auth-reseeded-credential":  ("auth-reseeded-credential",           Severity.HIGH,   Confidence.HIGH,   "reseeded-credential-source",              "remove or suppress the stale credential source"),
+    "auth-blank-source":         ("auth-blank-source",                  Severity.MEDIUM, Confidence.HIGH,   "blank-credential-source",                 "remove the blank credential entry"),
+    "cli-down":                  ("cli-down",                          Severity.CRITICAL, Confidence.HIGH, "cli-not-responding",                      "start or repair the Hermes CLI"),
+    "cli-unhealthy":             ("cli-unhealthy",                     Severity.HIGH,   Confidence.MEDIUM, "cli-health-check-failed",                 "check Hermes CLI status and auth state"),
 }
 
 
