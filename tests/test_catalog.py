@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermesoptimizer.catalog import Finding, Record, get_findings, get_records, init_db, upsert_finding, upsert_record
+from hermesoptimizer.catalog import Finding, Record, finish_run, get_findings, get_records, get_run_history, init_db, start_run, upsert_finding, upsert_record
 from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
 
@@ -62,3 +62,29 @@ def test_upsert_finding_and_reports(tmp_path: Path) -> None:
 
     assert (out_dir / "report.json").exists()
     assert (out_dir / "report.md").exists()
+
+
+def test_finish_run_persists_metrics_history(tmp_path: Path) -> None:
+    db = tmp_path / "catalog.db"
+    init_db(db)
+
+    run_id = start_run(db, "export")
+    finish_run(
+        db,
+        run_id,
+        record_count=2,
+        finding_count=3,
+        metrics={
+            "findings_total": 3,
+            "gateway_findings": 1,
+            "inspected_inputs_total": 4,
+        },
+    )
+
+    history = get_run_history(db, limit=1)
+    assert len(history) == 1
+    assert history[0]["id"] == run_id
+    assert history[0]["status"] == "completed"
+    assert history[0]["metrics"]["findings_total"] == 3
+    assert history[0]["metrics"]["gateway_findings"] == 1
+    assert history[0]["metrics"]["inspected_inputs_total"] == 4

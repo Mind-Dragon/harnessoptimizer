@@ -4,25 +4,7 @@ from pathlib import Path
 
 from hermesoptimizer.catalog import Finding, Record
 from hermesoptimizer.report.issues import group_findings_by_fingerprint
-
-
-def _compute_metrics(
-    *,
-    records: list[Record],
-    findings: list[Finding],
-    inspected_inputs: list[dict] | None,
-) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    counts["records_total"] = len(records)
-    counts["findings_total"] = len(findings)
-    counts["finding_groups_total"] = len(group_findings_by_fingerprint(findings))
-    counts["inspected_inputs_total"] = len(inspected_inputs or [])
-    counts["gateway_findings"] = sum(1 for finding in findings if finding.category == "gateway-signal")
-    counts["config_findings"] = sum(1 for finding in findings if finding.category == "config-signal")
-    counts["session_findings"] = sum(1 for finding in findings if finding.category == "session-signal")
-    counts["log_findings"] = sum(1 for finding in findings if finding.category == "log-signal")
-    counts["runtime_findings"] = sum(1 for finding in findings if finding.category == "runtime-signal")
-    return counts
+from hermesoptimizer.report.metrics import compute_report_metrics
 
 
 def _render_metrics_table(metrics: dict[str, int]) -> list[str]:
@@ -62,7 +44,7 @@ def write_markdown_report(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    metrics = _compute_metrics(records=records, findings=findings, inspected_inputs=inspected_inputs)
+    metrics = compute_report_metrics(records=records, findings=findings, inspected_inputs=inspected_inputs)
     lines: list[str] = [f"# {title}", ""]
 
     lines.append("## Metrics")

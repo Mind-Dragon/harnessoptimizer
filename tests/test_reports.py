@@ -5,6 +5,7 @@ from pathlib import Path
 from hermesoptimizer.catalog import Finding, Record
 from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
+from hermesoptimizer.report.metrics import METRIC_KEYS, compute_report_metrics
 
 
 def _comparison() -> dict:
@@ -49,6 +50,85 @@ def test_json_and_markdown_report(tmp_path: Path) -> None:
     assert "before_after" in json_text
     assert "Before / After" in md_text
     assert "findings_total" in md_text
+
+
+def test_export_uses_persistent_run_history(tmp_path: Path) -> None:
+    db = tmp_path / "catalog.db"
+    out_dir = tmp_path / "reports"
+    record = Record(
+        provider="openai",
+        model="gpt-5",
+        base_url="https://api.openai.com/v1",
+        auth_type="bearer",
+        auth_key="OPENAI_API_KEY",
+        lane="coding",
+        region=None,
+        capabilities=["text"],
+        context_window=128000,
+        source="manual",
+        confidence="high",
+    )
+    finding = Finding(
+        file_path="a.log",
+        line_num=1,
+        category="log-signal",
+        severity="medium",
+    )
+
+    from hermesoptimizer.catalog import init_db, upsert_finding, upsert_record
+    from hermesoptimizer.run_standalone import main
+
+    init_db(db)
+    upsert_record(db, record)
+    upsert_finding(db, finding)
+
+    assert main(["export", "--db", str(db), "--out-dir", str(out_dir), "--title", "First Run"]) == 0
+    (out_dir / "report.json").unlink()
+    (out_dir / "report.md").unlink()
+
+    assert main(["export", "--db", str(db), "--out-dir", str(out_dir), "--title", "Second Run"]) == 0
+
+    json_text = (out_dir / "report.json").read_text(encoding="utf-8")
+    md_text = (out_dir / "report.md").read_text(encoding="utf-8")
+    assert "before_after" in json_text
+    assert "Before / After" in md_text
+    assert "Second Run" in json_text
+
+
+def test_metric_surface_is_stable_and_ordered(tmp_path: Path) -> None:
+    record = Record(
+        provider="openai",
+        model="gpt-5",
+        base_url="https://api.openai.com/v1",
+        auth_type="bearer",
+        auth_key="OPENAI_API_KEY",
+        lane="coding",
+        region=None,
+        capabilities=["text"],
+        context_window=128000,
+        source="manual",
+        confidence="high",
+    )
+    finding = Finding(
+        file_path="a.log",
+        line_num=1,
+        category="log-signal",
+        severity="medium",
+    )
+    metrics = compute_report_metrics(records=[record], findings=[finding, finding], inspected_inputs=[{"type": "file", "path": "/home/user/.hermes/config.yaml"}])
+
+    assert METRIC_KEYS == (
+        "records_total",
+        "findings_total",
+        "finding_groups_total",
+        "inspected_inputs_total",
+        "gateway_findings",
+        "config_findings",
+        "session_findings",
+        "log_findings",
+        "runtime_findings",
+    )
+    assert tuple(metrics.keys()) == METRIC_KEYS
 
 
 def test_json_report_contains_inspected_inputs_header(tmp_path: Path) -> None:

@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS runs (
   finished_at TIMESTAMP,
   record_count INTEGER DEFAULT 0,
   finding_count INTEGER DEFAULT 0,
-  status TEXT DEFAULT 'running'
+  status TEXT DEFAULT 'running',
+  metrics_json TEXT
 );
 """
 
@@ -135,6 +136,7 @@ def connect(db_path: str | Path) -> sqlite3.Connection:
 def init_db(db_path: str | Path) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        _ensure_column(conn, "runs", "metrics_json", "TEXT")
 
 
 def _upsert(
@@ -143,6 +145,12 @@ def _upsert(
     values: Sequence,
 ) -> None:
     conn.execute(sql, values)
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+    existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+    if column not in existing:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
 def upsert_record(db_path: str | Path, record: Record) -> None:
@@ -216,6 +224,7 @@ def finish_run(
     *,
     record_count: int,
     finding_count: int,
+    metrics: dict[str, int] | None = None,
     status: str = "completed",
 ) -> None:
     with connect(db_path) as conn:
@@ -225,9 +234,31 @@ def finish_run(
             SET finished_at = CURRENT_TIMESTAMP,
                 record_count = ?,
                 finding_count = ?,
-                status = ?
+                status = ?,
+                metrics_json = ?
             WHERE id = ?
             """,
-            (record_count, finding_count, status, run_id),
+            (record_count, finding_count, status, json.dumps(metrics, sort_keys=True) if metrics is not None else None, run_id),
         )
         conn.commit()
+
+
+def get_run_history(db_path: str | Path, limit: int = 10) -> list[dict]:
+    with connect(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM runs
+            WHERE status = 'completed' AND metrics_json IS NOT NULL
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    history: list[dict] = []
+    for row in rows:
+        data = dict(row)
+        metrics_json = data.get("metrics_json")
+        data["metrics"] = json.loads(metrics_json) if metrics_json else {}
+        history.append(data)
+    return history

@@ -17,6 +17,8 @@ This file records the implementation work that was completed and the validation 
 - [x] Phase 4 code fixes: repeat-run stability checks, before/after proof scaffolding, and explicit readiness criteria in tests
 - [x] Added grouped finding and inspected-input support to report output
 - [x] Added report metrics plus optional before/after comparison blocks
+- [x] Persisted run-history metrics in SQLite and made export comparisons read from prior completed runs
+- [x] Added a stable report metric surface via `report/metrics.py` and locked the key order in tests
 - [x] Updated the local optimizer run report against the current fixture bundle
 - [x] Verified the full test suite passes
 - [x] Verified live-truth resolution against real provider docs/endpoints sources
@@ -24,10 +26,6 @@ This file records the implementation work that was completed and the validation 
 
 ## Second-pass TODO
 
-- [ ] Persist run-history metrics in SQLite so before/after comparisons can track longer trends, not just the last export.
-  - Verify: a later export can compare against prior metrics and show deltas for findings, gateway signals, and inspected inputs.
-- [ ] Add a stable performance metric surface to the report docs so we can track whether the optimizer is improving the whole system over time.
-  - Verify: report output shows the same metric names across runs.
 - [ ] Add an explicit escalation rule for OAuth-only recommendations.
   - Verify: if live provider docs recommend OAuth, the report bubbles that to human instead of auto-suggesting a direct-key fix, because direct keys are expected to live in `~/.vault` and OAuth is the exception.
 - [ ] Expand live-truth coverage to additional providers/endpoints when the real docs or APIs demand it.

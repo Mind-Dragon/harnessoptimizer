@@ -10,6 +10,7 @@ from hermesoptimizer.catalog import (
     finish_run,
     get_findings,
     get_records,
+    get_run_history,
     init_db,
     start_run,
     upsert_finding,
@@ -17,21 +18,11 @@ from hermesoptimizer.catalog import (
 )
 from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
+from hermesoptimizer.report.metrics import compute_report_metrics
 
 
 def _report_metrics(records: list[Record], findings: list[Finding], inspected_inputs: list[dict]) -> dict[str, int]:
-    metrics: dict[str, int] = {
-        "records_total": len(records),
-        "findings_total": len(findings),
-        "inspected_inputs_total": len(inspected_inputs),
-        "finding_groups_total": len({f.fingerprint or f"{f.category}:{f.file_path or ''}:{f.line_num or ''}:{f.kind or ''}" for f in findings}),
-        "gateway_findings": sum(1 for f in findings if f.category == "gateway-signal"),
-        "config_findings": sum(1 for f in findings if f.category == "config-signal"),
-        "session_findings": sum(1 for f in findings if f.category == "session-signal"),
-        "log_findings": sum(1 for f in findings if f.category == "log-signal"),
-        "runtime_findings": sum(1 for f in findings if f.category == "runtime-signal"),
-    }
-    return metrics
+    return compute_report_metrics(records=records, findings=findings, inspected_inputs=inspected_inputs)
 
 
 def _delta_metrics(before: dict[str, int], after: dict[str, int]) -> dict[str, int]:
@@ -39,26 +30,20 @@ def _delta_metrics(before: dict[str, int], after: dict[str, int]) -> dict[str, i
     return {key: after.get(key, 0) - before.get(key, 0) for key in keys}
 
 
-def _load_baseline_report(path: Path) -> dict | None:
-    if not path.exists():
+def _comparison_from_history(db_path: Path, current_metrics: dict[str, int]) -> dict | None:
+    history = get_run_history(db_path, limit=1)
+    if not history:
         return None
-    try:
-        import json
-
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-
-def _comparison_from_baseline(title: str, baseline: dict | None, current_metrics: dict[str, int]) -> dict | None:
-    if not baseline:
-        return None
+    baseline = history[0]
     baseline_metrics = baseline.get("metrics")
     if not isinstance(baseline_metrics, dict):
         return None
     baseline_metrics_int = {k: int(v) for k, v in baseline_metrics.items() if isinstance(v, int) or isinstance(v, float)}
+    baseline_title = f"Run #{baseline.get('id', 'baseline')}"
+    if baseline.get("title"):
+        baseline_title = str(baseline["title"])
     return {
-        "baseline_title": baseline.get("title", "Baseline"),
+        "baseline_title": baseline_title,
         "baseline_metrics": baseline_metrics_int,
         "current_metrics": current_metrics,
         "deltas": _delta_metrics(baseline_metrics_int, current_metrics),
@@ -189,15 +174,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "export":
         init_db(db_path)
+        run_id = start_run(db_path, "export")
         records = [Record(**{k: v for k, v in row.items() if k in Record.__annotations__}) for row in get_records(db_path)]
         findings = [Finding(**{k: v for k, v in row.items() if k in Finding.__annotations__}) for row in get_findings(db_path)]
         out_dir = Path(args.out_dir)
         inspected_inputs = _inspected_inputs_from_rows(records, findings)
         current_metrics = _report_metrics(records, findings, inspected_inputs)
-        baseline_json = _load_baseline_report(out_dir / "report.json")
-        comparison = _comparison_from_baseline(args.title, baseline_json, current_metrics)
+        comparison = _comparison_from_history(db_path, current_metrics)
         write_json_report(out_dir / "report.json", title=args.title, records=records, findings=findings, inspected_inputs=inspected_inputs, comparison=comparison)
         write_markdown_report(out_dir / "report.md", title=args.title, records=records, findings=findings, inspected_inputs=inspected_inputs, comparison=comparison)
+        finish_run(db_path, run_id, record_count=len(records), finding_count=len(findings), metrics=current_metrics)
         print(f"wrote {out_dir}")
         return 0
 
