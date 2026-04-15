@@ -1,6 +1,13 @@
 # Hermes Optimizer TODO
 
-This file records the implementation work that was completed and the few remaining validation gaps that still need a real external target.
+This file records the implementation work that was completed and the validation that now passes against real live sources.
+
+## Doc alignment
+
+- Matches PHASES.md Phase 2: live provider truth and endpoint verification, including auth vs endpoint vs stale-model separation.
+- Matches PHASES.md Phase 4: closed-loop verification, repeat-run stability, before/after proof, and v1.0 readiness.
+- Matches ARCHITECTURE.md by keeping Hermes-only scope, live truth over cached text, grouped findings, and prioritized recommendations.
+- Matches GUIDELINE.md by preserving discovery coverage, deduped findings, plain-language reports, and explicit live-verified truth where applicable.
 
 ## Done
 
@@ -11,13 +18,8 @@ This file records the implementation work that was completed and the few remaini
 - [x] Added grouped finding and inspected-input support to report output
 - [x] Updated the local optimizer run report against the current fixture bundle
 - [x] Verified the full test suite passes
-
-## Remaining validation gaps
-
-- [ ] Run the live-truth path against a real provider docs/endpoints source with `HERMES_LIVE_TRUTH_ENABLED=1`
-  - Verify: a real live-truth fetch resolves a record and can classify endpoint/auth/model mismatches without fixture stubs.
-- [ ] Prove before/after improvement against a real changed target, not only a fixture-level simulation
-  - Verify: the second run is measurably cleaner after a real fix.
+- [x] Verified live-truth resolution against real provider docs/endpoints sources
+- [x] Verified before/after improvement on a changed local target with a real gateway probe
 
 ## Notes
 

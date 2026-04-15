@@ -162,6 +162,15 @@ class LiveTruthAdapter:
             return None
 
         canonical_endpoint = payload.get("canonical_endpoint") or payload.get("endpoint") or payload.get("base_url") or ""
+        if not canonical_endpoint:
+            servers = payload.get("servers")
+            if isinstance(servers, list) and servers:
+                first = servers[0]
+                if isinstance(first, dict):
+                    canonical_endpoint = first.get("url") or ""
+        paths = payload.get("paths")
+        if canonical_endpoint and isinstance(paths, dict) and "/models" in paths and not canonical_endpoint.rstrip("/").endswith("/models"):
+            canonical_endpoint = canonical_endpoint.rstrip("/") + "/models"
         known_models = payload.get("known_models") or payload.get("models") or []
         deprecated_models = payload.get("deprecated_models") or []
         capabilities = payload.get("capabilities") or []
@@ -185,6 +194,20 @@ class LiveTruthAdapter:
         )
 
 
+def _merge_truth_records(base: ProviderTruthRecord, live: ProviderTruthRecord) -> ProviderTruthRecord:
+    """Overlay live truth onto local truth, preserving local model metadata when the live source omits it."""
+    return ProviderTruthRecord(
+        provider=live.provider or base.provider,
+        canonical_endpoint=live.canonical_endpoint or base.canonical_endpoint,
+        known_models=live.known_models or base.known_models,
+        deprecated_models=live.deprecated_models or base.deprecated_models,
+        capabilities=live.capabilities or base.capabilities,
+        context_window=live.context_window or base.context_window,
+        source_url=live.source_url or base.source_url,
+        confidence=live.confidence or base.confidence,
+    )
+
+
 def _effective_truth_record(
     provider: str,
     truth_store: ProviderTruthStore,
@@ -199,7 +222,7 @@ def _effective_truth_record(
     if use_live_truth and rec.source_url:
         live_rec = LiveTruthAdapter().fetch_record(provider, rec.source_url)
         if live_rec is not None:
-            return live_rec
+            return _merge_truth_records(rec, live_rec)
     return rec
 
 

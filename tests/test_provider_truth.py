@@ -158,3 +158,28 @@ def test_verify_provider_truth_categorizes_results_with_live_truth(monkeypatch) 
         assert "ok" in buckets
     finally:
         reset_http_get()
+
+
+def test_live_truth_uses_openapi_models_path_for_auth_failure(monkeypatch) -> None:
+    monkeypatch.setenv("HERMES_LIVE_TRUTH_ENABLED", "1")
+    store = ProviderTruthStore()
+    store.add(
+        ProviderTruthRecord(
+            provider="openai",
+            canonical_endpoint="https://api.openai.com/v1",
+            known_models=["gpt-4o"],
+            deprecated_models=["gpt-4"],
+            source_url="https://raw.githubusercontent.com/openai/openai-openapi/manual_spec/openapi.yaml",
+            confidence="high",
+        )
+    )
+
+    result = verify_endpoint_with_live(
+        "openai",
+        "https://api.openai.com/v1/models",
+        "gpt-4o",
+        store,
+        use_live_truth=True,
+    )
+    assert result.status == EndpointCheckStatus.AUTH_FAILURE
+    assert result.details.get("source_url") == "https://raw.githubusercontent.com/openai/openai-openapi/manual_spec/openapi.yaml"
