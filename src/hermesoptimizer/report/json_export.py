@@ -5,14 +5,37 @@ from dataclasses import asdict
 from pathlib import Path
 
 from hermesoptimizer.catalog import Finding, Record
+from hermesoptimizer.report.issues import group_findings_by_fingerprint
 
 
-def write_json_report(path: str | Path, *, title: str, records: list[Record], findings: list[Finding]) -> None:
+def write_json_report(
+    path: str | Path,
+    *,
+    title: str,
+    records: list[Record],
+    findings: list[Finding],
+    inspected_inputs: list[dict] | None = None,
+) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    grouped_findings = []
+    for fingerprint, items in group_findings_by_fingerprint(findings).items():
+        grouped_findings.append(
+            {
+                "fingerprint": fingerprint,
+                "count": len(items),
+                "category": items[0].category,
+                "severity": items[0].severity,
+                "lane": items[0].lane,
+                "sample_text": items[0].sample_text,
+                "kinds": sorted({item.kind for item in items if item.kind}),
+            }
+        )
     payload = {
         "title": title,
+        "inspected_inputs": inspected_inputs or [],
         "records": [asdict(record) for record in records],
         "findings": [asdict(finding) for finding in findings],
+        "finding_groups": grouped_findings,
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")

@@ -173,22 +173,6 @@ def scan_runtime_paths(paths: list[str | Path]) -> list[Finding]:
             )
         elif p.is_dir():
             entries = list(p.iterdir())
-            if not entries:
-                findings.append(
-                    Finding(
-                        file_path=str(p),
-                        line_num=None,
-                        category="runtime-signal",
-                        severity="low",
-                        kind=None,
-                        fingerprint=str(p),
-                        sample_text="runtime directory is empty",
-                        count=1,
-                        confidence="medium",
-                        router_note=f"runtime dir {p} has no contents",
-                        lane=None,
-                    )
-                )
             for entry in entries:
                 if entry.is_file() and entry.suffix in {".lock", ".pid", ".state"}:
                     age_seconds = now - entry.stat().st_mtime

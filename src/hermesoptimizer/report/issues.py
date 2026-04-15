@@ -10,6 +10,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from hermesoptimizer.catalog import Finding
+from hermesoptimizer.route.diagnosis import BUCKET_LABELS
 
 if TYPE_CHECKING:
     from hermesoptimizer.route.diagnosis import Priority, Recommendation
@@ -20,6 +21,19 @@ def group_findings(findings: list[Finding]) -> dict[str, list[Finding]]:
     grouped: dict[str, list[Finding]] = defaultdict(list)
     for finding in findings:
         grouped[finding.category].append(finding)
+    return dict(grouped)
+
+
+def group_findings_by_fingerprint(findings: list[Finding]) -> dict[str, list[Finding]]:
+    """
+    Group findings by fingerprint so repeated signals collapse into one bucket.
+
+    When a finding has no fingerprint, fall back to a stable synthetic key.
+    """
+    grouped: dict[str, list[Finding]] = defaultdict(list)
+    for finding in findings:
+        fingerprint = finding.fingerprint or f"{finding.category}:{finding.file_path or ''}:{finding.line_num or ''}:{finding.kind or ''}"
+        grouped[fingerprint].append(finding)
     return dict(grouped)
 
 
@@ -74,7 +88,7 @@ def recommendation_summary(
     """
     lines: list[str] = []
     for rec in recommendations:
-        label = rec.priority.value.upper()
+        label = BUCKET_LABELS.get(rec.priority, rec.priority.value.upper())
         line = f"[{label}] {rec.code}: {rec.summary}"
         lines.append(line)
         if include_detail:

@@ -19,6 +19,23 @@ from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
 
 
+def _inspected_inputs_from_rows(records: list[Record], findings: list[Finding]) -> list[dict]:
+    inspected: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for finding in findings:
+        if finding.file_path and finding.category == "gateway-signal":
+            key = ("command", finding.file_path)
+            if key not in seen:
+                seen.add(key)
+                inspected.append({"type": "command", "command": finding.file_path})
+        elif finding.file_path:
+            key = ("file", finding.file_path)
+            if key not in seen:
+                seen.add(key)
+                inspected.append({"type": "file", "path": finding.file_path})
+    return inspected
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hermesoptimizer")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -129,8 +146,9 @@ def main(argv: list[str] | None = None) -> int:
         records = [Record(**{k: v for k, v in row.items() if k in Record.__annotations__}) for row in get_records(db_path)]
         findings = [Finding(**{k: v for k, v in row.items() if k in Finding.__annotations__}) for row in get_findings(db_path)]
         out_dir = Path(args.out_dir)
-        write_json_report(out_dir / "report.json", title=args.title, records=records, findings=findings)
-        write_markdown_report(out_dir / "report.md", title=args.title, records=records, findings=findings)
+        inspected_inputs = _inspected_inputs_from_rows(records, findings)
+        write_json_report(out_dir / "report.json", title=args.title, records=records, findings=findings, inspected_inputs=inspected_inputs)
+        write_markdown_report(out_dir / "report.md", title=args.title, records=records, findings=findings, inspected_inputs=inspected_inputs)
         print(f"wrote {out_dir}")
         return 0
 

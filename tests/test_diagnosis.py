@@ -135,7 +135,7 @@ def phase1_loop(tmp_path: Path) -> Phase1Loop:
         "db: []\n"
         "runtime: []\n"
         "gateway:\n"
-        "  - command: echo 'gateway running'\n"
+        "  - command: curl -sf http://127.0.0.1:18789/health\n"
         "    type: gateway\n"
         "    authoritative: true\n",
         encoding="utf-8",
@@ -321,7 +321,7 @@ class TestDiagnosis:
 
 class TestGatewayHealth:
     def test_echo_ok_command_produces_no_error_finding(self) -> None:
-        findings = scan_gateway_health(["echo 'ok'"])
+        findings = scan_gateway_health(["curl -sf http://127.0.0.1:18789/health"])
         critical = [f for f in findings if f.severity == "critical"]
         assert critical == []
 
@@ -343,12 +343,23 @@ class TestRuntimePaths:
         findings = scan_runtime_paths([tmp_path / "nonexistent"])
         assert findings == []
 
-    def test_empty_runtime_dir_produces_low_severity_finding(self, tmp_path: Path) -> None:
+    def test_empty_runtime_dir_produces_no_findings(self, tmp_path: Path) -> None:
         rt_dir = tmp_path / "runtime"
         rt_dir.mkdir()
         findings = scan_runtime_paths([rt_dir])
-        assert len(findings) >= 1
-        assert any(f.severity == "low" for f in findings)
+        assert findings == []
+
+    def test_stale_runtime_lock_file_produces_finding(self, tmp_path: Path) -> None:
+        rt_dir = tmp_path / "runtime"
+        rt_dir.mkdir()
+        lock = rt_dir / "agent.lock"
+        lock.write_text("123", encoding="utf-8")
+        old_mtime = lock.stat().st_mtime - (8 * 24 * 3600)
+        lock.touch()
+        import os
+        os.utime(lock, (old_mtime, old_mtime))
+        findings = scan_runtime_paths([rt_dir])
+        assert any(f.file_path == str(lock) for f in findings)
 
 
 # ---------------------------------------------------------------------------
