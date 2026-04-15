@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 catalog.db
 reports/
+src/hermesoptimizer.egg-info/

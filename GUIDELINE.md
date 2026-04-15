@@ -99,3 +99,44 @@ If a result cannot be explained in plain language, it is not ready to be trusted
 - Do not silently mutate config as part of measurement.
 - Do not call the system healthy if the gateway or CLI is broken.
 - Do not call a session clean if blank or duplicate providers still show up in new-session data.
+
+## /todo and /devdo workflow
+
+The optimizer now supports a two-command workflow for plan-then-execute development:
+
+### /todo — Planning mode
+- Creates and updates workflow plans
+- Never executes work
+- Validates plan quality before freezing
+- Generates default task chains from an objective
+
+### /devdo — Execution mode
+- Consumes frozen plans
+- Builds task DAGs and schedules parallel batches
+- Dispatches subagents by role (research, implement, test, review, verify)
+- Runs two-stage review on implementation tasks
+- Checkpoints after each batch
+- Resumes from last clean checkpoint on interruption
+- Hard-blocks on invalid state, auto-repairs safe drift
+
+### Command alias
+- /dodev is aliased to /devdo for backward compatibility
+
+### State on disk
+- .hermes/workflows/<workflow_id>/plan.yaml — frozen plan
+- .hermes/workflows/<workflow_id>/run.yaml — live execution state
+- .hermes/workflows/<workflow_id>/tasks/ — per-task files
+- .hermes/workflows/<workflow_id>/checkpoints/ — append-only history
+- .hermes/workflows/<workflow_id>/artifacts/ — task output refs
+
+### Guard rules
+- /devdo refuses to start if the plan is missing, not frozen, or invalid
+- Boundary checks run before writes, completions, phase transitions, and fan-outs
+- Safe drift (version mismatch, stale guard state) is auto-repaired
+- Unsafe drift (blocked guard, failed run) hard-blocks and requires human intervention
+
+### Scheduler behavior
+- Tasks are organized into a DAG with dependency depth levels
+- Independent tasks at the same depth fan out in parallel batches
+- Role pools limit parallelism per role (e.g., max 4 implementers, max 2 reviewers)
+- The scheduler can scale to 10+ concurrent subagents for sufficiently wide task graphs

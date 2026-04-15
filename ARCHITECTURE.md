@@ -254,3 +254,52 @@ What you mean by this project is:
 The slightly more operational version is:
 
 "Stop guessing at where the config lives, stop trusting stale provider aliases, stop treating endpoint mistakes like auth problems, stop using models that are deprecated or not in the provider's catalog, and make the tool tell us what to change first."
+
+## Workflow state system
+
+### Workflow modules
+
+- `workflow/schema.py` — Dataclasses for WorkflowPlan, WorkflowRun, WorkflowTask, WorkflowCheckpoint, WorkflowBlocker
+- `workflow/store.py` — YAML persistence with load/save/validate round-trips
+- `workflow/guard.py` — Runtime guard with preflight, boundary, and drift-repair checks
+- `workflow/scheduler.py` — Task DAG construction, dependency depth, batch computation, role pools
+- `workflow/executor.py` — Execution state machine with dispatch, complete, block, review, resume
+- `workflow/plan_shaper.py` — Plan quality validation, default task generation, blocked-plan handling
+- `workflow/ux_format.py` — Terminal-friendly formatted output for /todo handoff and /devdo startup
+
+### Command modules
+
+- `commands/todo_cmd.py` — /todo: create, update, freeze plans, add tasks
+- `commands/devdo_cmd.py` — /devdo: start runs, update tasks, record checkpoints/blockers, resolve runs
+- `commands/__init__.py` — Alias routing (dodev → devdo)
+
+### Data flow (workflow)
+
+1. /todo creates a WorkflowPlan with status "draft"
+2. /todo adds tasks and validates quality
+3. /todo freezes the plan (status "frozen")
+4. /devdo loads the frozen plan and creates a WorkflowRun
+5. /devdo builds the task DAG and computes execution batches
+6. /devdo dispatches tasks by role, respecting dependency order
+7. Guard validates state before each write or phase transition
+8. Checkpoints are appended after each meaningful milestone
+9. Two-stage review runs on implementation tasks
+10. Run is resolved as "completed" or "failed"
+
+### Role pools
+
+| Role | Max Workers | Purpose |
+|------|-------------|---------|
+| research | 3 | Information gathering |
+| implement | 4 | Code implementation |
+| test | 2 | Test writing and execution |
+| review | 2 | Code review and spec compliance |
+| verify | 2 | Smoke checks and live verification |
+| integrate | 1 | Integration and merge |
+| guardrail | 1 | Constraint and safety checking |
+
+### Migration path
+
+- /dodev is aliased to /devdo and will be supported until the next major version
+- All existing optimizer functionality (run, report, verify) continues unchanged
+- Workflow state is stored in .hermes/workflows/ and does not interfere with existing reports/
