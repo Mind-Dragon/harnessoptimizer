@@ -82,7 +82,61 @@ The key v1.1 problem class is the misleading one:
 - or the session is new, but it inherited invalid data from stale state
 - or a removed credential reappears because another source re-seeded it
 
-### v1.2 — OpenClaw gateway and config diagnosis
+### v1.2 — Provider-model catalog, model validation, and agent management
+
+v1.2 adds a canonical provider-model catalog and thorough model validation.
+
+The adapter must:
+- maintain a `ProviderTruthStore` with known providers, canonical endpoints, known models, deprecated models, and capabilities
+- validate configured model names against the known model list for each provider
+- flag deprecated models explicitly
+- detect right-key-wrong-endpoint (RKWE) errors by comparing the configured endpoint against the canonical endpoint
+- handle auth failures separately from model-not-found errors, with escalation for OAuth providers
+- run routing diagnosis to map failures to lanes and rank them by priority
+
+Provider truth record shape:
+```
+ProviderTruthRecord:
+  provider: str                  # canonical provider name
+  canonical_endpoint: str         # correct base URL for this provider
+  known_models: list[str]        # models confirmed to exist and be supported
+  deprecated_models: list[str]   # models confirmed to be deprecated or EOL
+  capabilities: list[str]        # e.g. text, vision, embedding, rerank, speech, image, video
+  context_window: int             # max context in tokens (0 if unknown)
+  source_url: str | None         # URL used to fetch live truth (optional)
+  confidence: str                # high, medium, low
+  auth_type: str | None          # e.g. oauth, api_key
+```
+
+Model validation result statuses:
+- OK: endpoint and model both verified
+- RKWE: correct key, wrong endpoint (shows canonical endpoint)
+- STALE_MODEL: model not in known list
+- DEPRECATED_MODEL: model in deprecated list
+- UNKNOWN_PROVIDER: provider not in truth store
+- AUTH_FAILURE: live endpoint returned 401/403 (escalates to human for OAuth)
+- NETWORK_ERROR: endpoint unreachable
+- FAILED: general failure
+
+Routing diagnosis priority order:
+- CRITICAL: auth failure on a lane's primary provider; timeouts with 3+ retries
+- IMPORTANT: auth failure on a fallback provider; timeouts with fewer than 3 retries
+- GOOD_IDEA: stale model name or deprecated model in config
+- NICE_TO_HAVE: minor configuration improvements
+- WHATEVER: low-confidence or speculative findings
+
+Special provider notes for v1.2:
+- Qwen / Alibaba: qwen3.6-plus is the current recommended model for the qwen family
+- Alibaba has vision, rerank, embedding, speech, image, and video capabilities (some with CN or region scope constraints)
+- Kimi (moonshot-v1 family) is aliased from kimi, kimi-for-coding, kimi-coding, kimi-coding-cn
+- OpenAI codex aliases to openai
+
+Live truth gate:
+- `HERMES_LIVE_TRUTH_ENABLED=1` enables live lookups from `source_url` in truth records
+- live truth is merged with local truth, preserving local metadata when the live source omits fields
+- the gate is off by default so tests and CI runs are deterministic
+
+### v1.3 — OpenClaw gateway and config diagnosis
 
 OpenClaw adds a gateway and more direct provider plumbing.
 
@@ -93,7 +147,7 @@ That means the adapter must inspect:
 - plugin allowlists and entries
 - logs that show auth or endpoint failures
 
-### v1.3 — OpenCode provider routing and worktree behavior
+### v1.4 — OpenCode provider routing and worktree behavior
 
 OpenCode adds another layer of agent config and provider mapping.
 
@@ -120,11 +174,12 @@ Future harnesses should only need:
 3. Check gateway and CLI status when the harness exposes them.
 4. Extract errors and action items.
 5. Normalize provider aliases and deduplicate repeated signals.
-6. Enrich model, endpoint, and runtime details from live sources.
-7. Assign a priority bucket.
-8. Save normalized records and findings.
-9. Export reports.
-10. Re-check health after a repair or config change.
+6. Enrich model, endpoint, and runtime details from live sources and the provider truth store.
+7. Run routing diagnosis to map findings to lanes and rank by priority.
+8. Assign a priority bucket.
+9. Save normalized records and findings.
+10. Export reports.
+11. Re-check health after a repair or config change.
 
 ## Priority model
 
@@ -163,6 +218,7 @@ So the architecture allows multiple lookup methods:
 - provider docs
 - provider API or model listings
 - Hermes CLI and gateway status commands
+- the provider truth store (canonical, versioned, testable)
 
 The system should treat those as evidence sources, not as interchangeable copies.
 
@@ -170,10 +226,13 @@ The system should treat those as evidence sources, not as interchangeable copies
 
 - `src/hermesoptimizer/catalog.py` — SQLite schema and CRUD
 - `src/hermesoptimizer/sources/` — harness-specific source readers
-- `src/hermesoptimizer/verify/` — live status and endpoint verification helpers
+- `src/hermesoptimizer/verify/endpoints.py` — live status and endpoint verification helpers, model validation, RKWE detection
+- `src/hermesoptimizer/sources/provider_truth.py` — ProviderTruthStore, canonical provider names, model validation helpers
+- `src/hermesoptimizer/route/diagnosis.py` — RoutingDiagnosis, Recommendation, priority ranking, broken fallback chain detection
 - `src/hermesoptimizer/report/` — JSON and Markdown export
 - `src/hermesoptimizer/run_hermes_mode.py` — Hermes entry point
 - `src/hermesoptimizer/run_standalone.py` — CLI entry point
+- `src/hermesoptimizer/loop.py` — Phase 0/1 loop with discover -> parse -> diagnose -> enrich -> rank -> report -> verify -> repeat
 
 ## Design constraints
 
@@ -183,13 +242,15 @@ The system should treat those as evidence sources, not as interchangeable copies
 - keep the report format stable across versions
 - make it easy to add new adapters without rewriting the core
 - keep health checks explicit, named, and verifiable
+- keep the live truth gate off by default for deterministic test behavior
+- do not claim global availability for CN-only or region-restricted models
 
 ## Practical interpretation
 
 What you mean by this project is:
 
-"Build a system that watches the harnesses we use to run Hermes work, learns where their real files and real health surfaces live, detects when they are misconfigured or stale, and recommends the smallest useful fix in priority order."
+"Build a system that watches the harnesses we use to run Hermes work, learns where their real files and real health surfaces live, validates that the configured models are actually supported by the provider, detects when they are misconfigured or stale, and recommends the smallest useful fix in priority order."
 
 The slightly more operational version is:
 
-"Stop guessing at where the config lives, stop trusting stale provider aliases, stop treating endpoint mistakes like auth problems, and make the tool tell us what to change first."
+"Stop guessing at where the config lives, stop trusting stale provider aliases, stop treating endpoint mistakes like auth problems, stop using models that are deprecated or not in the provider's catalog, and make the tool tell us what to change first."

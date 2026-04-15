@@ -33,6 +33,18 @@ from hermesoptimizer.sources.provider_truth import ProviderTruthStore, load_prov
 from hermesoptimizer.verify.endpoints import EndpointCheckResult, verify_provider_truth
 
 
+# ---------------------------------------------------------------------------
+# Agent management integration
+# ---------------------------------------------------------------------------
+
+from hermesoptimizer.agent_management import (
+    AgentProfile,
+    HermesAgentRegistry,
+    get_registry,
+    init_registry,
+)
+
+
 @dataclass(slots=True)
 class LoopConfig:
     inventory_path: Path
@@ -53,6 +65,7 @@ class LoopState:
     recommendations: list[Recommendation] = field(default_factory=list)
     provider_truth_store: ProviderTruthStore | None = None
     verification_results: list[EndpointCheckResult] = field(default_factory=list)
+    agent_registry: HermesAgentRegistry | None = None
 
     def record_step(self, step: str) -> None:
         self.order.append(step)
@@ -71,6 +84,7 @@ def _clone_state(state: LoopState, **updates: Any) -> LoopState:
         "recommendations": state.recommendations,
         "provider_truth_store": state.provider_truth_store,
         "verification_results": state.verification_results,
+        "agent_registry": state.agent_registry,
     }
     payload.update(updates)
     return LoopState(**payload)
@@ -149,7 +163,8 @@ def enrich(state: LoopState, config: LoopConfig) -> LoopState:
         truth_store = load_provider_truth(config.provider_truth_path)
     elif truth_store is None:
         truth_store = ProviderTruthStore()
-    return _clone_state(state, provider_truth_store=truth_store)
+    agent_registry = init_registry(truth_store=truth_store)
+    return _clone_state(state, provider_truth_store=truth_store, agent_registry=agent_registry)
 
 
 def rank(state: LoopState, config: LoopConfig) -> LoopState:
