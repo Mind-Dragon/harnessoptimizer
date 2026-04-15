@@ -16,10 +16,22 @@ This file records the implementation work that was completed and the validation 
 - [x] Phase 3 code fixes: grouped finding summaries, multi-provider fallback coverage, bucket labels, and human-readable recommendation summaries
 - [x] Phase 4 code fixes: repeat-run stability checks, before/after proof scaffolding, and explicit readiness criteria in tests
 - [x] Added grouped finding and inspected-input support to report output
+- [x] Added report metrics plus optional before/after comparison blocks
 - [x] Updated the local optimizer run report against the current fixture bundle
 - [x] Verified the full test suite passes
 - [x] Verified live-truth resolution against real provider docs/endpoints sources
 - [x] Verified before/after improvement on a changed local target with a real gateway probe
+
+## Second-pass TODO
+
+- [ ] Persist run-history metrics in SQLite so before/after comparisons can track longer trends, not just the last export.
+  - Verify: a later export can compare against prior metrics and show deltas for findings, gateway signals, and inspected inputs.
+- [ ] Add a stable performance metric surface to the report docs so we can track whether the optimizer is improving the whole system over time.
+  - Verify: report output shows the same metric names across runs.
+- [ ] Add an explicit escalation rule for OAuth-only recommendations.
+  - Verify: if live provider docs recommend OAuth, the report bubbles that to human instead of auto-suggesting a direct-key fix, because direct keys are expected to live in `~/.vault` and OAuth is the exception.
+- [ ] Expand live-truth coverage to additional providers/endpoints when the real docs or APIs demand it.
+  - Verify: each new live source is represented by a real probe or doc fetch and classified into auth / endpoint / stale-model buckets.
 
 ## Notes
 
@@ -27,3 +39,4 @@ This file records the implementation work that was completed and the validation 
 - OpenClaw and OpenCode stay out of scope for now.
 - Live provider truth still beats local cached text when they disagree.
 - Gateway and runtime canaries should remain explicit, named, and verifiable.
+

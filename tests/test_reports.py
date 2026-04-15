@@ -7,6 +7,15 @@ from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
 
 
+def _comparison() -> dict:
+    return {
+        "baseline_title": "Previous Run",
+        "baseline_metrics": {"findings_total": 3, "gateway_findings": 2, "inspected_inputs": 4},
+        "current_metrics": {"findings_total": 1, "gateway_findings": 0, "inspected_inputs": 5},
+        "deltas": {"findings_total": -2, "gateway_findings": -2, "inspected_inputs": 1},
+    }
+
+
 def test_json_and_markdown_report(tmp_path: Path) -> None:
     record = Record(
         provider="openai",
@@ -29,11 +38,17 @@ def test_json_and_markdown_report(tmp_path: Path) -> None:
     )
 
     out_dir = tmp_path / "reports"
-    write_json_report(out_dir / "report.json", title="Report", records=[record], findings=[finding])
-    write_markdown_report(out_dir / "report.md", title="Report", records=[record], findings=[finding])
+    write_json_report(out_dir / "report.json", title="Report", records=[record], findings=[finding], comparison=_comparison())
+    write_markdown_report(out_dir / "report.md", title="Report", records=[record], findings=[finding], comparison=_comparison())
 
-    assert "\"title\": \"Report\"" in (out_dir / "report.json").read_text(encoding="utf-8")
-    assert "# Report" in (out_dir / "report.md").read_text(encoding="utf-8")
+    json_text = (out_dir / "report.json").read_text(encoding="utf-8")
+    md_text = (out_dir / "report.md").read_text(encoding="utf-8")
+    assert "\"title\": \"Report\"" in json_text
+    assert "# Report" in md_text
+    assert "metrics" in json_text
+    assert "before_after" in json_text
+    assert "Before / After" in md_text
+    assert "findings_total" in md_text
 
 
 def test_json_report_contains_inspected_inputs_header(tmp_path: Path) -> None:
