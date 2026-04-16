@@ -1,6 +1,8 @@
 # Hermes Optimizer Roadmap
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
+>
+> Current package version: 0.4.0. The milestones below are release/capability labels, not the installed package version.
 
 ## Product shape
 

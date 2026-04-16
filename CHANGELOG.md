@@ -9,7 +9,7 @@ All notable changes to Hermes Optimizer.
 - `/todo` command: create, update, freeze, add tasks, validate plan quality
 - `/devdo` command: start runs, build task DAGs, dispatch parallel subagent batches
 - `/dodev` backward-compatible alias for `/devdo`
-- `workflow/schema.py`: WorkflowPlan, WorkflowRun, WorkflowTask, WorkflowCheckpoint, WorkflowBlocker dataclasses (schema version 1.0)
+- `workflow/schema.py`: WorkflowPlan, WorkflowRun, WorkflowTask, WorkflowCheckpoint, WorkflowBlocker dataclasses (current schema)
 - `workflow/store.py`: YAML persistence with file locking and round-trip validation
 - `workflow/guard.py`: Runtime guard with preflight checks, boundary validation, phase transitions, batch limits, write consistency, plan version alignment, safe drift auto-repair
 - `workflow/scheduler.py`: Task DAG construction, dependency depth levels, role pools (research=3, implement=4, test=2, review=2, verify=2, integrate=1, guardrail=1), batch computation with max_parallelism=10

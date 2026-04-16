@@ -1,6 +1,6 @@
 # Hermes Optimizer Phase 0-4 Plan
 
-This is the Hermes-only path to v1.1.
+This is the Hermes-only path for the current 0.4.0 release line.
 It deliberately includes discovery, parsing, canonical provider cleanup, gateway checks, CLI checks, credential suppression, and closed-loop verification.
 
 The rule is simple:
@@ -143,9 +143,9 @@ Acceptance criteria:
 - the report explains why something is critical versus merely useful
 - proposed changes are specific enough to apply later
 
-## Phase 4 — Closed loop verification and v1.1 hardening
+## Phase 4 — Closed loop verification and 0.4.0 hardening
 
-Goal: turn the analysis into a stable, repeatable Hermes v1.1 system.
+Goal: turn the analysis into a stable, repeatable Hermes 0.4.0 system.
 
 What this phase does:
 - rerun the scan after changes
@@ -153,7 +153,7 @@ What this phase does:
 - add tests for the discovered paths, parser behavior, provider lookup, and routing diagnosis
 - add smoke checks for a clean new session
 - keep the loop stable across repeated runs
-- define v1.1 readiness
+- define 0.4.0 readiness
 
 Inputs:
 - previous phase outputs
@@ -163,18 +163,18 @@ Inputs:
 Outputs:
 - verified reports
 - regression tests
-- a v1.1 readiness signal
+- a 0.4.0 readiness signal
 - a stable Hermes-only optimizer loop
 
 Acceptance criteria:
 - a Hermes scan can run end to end without manual cleanup
 - the optimizer can show before/after improvement
 - the system can explain its own recommendations
-- v1.1 is ready when Hermes-only discovery, parsing, enrichment, routing diagnosis, provider cleanup, and reporting all work together
+- 0.4.0 is ready when Hermes-only discovery, parsing, enrichment, routing diagnosis, provider cleanup, and reporting all work together
 
-## What v1.1 means here
+## What 0.4.0 means here
 
-v1.1 is complete when Hermes only can do all of this:
+0.4.0 is complete when Hermes only can do all of this:
 - discover its own runtime truth sources
 - parse config, session, log, database, and gateway/runtime state
 - normalize canonical providers and strip stale embedded fields
@@ -190,4 +190,4 @@ Phase 0 finds the truth sources.
 Phase 1 reads them.
 Phase 2 checks live provider truth and canonical cleanup.
 Phase 3 ranks the fixes and keeps removed credentials removed.
-Phase 4 proves the loop is stable enough to call v1.1.
+Phase 4 proves the loop is stable enough to call 0.4.0.

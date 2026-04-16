@@ -4,6 +4,8 @@
 
 Hermes Optimizer is a small analysis core plus a set of source adapters.
 
+This architecture doc describes the current release line; the numbered sections below track the release path, not the package version.
+
 The core does four things:
 - stores normalized records in SQLite
 - stores findings in SQLite
@@ -32,11 +34,11 @@ That means every version uses the same rule:
 
 ## Versioned scope
 
-### v1.0 — Hermes analysis baseline
+### v0.1.0 — Hermes analysis baseline
 
-Hermes v1.0 is the first adapter because it is local, structured, and the fastest way to prove the system.
+Hermes v0.1.0 is the first adapter because it is local, structured, and the fastest way to prove the system.
 
-Hermes v1.0 reads:
+Hermes v0.1.0 reads:
 - `~/.hermes/config.yaml`
 - `~/.hermes/logs/`
 - `~/.hermes/sessions/`
@@ -56,9 +58,9 @@ It outputs:
 - prioritized optimizations
 - provider/model lookup results when a model name or endpoint needs validation
 
-### v1.1 — Hermes runtime hygiene and provider cleanup
+### v0.2.0 — Hermes runtime hygiene and provider cleanup
 
-v1.1 hardens the Hermes adapter so a new session starts cleanly and stays honest.
+v0.2.0 hardens the Hermes adapter so a new session starts cleanly and stays honest.
 
 The adapter must inspect:
 - gateway health
@@ -75,16 +77,16 @@ Canonical providers are env-backed:
 - if a canonical provider is duplicated in a user-defined `providers:` block, the canonical entry wins and the duplicate is collapsed away
 - provider-specific env overrides that conflict with canonical routing are treated as stale inputs for the canonical path
 
-The key v1.1 problem class is the misleading one:
+The key v0.2.0 problem class is the misleading one:
 - the gateway is up, but the CLI state is stale
 - or the CLI looks fine, but the gateway is unhealthy
 - or the provider key is valid, but the alias list is polluted with duplicates or blanks
 - or the session is new, but it inherited invalid data from stale state
 - or a removed credential reappears because another source re-seeded it
 
-### v1.2 — Provider-model catalog, model validation, and agent management
+### v0.3.0 — Provider-model catalog, model validation, and agent management
 
-v1.2 adds a canonical provider-model catalog and thorough model validation.
+v0.3.0 adds a canonical provider-model catalog and thorough model validation.
 
 The adapter must:
 - maintain a `ProviderTruthStore` with known providers, canonical endpoints, known models, deprecated models, and capabilities
@@ -125,7 +127,7 @@ Routing diagnosis priority order:
 - NICE_TO_HAVE: minor configuration improvements
 - WHATEVER: low-confidence or speculative findings
 
-Special provider notes for v1.2:
+Special provider notes for v0.3.0:
 - Qwen / Alibaba: qwen3.6-plus is the current recommended model for the qwen family
 - Alibaba has vision, rerank, embedding, speech, image, and video capabilities (some with CN or region scope constraints)
 - Kimi (moonshot-v1 family) is aliased from kimi, kimi-for-coding, kimi-coding, kimi-coding-cn
@@ -136,7 +138,7 @@ Live truth gate:
 - live truth is merged with local truth, preserving local metadata when the live source omits fields
 - the gate is off by default so tests and CI runs are deterministic
 
-### v1.3 — OpenClaw gateway and config diagnosis
+### v0.6.0 — OpenClaw gateway and config diagnosis
 
 OpenClaw adds a gateway and more direct provider plumbing.
 
@@ -147,7 +149,7 @@ That means the adapter must inspect:
 - plugin allowlists and entries
 - logs that show auth or endpoint failures
 
-### v1.4 — OpenCode provider routing and worktree behavior
+### v0.7.0 — OpenCode provider routing and worktree behavior
 
 OpenCode adds another layer of agent config and provider mapping.
 
