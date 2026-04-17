@@ -8,7 +8,7 @@ def main() -> int:
     args = sys.argv[1:]
     if not args:
         print("Usage: python -m hermesoptimizer <command> [args]")
-        print("Commands: todo, devdo, dodev, run")
+        print("Commands: todo, devdo, dodev, run, caveman")
         return 1
 
     command = args[0]
@@ -16,8 +16,15 @@ def main() -> int:
 
     if command == "run":
         from hermesoptimizer.run_standalone import main as run_main
-        return run_main()
-    
+        return run_main(rest)
+
+    if command == "caveman":
+        from hermesoptimizer.caveman import toggle, is_enabled
+        new_state = toggle()
+        state_str = "ON" if new_state else "OFF"
+        print(f"caveman mode: {state_str}")
+        return 0
+
     if command in ("todo", "devdo", "dodev"):
         if command == "dodev":
             command = "devdo"

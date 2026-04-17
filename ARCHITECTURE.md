@@ -138,6 +138,24 @@ Live truth gate:
 - live truth is merged with local truth, preserving local metadata when the live source omits fields
 - the gate is off by default so tests and CI runs are deterministic
 
+### v0.5.3 — Caveman mode for token-efficient output
+
+v0.5.3 adds an optional output-compression layer for Hermes-wide work.
+
+The caveman layer must:
+- stay OFF by default unless `caveman_mode` is enabled in `~/.hermes/config.yaml`
+- expose a CLI toggle via `python -m hermesoptimizer caveman`
+- compress only natural-language output, not code, paths, commands, or structured data
+- keep safety-critical categories in full mode: vault operations, config mutations, destructive confirmations, auth/credential handling, and setup/onboarding
+- remain a harness-wide optional add-on, not a hard dependency for the analysis pipeline
+
+Implementation shape:
+- `src/hermesoptimizer/caveman/__init__.py` — compression logic, config sync, safety guardrails, wrappers
+- `src/hermesoptimizer/__main__.py` — CLI toggle entrypoint
+- `tests/test_caveman.py` — compression and guardrail behavior
+- `tests/test_caveman_cli.py` — CLI toggle smoke checks
+- `tests/test_caveman_config.py` — persistent config behavior
+
 ### v0.6.0 — OpenClaw gateway and config diagnosis
 
 OpenClaw adds a gateway and more direct provider plumbing.

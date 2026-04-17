@@ -1,6 +1,6 @@
 # Hermes Optimizer
 
-Current release: v0.4.0.
+Current release: v0.5.3.
 
 Analysis, hygiene, and workflow orchestration for Hermes Agent environments.
 
@@ -47,6 +47,8 @@ hermesoptimizer --help             # CLI options
 | `hermesoptimizer todo` | Create, list, and freeze workflow plans |
 | `hermesoptimizer devdo` | Execute frozen plans with subagent orchestration |
 | `hermesoptimizer dodev` | Alias for `devdo` |
+| `hermesoptimizer vault-audit` | Audit vault entries, validation, dedup, and rotation state |
+| `hermesoptimizer vault-writeback` | Execute write-back to vault files with --confirm flow |
 
 ## Architecture
 
@@ -81,7 +83,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-332 tests, 0 failures. Run with:
+501 tests, 0 failures, 4 skipped. Run with:
 
 ```
 pytest
@@ -92,7 +94,9 @@ pytest
 - `ARCHITECTURE.md` -- system shape, data flow, design constraints
 - `GUIDELINE.md` -- success rules and release gates
 - `ROADMAP.md` -- current version plan from v0.1.0 through v0.8.0+
-- `VERSION0.4.md` / `PLAN.md` -- historical transition notes for the current 0.4 release line
+- `VERSION0.4.md` -- historical transition notes for the shipped 0.4 release line
+- `VERSION0.5.md` -- archived: v0.5.0 vault release note
+- `VERSION0.5.1.md` -- active planning note for the vault follow-up slice
 - `docs/WORKFLOW.md` -- operator guide for /todo and /devdo
 - `TODO.md` -- current execution queue
 

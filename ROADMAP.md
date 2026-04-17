@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.4.0. The milestones below are release/capability labels, not the installed package version.
+> Current package version: 0.5.3. The milestones below are release/capability labels, not the installed package version.
 
 ## Product shape
 
@@ -44,113 +44,34 @@ Done. ProviderTruthStore with model validation. RKWE detection. Routing diagnosi
 
 Done. `/todo` + `/devdo` two-command workflow. Task DAGs, role pools, scheduler, guard, executor, checkpoints, resume, two-stage review, UX rendering. 332 tests passing.
 
-## Next version
-
 ### v0.5.0 -- Vault management and credential lifecycle
 
-The optimizer currently reads configs and detects stale credentials. The next step is managing the credential lifecycle itself -- without forcing users to abandon their existing vault setups.
+Done. Vault package under `src/hermesoptimizer/vault/` with read-only primitives: inventory discovery, fingerprinting, validation, deduplication, rotation hints, and bridge planning. Tests use repo-local `tmp/.vault` fixtures. Production installs read from `~/.vault`. Write-back is opt-in and non-destructive by default.
 
-#### The concept
+### v0.5.1 -- Vault harness integration and CLI surface
 
-Most Hermes operators store credentials in one or more of these places:
-- `.env` files in project directories
-- `~/.hermes/config.yaml` with embedded keys
-- shell profile exports
-- dedicated vault files (`~/.vault/`, `~/.env/`, etc.)
-- platform-specific secret stores (1Password CLI, pass, etc.)
+Done. Hermes vault skill added, CLI audit/report path added, provider-validation adapter hook added, target-format-aware write-back planning added, and vault tests expanded. The non-destructive contract remains in place: read from `~/.vault`, test with repo-local `tmp/.vault`, and never mutate without explicit opt-in.
 
-The problem: there is no single source of truth for which credentials exist, which are active, which are expired, and which are duplicated across locations. Operators find out a key is stale when a request fails, not before.
+### v0.5.2 -- Vault operational iteration
 
-Vault management adds a credential inventory and lifecycle layer on top of whatever storage the operator already uses. It does not replace existing vaults. It watches them.
+Done. Live provider validation backends, broader source parsing (YAML/JSON/shell profiles/CSV/TXT/DOCX/PDF/images via Docling), actual write-back execution with confirmation, rotation automation hooks, and Docling OCR integration for screenshot-based credentials.
 
-#### How it works
+### v0.5.3 -- Caveman mode for token-efficient output
 
-1. **Discovery**: The optimizer scans configured credential locations (default paths plus user-specified paths) and builds a credential inventory. Each entry records:
-   - source location (file path, env var name, config key)
-   - provider it belongs to
-   - key prefix (first 8 chars, for fingerprinting without exposing the full secret)
-   - last-seen timestamp
-   - last-validated timestamp (when the optimizer last confirmed the key works against the provider endpoint)
-   - status: active, expired, unknown, duplicate
+Done. Caveman-style output compression added as an opt-in feature for Hermes-wide work. Reduces output tokens ~75% while preserving technical accuracy. Safety-critical paths (vault write-back, config mutations, destructive operations, auth/credential handling, setup/onboarding) stay in full mode regardless of setting. Persistent config via `~/.hermes/config.yaml` with `caveman_mode` key. CLI toggle via `python -m hermesoptimizer caveman`. Hermes skill created at `~/.hermes/skills/software-development/caveman/SKILL.md`. 34 tests passing.
 
-2. **Validation**: On each run, the optimizer validates credentials against their provider endpoints. A key that returns 401/403 is marked expired. A key that works is marked active with a fresh timestamp.
-
-3. **Deduplication**: If the same key prefix appears in multiple locations, the optimizer flags the duplicates and identifies which location is canonical. The operator chooses which one wins.
-
-4. **Rotation tracking**: When a key changes (different prefix at the same location), the optimizer logs the rotation event. This creates an audit trail: when was this credential last rotated, how often does it rotate, has it been silent for too long.
-
-5. **Staleness detection**: Credentials that have not been validated in N days (configurable, default 30) are flagged as stale-even-if-not-expired. Providers that have been unused for the same period get a "dormant provider" notice.
-
-6. **Vault bridge**: For operators who want the optimizer to write back to their vault format, a vault bridge module handles the serialization. Supported formats:
-   - `.env` files (key=VALUE lines)
-   - YAML config files (nested key resolution)
-   - JSON config files
-   - Shell export statements
-
-   The bridge is opt-in. The default mode is read-only analysis with recommendations.
-
-#### What it does not do
-
-- Does not store plaintext secrets in the catalog (only fingerprints and metadata)
-- Does not force a specific vault format
-- Does not auto-rotate credentials (it detects and recommends, the operator rotates)
-- Does not replace 1Password, pass, or any dedicated secret manager
-- Does not send credentials to any external service
-
-#### File layout
-
-```
-src/hermesoptimizer/
-  vault/
-    __init__.py
-    inventory.py        Credential discovery and indexing
-    validator.py        Live credential validation against provider endpoints
-    dedup.py            Duplicate detection and canonical source identification
-    rotation.py         Rotation event tracking and staleness detection
-    bridge.py           Write-back bridge for supported vault formats
-    fingerprint.py      Key fingerprinting (prefix-based, no full secret storage)
-```
-
-#### Primary source targets
-
-- `~/.hermes/config.yaml` -- embedded provider keys
-- `~/.vault/` -- vault directory convention
-- `.env` files in project directories
-- `~/.bashrc`, `~/.zshrc`, `~/.profile` -- exported env vars
-- user-specified additional paths (configurable in `config.yaml` under `vault.sources`)
-
-#### What v0.5.0 must answer
-
-- which credentials exist across all configured vault locations
-- which are active, which are expired, which are stale
-- which are duplicated across locations
-- when each credential was last rotated
-- which vault location is canonical for each provider
-- whether a dormant provider should be cleaned up
-
-#### Acceptance criteria
-
-- credential inventory is complete across all configured sources
-- live validation marks keys correctly as active or expired
-- duplicate detection identifies same-key different-location entries
-- rotation tracking records change events without storing plaintext
-- vault bridge writes back to at least .env and YAML formats
-- all credential metadata uses fingerprints, not full secrets
-- existing vault files are never modified unless the operator explicitly enables write-back
-- tests cover discovery, validation, dedup, rotation, and bridge without requiring real API keys
-
-#### Out of scope
-
-- auto-rotation of credentials
-- replacing dedicated secret managers
-- encrypting vault files (the vault itself handles this)
-- managing credentials for providers the optimizer does not know about
+## Next version
 
 ### v0.6.0 -- OpenClaw gateway and config diagnosis
 
 Scope:
 - add an OpenClaw adapter that reads gateway health and config
 - detect gateway-down, auth-fail, provider-crash, clobbering, plugin drift, and stale config patterns
+- add SSH bootstrap/session reuse for remote runs so the agent does not SSH for every command
+- add tmux session management for persistent remote workflows
+- establish private/VPN IP defaults instead of localhost
+- establish port range conventions for dev servers (not just 8000/3000)
+- add default install skills for common dev environments
 - pull in gateway logs and health endpoint status
 - map findings into the same canonical schema used by Hermes
 - add repair-oriented report sections so operators can see what needs fixing

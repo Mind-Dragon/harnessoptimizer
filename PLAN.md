@@ -12,7 +12,7 @@
 That entire hygiene story is already shipped in the current repository:
 - runtime hygiene and provider cleanup were delivered before v0.4.0
 - the workflow engine (/todo + /devdo) was delivered in v0.4.0
-- the current package version is still `0.4.0`
+- the current package version was `0.4.0` at the time of this plan
 
 ## Current active path
 Use `ROADMAP.md` as the source of truth for the next work:

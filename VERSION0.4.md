@@ -2,7 +2,7 @@
 
 ## Current reality
 
-The repository is currently at v0.4.0:
+This is the archived v0.4.0 release note:
 - `pyproject.toml` pins the package at `0.4.0`
 - `src/hermesoptimizer/__init__.py` exposes `__version__ = "0.4.0"`
 - `CHANGELOG.md` records v0.4.0 as the workflow-engine release
@@ -68,12 +68,12 @@ If the repo is moving forward from the current shipped state, the next concrete 
 ## Non-goals
 - do not relabel shipped v0.4.0 workflow work as unfinished 0.4.0 work
 - do not pretend the current repository still needs the `/todo` + `/devdo` engine
-- do not change the package version in this doc; the current release is still v0.4.0
+- do not treat this archived note as the active release line; use `VERSION0.5.md` for the vault-prep release line
 - do not skip directly to adapter work before the vault layer is cleanly defined
 
 ## Decision log
 
-- Current release line: `0.4.0`
-- Current workflow engine status: shipped
-- Current 0.4 hygiene status: already satisfied by shipped work
+- Historical release line: `0.4.0`
+- Historical workflow engine status: shipped
+- Historical 0.4 hygiene status: already satisfied by shipped work
 - Next build target: `v0.5.0` vault management
