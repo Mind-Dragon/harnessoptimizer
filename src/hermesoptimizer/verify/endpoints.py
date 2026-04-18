@@ -92,11 +92,33 @@ class EndpointCheckStatus(Enum):
     OK = "ok"
     RKWE = "rkwe"  # right-key-wrong-endpoint
     STALE_MODEL = "stale_model"
+    STALE_ALIAS = "stale_alias"
+    DEPRECATED_MODEL = "deprecated_model"
+    MISSING_CAPABILITY = "missing_capability"
+    WRONG_ENDPOINT_ROUTING = "wrong_endpoint_routing"
     ENDPOINT_DRIFT = "endpoint_drift"
     UNKNOWN_PROVIDER = "unknown_provider"
     NETWORK_ERROR = "network_error"
     AUTH_FAILURE = "auth_failure"
     FAILED = "failed"
+
+
+@dataclass(slots=True)
+class StaleAliasResult:
+    """Result of a stale alias check."""
+
+    original_model: str
+    correct_model: str
+    provider: str
+    is_stale_alias: bool = True
+    is_deprecated: bool = False
+
+    def __repr__(self) -> str:
+        return (
+            f"StaleAliasResult(original={self.original_model!r}, "
+            f"correct={self.correct_model!r}, provider={self.provider!r}, "
+            f"is_stale_alias={self.is_stale_alias}, is_deprecated={self.is_deprecated})"
+        )
 
 
 @dataclass
@@ -228,6 +250,215 @@ def _effective_truth_record(
     return rec
 
 
+# --------------------------------------------------------------------------- #
+# Stale alias detection
+# --------------------------------------------------------------------------- #
+
+
+def check_stale_alias(
+    provider: str,
+    model: str,
+    truth_store: ProviderTruthStore,
+) -> StaleAliasResult | None:
+    """
+    Check if a model name is a known stale alias for a different (current) model.
+
+    Returns a StaleAliasResult if the model is a stale alias, None otherwise.
+    """
+    rec = truth_store.get(provider)
+    if rec is None:
+        return None
+
+    correct_model = rec.get_stale_alias_correction(model)
+    if correct_model is None:
+        return None
+
+    return StaleAliasResult(
+        original_model=model,
+        correct_model=correct_model,
+        provider=provider,
+        is_stale_alias=True,
+        is_deprecated=False,
+    )
+
+
+def check_model_alias(
+    provider: str,
+    model: str,
+    truth_store: ProviderTruthStore,
+) -> StaleAliasResult | None:
+    """
+    Combined check for stale aliases and deprecated models.
+
+    Returns a StaleAliasResult if the model is either a stale alias or deprecated,
+    None otherwise (model is valid or unknown).
+    """
+    rec = truth_store.get(provider)
+    if rec is None:
+        return None
+
+    # Check for stale alias first
+    correct_model = rec.get_stale_alias_correction(model)
+    if correct_model is not None:
+        return StaleAliasResult(
+            original_model=model,
+            correct_model=correct_model,
+            provider=provider,
+            is_stale_alias=True,
+            is_deprecated=False,
+        )
+
+    # Check for deprecated model
+    if rec.is_model_deprecated(model):
+        return StaleAliasResult(
+            original_model=model,
+            correct_model=model,  # No correction available
+            provider=provider,
+            is_stale_alias=False,
+            is_deprecated=True,
+        )
+
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# Capability validation
+# --------------------------------------------------------------------------- #
+
+
+def check_capabilities(
+    provider: str,
+    model: str,
+    required_capabilities: list[str],
+    truth_store: ProviderTruthStore,
+) -> EndpointCheckResult | None:
+    """
+    Check if a model has all required capabilities.
+
+    Returns None if all capabilities are present, an EndpointCheckResult with
+    MISSING_CAPABILITY status if any are missing.
+    """
+    if not required_capabilities:
+        return None
+
+    rec = truth_store.get(provider)
+    if rec is None:
+        return None
+
+    # If model is not in known models, let stale model check handle it
+    if not rec.is_model_known(model):
+        return None
+
+    model_caps = rec.capabilities or []
+    missing = [cap for cap in required_capabilities if cap not in model_caps]
+
+    if not missing:
+        return None
+
+    return EndpointCheckResult(
+        provider=provider,
+        model=model,
+        configured_endpoint=None,
+        status=EndpointCheckStatus.MISSING_CAPABILITY,
+        message=f"Model '{model}' is missing required capabilities: {missing}",
+        details={
+            "required_capabilities": required_capabilities,
+            "model_capabilities": model_caps,
+            "missing_capabilities": missing,
+        },
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Wrong-endpoint routing validation
+# --------------------------------------------------------------------------- #
+
+
+def check_endpoint_routing(
+    provider: str,
+    endpoint: str,
+    model: str,
+    truth_store: ProviderTruthStore,
+    *,
+    region: str | None = None,
+) -> EndpointCheckResult | None:
+    """
+    Check if a model is using the correct endpoint.
+
+    Returns None if the endpoint is correct, an EndpointCheckResult with
+    WRONG_ENDPOINT_ROUTING status if the model is routed to a wrong endpoint.
+
+    For models with specific endpoint requirements (model_endpoints), checks if
+    the configured endpoint matches. For region-aware routing, also considers
+    whether the endpoint matches the expected region.
+    """
+    rec = truth_store.get(provider)
+    if rec is None:
+        return None
+
+    # If model is not in known models, let stale model check handle it
+    if not rec.is_model_known(model):
+        return None
+
+    # Normalize endpoints for comparison
+    configured = endpoint.rstrip("/")
+
+    # Check region-specific endpoint first if region is provided
+    if region:
+        region_candidates = rec.get_candidates_for_region(region)
+        if region_candidates:
+            # Find if the configured endpoint is one of the expected ones for this region
+            matching_candidate = None
+            for candidate in region_candidates:
+                if candidate.endpoint.rstrip("/") == configured:
+                    matching_candidate = candidate
+                    break
+
+            # If we have region candidates but none match, it's wrong routing
+            if matching_candidate is None:
+                valid_endpoints = [c.endpoint for c in region_candidates]
+                return EndpointCheckResult(
+                    provider=provider,
+                    model=model,
+                    configured_endpoint=endpoint,
+                    status=EndpointCheckStatus.WRONG_ENDPOINT_ROUTING,
+                    message=(
+                        f"Model '{model}' is routed to wrong endpoint for region '{region}'. "
+                        f"Expected one of {valid_endpoints} but got '{endpoint}'"
+                    ),
+                    details={
+                        "expected_endpoints": valid_endpoints,
+                        "configured_endpoint": endpoint,
+                        "region": region,
+                    },
+                )
+
+    # Check model-specific endpoint override or canonical endpoint
+    expected_endpoint = rec.get_model_endpoint(model)
+    if expected_endpoint is None:
+        expected_endpoint = rec.canonical_endpoint
+
+    expected = expected_endpoint.rstrip("/")
+
+    if configured == expected:
+        return None
+
+    return EndpointCheckResult(
+        provider=provider,
+        model=model,
+        configured_endpoint=endpoint,
+        status=EndpointCheckStatus.WRONG_ENDPOINT_ROUTING,
+        message=(
+            f"Model '{model}' is routed to wrong endpoint. "
+            f"Expected '{expected_endpoint}' but got '{endpoint}'"
+        ),
+        details={
+            "expected_endpoint": expected_endpoint,
+            "configured_endpoint": endpoint,
+        },
+    )
+
+
 def verify_endpoint(
     provider: str,
     endpoint: str,
@@ -240,8 +471,10 @@ def verify_endpoint(
     Performs the following checks in order:
     1. If provider is unknown in truth store -> UNKNOWN_PROVIDER
     2. RKWE check: endpoint vs canonical endpoint
-    3. Stale model check: model vs known model list
-    4. If all pass -> OK
+    3. Stale alias check: model is a known alias for a different (current) model
+    4. Deprecated model check: model is in the deprecated list
+    5. Generic stale model check: model is not in known model list
+    6. If all pass -> OK
 
     Parameters:
         provider: Provider name (e.g. "openai")
@@ -275,10 +508,46 @@ def verify_endpoint(
             details={"canonical_endpoint": rec.canonical_endpoint},
         )
 
-    # Check 2: stale model
+    # Check 2: stale alias (before generic stale model check)
+    if model:
+        alias_result = check_stale_alias(provider, model, truth_store)
+        if alias_result is not None:
+            return EndpointCheckResult(
+                provider=provider,
+                model=model,
+                configured_endpoint=endpoint,
+                status=EndpointCheckStatus.STALE_ALIAS,
+                message=(
+                    f"Model '{alias_result.original_model}' is a stale alias. "
+                    f"Use '{alias_result.correct_model}' instead"
+                ),
+                details={
+                    "original_model": alias_result.original_model,
+                    "correct_model": alias_result.correct_model,
+                    "is_stale_alias": True,
+                },
+            )
+
+    # Check 3: deprecated model
     if model:
         is_stale, stale_msg = truth_store.check_stale_model(provider, model)
         if is_stale:
+            # Determine if it's deprecated or just unknown
+            is_deprecated = rec.is_model_deprecated(model) if rec else False
+            if is_deprecated:
+                return EndpointCheckResult(
+                    provider=provider,
+                    model=model,
+                    configured_endpoint=endpoint,
+                    status=EndpointCheckStatus.DEPRECATED_MODEL,
+                    message=stale_msg,
+                    details={
+                        "known_models": rec.known_models,
+                        "deprecated_models": rec.deprecated_models,
+                        "is_deprecated": True,
+                    },
+                )
+            # Generic stale model (not in known list, not in deprecated list)
             return EndpointCheckResult(
                 provider=provider,
                 model=model,
@@ -288,6 +557,7 @@ def verify_endpoint(
                 details={
                     "known_models": rec.known_models,
                     "deprecated_models": rec.deprecated_models,
+                    "is_deprecated": False,
                 },
             )
 

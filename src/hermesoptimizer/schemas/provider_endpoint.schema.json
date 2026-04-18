@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hermesoptimizer.io/schemas/provider_endpoint.schema.json",
+  "title": "Provider Endpoint Catalog",
+  "description": "Canonical provider endpoint documentation catalog for Hermes repair engine. Stores configuration-relevant endpoint contract data: base URL, API style, auth style, region/scope notes, models-path behavior, and known caveats.",
+  "type": "object",
+  "required": ["version", "provider_endpoints"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version for this catalog",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "provider_endpoints": {
+      "type": "array",
+      "description": "List of provider endpoint records",
+      "items": {
+        "$ref": "#/definitions/ProviderEndpoint"
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "ProviderEndpoint": {
+      "type": "object",
+      "required": ["provider_slug", "provider_name", "endpoints"],
+      "properties": {
+        "provider_slug": {
+          "type": "string",
+          "description": "Canonical lowercase provider identifier, e.g. 'openai', 'anthropic', 'qwen'",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "provider_name": {
+          "type": "string",
+          "description": "Human-readable provider name, e.g. 'OpenAI', 'Anthropic', 'Qwen'"
+        },
+        "provider_aliases": {
+          "type": "array",
+          "description": "Known stale or alternate aliases for this provider",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "endpoints": {
+          "type": "array",
+          "description": "List of endpoint families for this provider",
+          "items": {
+            "$ref": "#/definitions/EndpointFamily"
+          },
+          "minItems": 1
+        },
+        "default_auth_type": {
+          "type": "string",
+          "description": "Default authentication type for this provider",
+          "enum": ["bearer", "api_key", "oauth", "basic", "custom"]
+        },
+        "default_auth_key_env": {
+          "type": "string",
+          "description": "Environment variable name that typically holds the API key, e.g. 'OPENAI_API_KEY'"
+        },
+        "region_codes": {
+          "type": "array",
+          "description": "Region codes where this provider operates",
+          "items": {
+            "type": "string",
+            "enum": ["us", "eu", "cn", "ap", "global"]
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes about this provider"
+        }
+      }
+    },
+    "EndpointFamily": {
+      "type": "object",
+      "required": ["base_url", "api_style", "auth_header_shape", "models_path"],
+      "properties": {
+        "family_name": {
+          "type": "string",
+          "description": "Descriptive name for this endpoint family, e.g. 'OpenAI v1', 'Azure OpenAI'"
+        },
+        "base_url": {
+          "type": "string",
+          "description": "Base URL for this endpoint family",
+          "format": "uri"
+        },
+        "api_style": {
+          "type": "string",
+          "description": "API design style",
+          "enum": ["rest", "openai-compatible", "anthropic-compatible", "custom"]
+        },
+        "auth_header_shape": {
+          "type": "string",
+          "description": "Shape of the authentication header, e.g. 'Bearer <token>', 'Authorization: Bearer <token>', 'X-API-Key: <key>'"
+        },
+        "models_path": {
+          "type": "string",
+          "description": "URL path for listing models, e.g. '/v1/models'"
+        },
+        "auth_type": {
+          "type": "string",
+          "description": "Authentication type override for this endpoint family",
+          "enum": ["bearer", "api_key", "oauth", "basic", "custom"]
+        },
+        "region_scope": {
+          "type": "array",
+          "description": "Region codes this specific endpoint family covers",
+          "items": {
+            "type": "string",
+            "enum": ["us", "eu", "cn", "ap", "global"]
+          }
+        },
+        "compatibility_notes": {
+          "type": "string",
+          "description": "Compatibility caveats for this endpoint family"
+        },
+        "is_default": {
+          "type": "boolean",
+          "description": "True if this is the default endpoint family for the provider",
+          "default": false
+        },
+        "is_stable": {
+          "type": "boolean",
+          "description": "True if this endpoint family is considered stable/production-ready",
+          "default": true
+        },
+        "last_verified": {
+          "type": "string",
+          "description": "ISO-8601 date when this endpoint was last verified",
+          "format": "date"
+        },
+        "doc_urls": {
+          "type": "array",
+          "description": "Source documentation URLs for this endpoint family",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    }
+  }
+}

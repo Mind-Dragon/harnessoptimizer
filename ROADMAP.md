@@ -60,56 +60,21 @@ Done. Live provider validation backends, broader source parsing (YAML/JSON/shell
 
 Done. Caveman-style output compression added as an opt-in feature for Hermes-wide work. Reduces output tokens ~75% while preserving technical accuracy. Safety-critical paths (vault write-back, config mutations, destructive operations, auth/credential handling, setup/onboarding) stay in full mode regardless of setting. Persistent config via `~/.hermes/config.yaml` with `caveman_mode` key. CLI toggle via `python -m hermesoptimizer caveman`. Hermes skill created at `~/.hermes/skills/software-development/caveman/SKILL.md`. 34 tests passing.
 
+### v0.6.0 -- Provider/model/config repair pass
+
+Done. Hermes-only provider truth rework: explicit canonical providers with endpoint/auth/region/transport metadata, stale alias detection, endpoint candidate probing, and model-specific endpoint routing. Config-fixing pass with safe repair recommendations and auto-fix vs recommend-and-confirm vs human-only classification. Report output improvements: provider health, model validity, and config-repair priority as first-class sections with lane-aware repair tuples. Provider endpoint documentation catalog (`src/hermesoptimizer/schemas/provider_endpoint.schema.json`, `data/provider_endpoints.json`, `src/hermesoptimizer/schemas/provider_endpoint.py`) with safe extraction workflow and blocked-doc state tracking. Provider model catalog refresh (`src/hermesoptimizer/schemas/provider_model.schema.json`, `data/provider_models.json`, `src/hermesoptimizer/schemas/provider_model.py`) with live `/models` API preference and explicit blocked-source states. Provider management controls: endpoint health memory with decay, credential-source provenance, fallback-order hygiene, model pinning, endpoint quarantine TTL. Tests: `pytest tests/test_catalog_refresh.py`, `pytest tests/test_provider_model_refresh.py`, `pytest tests/test_config_fix.py`, `pytest tests/test_provider_management.py`.
+
 ## Next version
 
-### v0.6.0 -- OpenClaw gateway and config diagnosis
+### v1.0 series -- Other harnesses and remote workflow
 
 Scope:
-- add an OpenClaw adapter that reads gateway health and config
-- detect gateway-down, auth-fail, provider-crash, clobbering, plugin drift, and stale config patterns
-- add SSH bootstrap/session reuse for remote runs so the agent does not SSH for every command
-- add tmux session management for persistent remote workflows
-- establish private/VPN IP defaults instead of localhost
-- establish port range conventions for dev servers (not just 8000/3000)
-- add default install skills for common dev environments
-- pull in gateway logs and health endpoint status
-- map findings into the same canonical schema used by Hermes
-- add repair-oriented report sections so operators can see what needs fixing
-
-Primary source targets:
-- `~/.openclaw/openclaw.json`
-- `~/.openclaw/logs/`
-- gateway health endpoint and status output
-- plugin allowlist / entry config
-
-What v0.6.0 must answer:
-- is the gateway alive
-- is the config still the last known good version
-- which provider is failing
-- what repair action is most likely to work
-
-### v0.7.0 -- OpenCode agent config and provider routing
-
-Scope:
-- add an OpenCode adapter for agent config, provider routing, and runtime behavior
-- detect broken model mappings, invalid provider endpoints, and agent-level execution problems
-- ingest worktree/task metadata when present
-- track config drift and missing plugin or skill references
-- keep the same catalog and reporting pipeline
-
-Primary source targets:
-- OpenCode config files
-- OpenCode logs and task traces
-- provider routing metadata
-- worktree-aware runtime files
-
-### v0.8.0+ -- Cross-harness correlation and adapter template
-
-Scope:
-- reports that combine findings from multiple harnesses in a single run
-- cross-harness correlation (same provider failing in Hermes and OpenClaw)
-- adapter template module so new harnesses are cheap to add
-- cron-driven continuous monitoring mode
+- SSH bootstrap and tmux session reuse for remote workflows
+- private/VPN IP defaults and port-range conventions
+- install-skill bundles for common environments
+- OpenClaw adapter and health/config probes
+- OpenCode adapter and config/routing parsing
+- later multi-harness correlation after Hermes-side repair flow is mature
 
 Future additions should follow one rule:
 - if it can be read, normalized, and reported, it can become an adapter
@@ -140,19 +105,18 @@ That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into se
 6. ~~Add model validation (stale, deprecated, RKWE) with priority ranking~~
 7. ~~Add routing diagnosis and broken fallback chain detection~~
 8. ~~Build /todo + /devdo workflow engine with scheduler, guard, executor~~
-9. Add vault management: credential inventory, validation, dedup, rotation tracking
-10. Add vault bridge: write-back for .env and YAML formats
-11. Add OpenClaw adapter and health/config probes
-12. Add OpenCode adapter and config/routing parsing
-13. Tighten shared normalization and reporting across all harnesses
-14. Add adapter template for new harness onboarding
+9. ~~Add vault management: credential inventory, validation, dedup, rotation tracking~~
+10. ~~Add vault bridge: write-back for .env and YAML formats~~
+11. ~~Rework Hermes provider truth, model validation, and config repair surfaces~~
+12. ~~Tighten Hermes-first normalization and reporting for provider/model/config repair~~
+13. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
+14. Add adapter template for new harness onboarding once the Hermes repair path is stable
 
 ## Definition of done for the roadmap
 
 This roadmap is done when:
-- Hermes, OpenClaw, and OpenCode are all first-class adapters
-- vault management provides credential lifecycle visibility across all adapters
-- each harness has source-specific tests and shared integration tests
+- Hermes has a mature provider/model/config repair path with explicit safe recommendations
+- vault management provides credential lifecycle visibility across Hermes and future adapters
 - the provider-model catalog covers the most common providers and validates model names
-- the reports can compare runs across harnesses
-- adding a new harness is mostly a new adapter module plus fixtures, not a rewrite
+- the reports can compare runs across repair passes and later across adapters
+- adding a new harness in the v1.0 series is mostly a new adapter module plus fixtures, not a rewrite

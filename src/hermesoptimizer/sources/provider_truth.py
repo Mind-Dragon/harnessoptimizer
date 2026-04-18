@@ -33,16 +33,75 @@ def canonical_provider_name(provider: str) -> str:
 
 
 @dataclass(slots=True)
+class EndpointCandidate:
+    """
+    Represents a known-good endpoint that can be used as a repair candidate
+    when the primary endpoint is failing.
+
+    Fields:
+        endpoint: Base URL for this endpoint family
+        api_style: API design style (e.g. "openai-compatible", "anthropic-compatible", "rest")
+        auth_type: Authentication type (e.g. "bearer", "api_key", "oauth")
+        region_scope: List of region codes this endpoint covers (e.g. ["us", "eu", "global"])
+        is_stable: Whether this endpoint is considered stable/production-ready
+    """
+
+    endpoint: str
+    api_style: str = "openai-compatible"
+    auth_type: str = "bearer"
+    region_scope: list[str] = field(default_factory=list)
+    is_stable: bool = True
+
+    def __repr__(self) -> str:
+        return (
+            f"EndpointCandidate(endpoint={self.endpoint!r}, "
+            f"api_style={self.api_style!r}, auth_type={self.auth_type!r}, "
+            f"region_scope={self.region_scope!r}, is_stable={self.is_stable!r})"
+        )
+
+
+@dataclass(slots=True)
 class ProviderTruthRecord:
+    """
+    Canonical provider truth record.
+
+    Fields:
+        provider: Canonical provider name
+        canonical_endpoint: Correct base URL for this provider
+        known_models: Models confirmed to exist and be supported
+        deprecated_models: Models confirmed to be deprecated or EOL
+        stale_aliases: Mapping of known stale model name aliases to their correct names
+            (e.g., {"gpt-5": "gpt-4o", "gpt-4.5": "gpt-4o"})
+        model_endpoints: Mapping of model names to their specific endpoint URLs
+            when a model requires a non-canonical endpoint
+        capabilities: Capability tags (e.g. text, vision, embedding, rerank)
+        context_window: Max context in tokens (0 if unknown)
+        source_url: URL used to fetch live truth (optional)
+        confidence: Confidence level ("high", "medium", "low")
+        auth_type: Authentication type (e.g. "oauth", "api_key", "bearer")
+        regions: Region codes where this provider operates (e.g. ["us", "eu", "cn", "global"])
+        transport: Transport protocol ("https", "http", "wss", etc.)
+        endpoint_candidates: Known-good alternative endpoints for repair probing
+    """
+
     provider: str
     canonical_endpoint: str
     known_models: list[str] = field(default_factory=list)
     deprecated_models: list[str] = field(default_factory=list)
+    stale_aliases: dict[str, str] = field(default_factory=dict)
+    model_endpoints: dict[str, str] = field(default_factory=dict)
     capabilities: list[str] = field(default_factory=list)
     context_window: int = 0
     source_url: str | None = None
     confidence: str = "medium"
     auth_type: str | None = None
+    regions: list[str] = field(default_factory=list)
+    transport: str = ""
+    endpoint_candidates: list[EndpointCandidate] = field(default_factory=list)
+
+    # ------------------------------------------------------------------ #
+    # Model helpers
+    # ------------------------------------------------------------------ #
 
     def is_model_known(self, model: str) -> bool:
         return model in self.known_models
@@ -50,11 +109,61 @@ class ProviderTruthRecord:
     def is_model_deprecated(self, model: str) -> bool:
         return model in self.deprecated_models
 
+    def get_stale_alias_correction(self, model: str) -> str | None:
+        """Return the correct model name if the given model is a stale alias, else None."""
+        return self.stale_aliases.get(model)
+
+    def get_model_endpoint(self, model: str) -> str | None:
+        """Return the model-specific endpoint if configured, else None."""
+        return self.model_endpoints.get(model)
+
+    # ------------------------------------------------------------------ #
+    # Endpoint helpers
+    # ------------------------------------------------------------------ #
+
     def is_endpoint_canonical(self, endpoint: str) -> bool:
         return self.canonical_endpoint.rstrip("/") == endpoint.rstrip("/")
 
+    # ------------------------------------------------------------------ #
+    # Auth helpers
+    # ------------------------------------------------------------------ #
+
     def requires_human_auth(self) -> bool:
         return (self.auth_type or "").strip().lower() == "oauth"
+
+    # ------------------------------------------------------------------ #
+    # Region helpers
+    # ------------------------------------------------------------------ #
+
+    def is_available_in_region(self, region: str) -> bool:
+        """Return True if this provider is available in the given region."""
+        if not self.regions:
+            return True  # Unknown means all regions possible
+        return region in self.regions
+
+    # ------------------------------------------------------------------ #
+    # Transport helpers
+    # ------------------------------------------------------------------ #
+
+    def is_transport_secure(self) -> bool:
+        """Return True if the transport is HTTPS or WSS (secure)."""
+        return self.transport.lower() in {"https", "wss"}
+
+    # ------------------------------------------------------------------ #
+    # Endpoint candidate helpers
+    # ------------------------------------------------------------------ #
+
+    def get_stable_candidates(self) -> list[EndpointCandidate]:
+        """Return only stable endpoint candidates."""
+        return [c for c in self.endpoint_candidates if c.is_stable]
+
+    def get_candidates_for_region(self, region: str) -> list[EndpointCandidate]:
+        """Return endpoint candidates that cover the given region."""
+        return [
+            c
+            for c in self.endpoint_candidates
+            if not c.region_scope or region in c.region_scope
+        ]
 
 
 @dataclass
@@ -68,11 +177,16 @@ class ProviderTruthStore:
             canonical_endpoint=record.canonical_endpoint,
             known_models=list(record.known_models),
             deprecated_models=list(record.deprecated_models),
+            stale_aliases=dict(record.stale_aliases),
+            model_endpoints=dict(record.model_endpoints),
             capabilities=list(record.capabilities),
             context_window=record.context_window,
             source_url=record.source_url,
             confidence=record.confidence,
             auth_type=record.auth_type,
+            regions=list(record.regions),
+            transport=record.transport,
+            endpoint_candidates=list(record.endpoint_candidates),
         )
         existing = self.records.get(canonical)
         if existing is not None and not replace:
@@ -106,6 +220,64 @@ class ProviderTruthStore:
     def all_records(self) -> list[ProviderTruthRecord]:
         return list(self.records.values())
 
+    # ------------------------------------------------------------------ #
+    # Repair candidate helpers
+    # ------------------------------------------------------------------ #
+
+    def get_repair_candidates(
+        self,
+        provider: str,
+        *,
+        region: str | None = None,
+        stable_only: bool = False,
+    ) -> list[EndpointCandidate]:
+        """
+        Return known-good endpoint candidates for a provider that can be
+        probed as repair candidates when the primary endpoint is failing.
+
+        Parameters:
+            provider: Provider name (alias resolves to canonical)
+            region: Optional region code to filter candidates
+            stable_only: If True, only return stable (is_stable=True) candidates
+
+        Returns:
+            List of EndpointCandidate objects, filtered by region and stability
+        """
+        rec = self.get(provider)
+        if rec is None:
+            return []
+
+        candidates = rec.endpoint_candidates
+
+        if stable_only:
+            candidates = [c for c in candidates if c.is_stable]
+
+        if region:
+            candidates = [
+                c
+                for c in candidates
+                if not c.region_scope or region in c.region_scope
+            ]
+
+        return candidates
+
+
+def _dict_to_candidates(data: list[Any]) -> list[EndpointCandidate]:
+    """Convert a list of dicts to EndpointCandidate objects."""
+    result = []
+    for item in data:
+        if isinstance(item, dict):
+            result.append(
+                EndpointCandidate(
+                    endpoint=item.get("endpoint", ""),
+                    api_style=item.get("api_style", "openai-compatible"),
+                    auth_type=item.get("auth_type", "bearer"),
+                    region_scope=item.get("region_scope", []),
+                    is_stable=item.get("is_stable", True),
+                )
+            )
+    return result
+
 
 def _dict_to_record(d: dict[str, Any]) -> ProviderTruthRecord:
     return ProviderTruthRecord(
@@ -113,12 +285,27 @@ def _dict_to_record(d: dict[str, Any]) -> ProviderTruthRecord:
         canonical_endpoint=d.get("canonical_endpoint", ""),
         known_models=d.get("known_models", []),
         deprecated_models=d.get("deprecated_models", []),
+        stale_aliases=d.get("stale_aliases", {}),
+        model_endpoints=d.get("model_endpoints", {}),
         capabilities=d.get("capabilities", []),
         context_window=d.get("context_window", 0),
         source_url=d.get("source_url"),
         confidence=d.get("confidence", "medium"),
         auth_type=d.get("auth_type"),
+        regions=d.get("regions", []),
+        transport=d.get("transport", ""),
+        endpoint_candidates=_dict_to_candidates(d.get("endpoint_candidates", [])),
     )
+
+
+def _candidate_to_dict(c: EndpointCandidate) -> dict[str, Any]:
+    return {
+        "endpoint": c.endpoint,
+        "api_style": c.api_style,
+        "auth_type": c.auth_type,
+        "region_scope": c.region_scope,
+        "is_stable": c.is_stable,
+    }
 
 
 def load_provider_truth(path: str | Path) -> ProviderTruthStore:
@@ -136,15 +323,21 @@ def load_provider_truth(path: str | Path) -> ProviderTruthStore:
 def dump_provider_truth(store: ProviderTruthStore, path: str | Path) -> None:
     data = {}
     for rec in store.all_records():
-        data[rec.provider] = {
+        record_dict: dict[str, Any] = {
             "provider": rec.provider,
             "canonical_endpoint": rec.canonical_endpoint,
             "known_models": rec.known_models,
             "deprecated_models": rec.deprecated_models,
+            "stale_aliases": rec.stale_aliases,
+            "model_endpoints": rec.model_endpoints,
             "capabilities": rec.capabilities,
             "context_window": rec.context_window,
             "source_url": rec.source_url,
             "confidence": rec.confidence,
             "auth_type": rec.auth_type,
+            "regions": rec.regions,
+            "transport": rec.transport,
+            "endpoint_candidates": [_candidate_to_dict(c) for c in rec.endpoint_candidates],
         }
+        data[rec.provider] = record_dict
     Path(path).write_text(yaml.dump(data, sort_keys=False), encoding="utf-8")

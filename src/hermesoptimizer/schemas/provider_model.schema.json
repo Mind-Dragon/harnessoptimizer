@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hermesoptimizer.io/schemas/provider_model.schema.json",
+  "title": "Provider Model Catalog",
+  "description": "Normalized model catalog for Hermes repair engine. Stores model metadata including capabilities, costs, region availability, deprecation status, and source provenance.",
+  "type": "object",
+  "required": ["version", "provider_models"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version for this catalog",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "provider_models": {
+      "type": "array",
+      "description": "List of provider model records",
+      "items": {
+        "$ref": "#/definitions/ProviderModel"
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "ProviderModel": {
+      "type": "object",
+      "required": ["provider_slug", "model_name", "display_name", "capabilities", "context_window"],
+      "properties": {
+        "provider_slug": {
+          "type": "string",
+          "description": "Canonical lowercase provider identifier, e.g. 'openai', 'anthropic', 'qwen'",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "model_name": {
+          "type": "string",
+          "description": "Canonical model name string, e.g. 'gpt-4o', 'qwen3.6-plus'"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Human-readable model name, e.g. 'GPT-4o', 'Qwen 3.6 Plus'"
+        },
+        "capabilities": {
+          "type": "array",
+          "description": "Capability tags for this model",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "context_window": {
+          "type": "integer",
+          "description": "Maximum context window size in tokens (0 for audio/image-only models)",
+          "minimum": 0
+        },
+        "input_cost_per_mtok": {
+          "type": ["number", "null"],
+          "description": "Input cost per million tokens, null if unknown"
+        },
+        "output_cost_per_mtok": {
+          "type": ["number", "null"],
+          "description": "Output cost per million tokens, null if unknown"
+        },
+        "latency_tier": {
+          "type": ["string", "null"],
+          "description": "Latency/compute tier classification",
+          "enum": ["fast", "standard", "slow", null]
+        },
+        "region_availability": {
+          "type": ["array", "null"],
+          "description": "Region codes where this model is available",
+          "items": {
+            "type": "string",
+            "enum": ["us", "eu", "cn", "ap", "global"]
+          }
+        },
+        "release_date": {
+          "type": ["string", "null"],
+          "description": "ISO-8601 date string for model release",
+          "format": "date"
+        },
+        "is_deprecated": {
+          "type": "boolean",
+          "description": "True if this model is deprecated",
+          "default": false
+        },
+        "deprecation_notes": {
+          "type": ["string", "null"],
+          "description": "Deprecation notes or replacement guidance"
+        },
+        "is_best_for": {
+          "type": ["object", "null"],
+          "description": "Map from role to canonical model name for best model for that role",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "endpoint_url": {
+          "type": ["string", "null"],
+          "description": "Canonical API endpoint URL for this model family",
+          "format": "uri"
+        },
+        "auth_type": {
+          "type": ["string", "null"],
+          "description": "Authentication type, e.g. 'bearer', 'api_key'"
+        },
+        "auth_key_env": {
+          "type": ["string", "null"],
+          "description": "Environment variable name for the API key, e.g. 'OPENAI_API_KEY'"
+        },
+        "notes": {
+          "type": ["string", "null"],
+          "description": "Free-form notes about this model"
+        },
+        "source_provenance": {
+          "type": "string",
+          "description": "Source of this model record",
+          "enum": ["live_api", "official_docs", "sdk_example", "manual_fallback"]
+        },
+        "source_url": {
+          "type": ["string", "null"],
+          "description": "Source URL where this model info was obtained",
+          "format": "uri"
+        },
+        "last_verified": {
+          "type": ["string", "null"],
+          "description": "ISO-8601 date when this model info was last verified",
+          "format": "date"
+        }
+      }
+    }
+  }
+}

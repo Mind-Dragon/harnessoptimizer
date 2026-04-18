@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "provider_endpoints": [
+    {
+      "provider_slug": "testprovider",
+      "provider_name": "Test Provider",
+      "provider_aliases": ["test-alias"],
+      "default_auth_type": "bearer",
+      "default_auth_key_env": "TEST_API_KEY",
+      "region_codes": ["us", "global"],
+      "endpoints": [
+        {
+          "family_name": "Test API",
+          "base_url": "https://api.testprovider.example.com/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/v1/models",
+          "auth_type": "bearer",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": ["https://docs.testprovider.example.com/"]
+        }
+      ],
+      "notes": "Test provider for unit testing."
+    },
+    {
+      "provider_slug": "anotherprovider",
+      "provider_name": "Another Provider",
+      "endpoints": [
+        {
+          "family_name": "Another API",
+          "base_url": "https://api.anotherprovider.example.com",
+          "api_style": "rest",
+          "auth_header_shape": "X-API-Key: <key>",
+          "models_path": "/models",
+          "is_default": true,
+          "is_stable": true
+        }
+      ]
+    }
+  ]
+}

@@ -103,10 +103,16 @@ def test_verify_endpoint_detects_rkwe_and_stale_model() -> None:
     )
     ok = verify_endpoint("openai", "https://api.openai.com/v1", "gpt-5", store)
     rkwe = verify_endpoint("openai", "https://wrong.example/v1", "gpt-5", store)
-    stale = verify_endpoint("openai", "https://api.openai.com/v1", "gpt-4", store)
+    deprecated = verify_endpoint("openai", "https://api.openai.com/v1", "gpt-4", store)
+    unknown_stale = verify_endpoint("openai", "https://api.openai.com/v1", "completely-unknown", store)
     assert ok.status == EndpointCheckStatus.OK
     assert rkwe.status == EndpointCheckStatus.RKWE
-    assert stale.status == EndpointCheckStatus.STALE_MODEL
+    # gpt-4 is in deprecated_models, so it should get DEPRECATED_MODEL status
+    assert deprecated.status == EndpointCheckStatus.DEPRECATED_MODEL
+    assert deprecated.details.get("is_deprecated") is True
+    # completely-unknown is not in known or deprecated lists, so it gets STALE_MODEL
+    assert unknown_stale.status == EndpointCheckStatus.STALE_MODEL
+    assert unknown_stale.details.get("is_deprecated") is not True
 
 
 def test_verify_provider_truth_handles_multiple_configs() -> None:

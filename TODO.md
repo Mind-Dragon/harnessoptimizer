@@ -91,11 +91,36 @@ All seven items are now complete and verified.
 
 ## v0.6.0 queue
 
-### v0.6.0 (planned)
-- add SSH bootstrap/session reuse for remote runs so the agent does not SSH for every command
-- add tmux session management for persistent remote workflows
-- establish private/VPN IP defaults instead of localhost
-- establish port range conventions for dev servers (not just 8000/3000)
-- add default install skills for common dev environments
-- keep the OpenClaw gateway/config diagnosis work in scope
-- verify remote smoke run behavior and session reuse logs
+### v0.6.0 (done)
+- rework provider truth so canonical providers, auth types, endpoints, regions, and transports are explicit and repairable
+- tighten model validation for stale aliases, deprecated models, missing capabilities, and wrong-endpoint routing
+- add a config-fixing pass that produces specific safe repair recommendations for Hermes config drift
+- reconcile provider/model/config evidence across config, sessions, logs, auth store, credential pools, and live validation results
+- track provider provenance for every displayed/provider-list row: top-level model, `providers:` block, `fallback_providers`, auxiliary/tool assignment, env discovery, auth store / credential pool, and external auto-detect
+- collapse duplicate provider rows by canonical provider identity plus endpoint contract, not just display name
+- explain duplicate rows as provenance collisions in reports and repair output instead of leaving them as silent picker noise
+- auto-repair stale API-key providers by recommending removal from the active list and offering a replacement-key insert path
+- auto-repair expiring OAuth providers by attempting renewal first and surfacing an explicit expiring/expired action if renewal fails
+- auto-repair bad endpoints by testing the same key against known-good endpoints for that provider and promoting the first contract-valid endpoint
+- add stronger report sections for provider health, model validity, and config repair priority
+- emit lane-aware repair tuples: provider alias, endpoint URL, auth type, region, and model
+- recommend provider-management actions: dedupe aliases, demote repeatedly failing providers, quarantine bad endpoints, pin known-good models, keep endpoint health memory with decay, record credential-source provenance, classify repair actions by safety level, and reorder fallback providers when healthier options consistently win
+- build and maintain a repo-local JSON catalog of provider endpoint documentation for configuration/repair use (`src/hermesoptimizer/schemas/provider_endpoint.schema.json`, `data/provider_endpoints.json`, `src/hermesoptimizer/schemas/provider_endpoint.py`)
+- define a checked-in JSON schema for endpoint and provenance catalog data used by the repair engine and picker dedup logic
+- refresh the provider endpoint catalog with a safe extraction workflow that records blocked-doc states instead of hammering anti-bot providers
+- refresh the model list for each provider using current provider website/docs data and keep the checked-in catalog in sync (`src/hermesoptimizer/schemas/provider_model.schema.json`, `data/provider_models.json`, `src/hermesoptimizer/schemas/provider_model.py`)
+- for providers that support it, prefer live `/models` API results as the highest-confidence source for model enumeration and merge website/docs data only for missing metadata or blocked APIs
+- track per-provider model-source provenance in the catalog: live API, official docs, SDK/examples, or manual fallback
+- validate the schemas/catalogs with `tests/test_catalog_refresh.py` and `tests/test_provider_model_refresh.py`
+- keep SSH/tmux/session-reuse, install-skill automation, and all non-Hermes harness adapters out of v0.6.0
+- verify the provider/model/config repair path with deterministic fixture-driven smoke coverage
+
+## v1.0 series
+
+### v1.0.0+ (deferred)
+- SSH bootstrap and tmux session reuse for remote workflows
+- private/VPN IP defaults and port-range conventions for remote/dev hosts
+- install-skill bundles for common remote environments
+- OpenClaw adapter and health/config probes
+- OpenCode adapter and config/routing parsing
+- later multi-harness correlation after the Hermes repair path is mature

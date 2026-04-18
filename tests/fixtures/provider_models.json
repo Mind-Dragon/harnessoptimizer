@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "provider_models": [
+    {
+      "provider_slug": "testprovider",
+      "model_name": "test-model-1",
+      "display_name": "Test Model 1",
+      "capabilities": ["text", "reasoning"],
+      "context_window": 8000,
+      "input_cost_per_mtok": 1.0,
+      "output_cost_per_mtok": 2.0,
+      "latency_tier": "standard",
+      "region_availability": ["us", "global"],
+      "release_date": "2025-01-01",
+      "is_deprecated": false,
+      "is_best_for": {
+        "reasoning": "test-model-1"
+      },
+      "endpoint_url": "https://api.testprovider.example.com/v1",
+      "auth_type": "bearer",
+      "auth_key_env": "TEST_API_KEY",
+      "source_provenance": "sdk_example",
+      "last_verified": "2025-01-15"
+    },
+    {
+      "provider_slug": "testprovider",
+      "model_name": "test-model-deprecated",
+      "display_name": "Test Deprecated Model",
+      "capabilities": ["text"],
+      "context_window": 4000,
+      "is_deprecated": true,
+      "deprecation_notes": "Use test-model-1 instead",
+      "source_provenance": "manual_fallback"
+    },
+    {
+      "provider_slug": "anotherprovider",
+      "model_name": "another-model",
+      "display_name": "Another Model",
+      "capabilities": ["text", "vision"],
+      "context_window": 16000,
+      "latency_tier": "fast",
+      "region_availability": ["eu", "ap"],
+      "source_provenance": "official_docs"
+    }
+  ]
+}

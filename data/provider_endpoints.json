@@ -1,0 +1,155 @@
+{
+  "version": "1.0.0",
+  "provider_endpoints": [
+    {
+      "provider_slug": "openai",
+      "provider_name": "OpenAI",
+      "provider_aliases": ["openai-compat", "openai-api"],
+      "default_auth_type": "bearer",
+      "default_auth_key_env": "OPENAI_API_KEY",
+      "region_codes": ["us", "eu", "ap", "global"],
+      "endpoints": [
+        {
+          "family_name": "OpenAI API v1",
+          "base_url": "https://api.openai.com/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/v1/models",
+          "auth_type": "bearer",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": [
+            "https://platform.openai.com/docs/api-reference"
+          ]
+        }
+      ],
+      "notes": "Primary provider for GPT models. Supports bearer token auth."
+    },
+    {
+      "provider_slug": "anthropic",
+      "provider_name": "Anthropic",
+      "provider_aliases": ["claude", "anthropic-api"],
+      "default_auth_type": "bearer",
+      "default_auth_key_env": "ANTHROPIC_API_KEY",
+      "region_codes": ["us", "eu", "global"],
+      "endpoints": [
+        {
+          "family_name": "Anthropic API",
+          "base_url": "https://api.anthropic.com",
+          "api_style": "anthropic-compatible",
+          "auth_header_shape": "x-api-key: <key>",
+          "models_path": "/v1/models",
+          "auth_type": "api_key",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": [
+            "https://docs.anthropic.com/claude/reference"
+          ]
+        }
+      ],
+      "notes": "Provider for Claude models. Uses x-api-key header."
+    },
+    {
+      "provider_slug": "qwen",
+      "provider_name": "Alibaba Qwen",
+      "provider_aliases": ["dashscope", "aliyun-qwen"],
+      "default_auth_type": "api_key",
+      "default_auth_key_env": "DASHSCOPE_API_KEY",
+      "region_codes": ["cn", "ap", "global"],
+      "endpoints": [
+        {
+          "family_name": "DashScope API",
+          "base_url": "https://dashscope.aliyuncs.com/api/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/services/aigc/text-generation/generation",
+          "auth_type": "bearer",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-10",
+          "doc_urls": [
+            "https://help.aliyun.com/en/dashscope/"
+          ]
+        }
+      ],
+      "notes": "Alibaba Cloud Qwen models via DashScope."
+    },
+    {
+      "provider_slug": "xai",
+      "provider_name": "xAI",
+      "provider_aliases": ["grok", "xai-api"],
+      "default_auth_type": "bearer",
+      "default_auth_key_env": "XAI_API_KEY",
+      "region_codes": ["us", "global"],
+      "endpoints": [
+        {
+          "family_name": "xAI API",
+          "base_url": "https://api.x.ai/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/v1/models",
+          "auth_type": "bearer",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": [
+            "https://docs.x.ai/"
+          ]
+        }
+      ],
+      "notes": "Provider for Grok models via xAI."
+    },
+    {
+      "provider_slug": "minimax",
+      "provider_name": "MiniMax",
+      "provider_aliases": ["minimax-api"],
+      "default_auth_type": "api_key",
+      "default_auth_key_env": "MINIMAX_API_KEY",
+      "region_codes": ["cn", "ap", "global"],
+      "endpoints": [
+        {
+          "family_name": "MiniMax API",
+          "base_url": "https://api.minimax.chat/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/v1/models",
+          "auth_type": "bearer",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": [
+            "https://www.minimaxi.com/document/"
+          ]
+        }
+      ],
+      "notes": "Provider for MiniMax models including M2 series."
+    },
+    {
+      "provider_slug": "zai",
+      "provider_name": "Z.AI / GLM",
+      "provider_aliases": ["bigmodel", "glm", "zhoxuai"],
+      "default_auth_type": "api_key",
+      "default_auth_key_env": "ZAI_API_KEY",
+      "region_codes": ["cn", "ap"],
+      "endpoints": [
+        {
+          "family_name": "BigModel API",
+          "base_url": "https://open.bigmodel.cn/api/paas/v1",
+          "api_style": "openai-compatible",
+          "auth_header_shape": "Authorization: Bearer <token>",
+          "models_path": "/v1/models",
+          "auth_type": "api_key",
+          "is_default": true,
+          "is_stable": true,
+          "last_verified": "2025-01-15",
+          "doc_urls": [
+            "https://open.bigmodel.cn/dev/api"
+          ]
+        }
+      ],
+      "notes": "Provider for GLM models via BigModel.cn."
+    }
+  ]
+}
