@@ -1,6 +1,6 @@
 # Hermes Optimizer /todo — v0.8.0 Agent-Native Tool Surface Optimization
 
-**Status: Active.** v0.7.0 is complete; the live queue is now the v0.8.0 tool-surface optimization slice.
+**Status: Complete.** v0.7.0 is complete; the v0.8.0 tool-surface optimization slice is also complete (tasks 1–7 all verified).
 
 ## Source of truth
 - `ROADMAP.md` v0.8.0 tool-surface optimization section
