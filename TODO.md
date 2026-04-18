@@ -1,12 +1,78 @@
-# Hermes Optimizer /todo — v0.5.1 Vault Follow-up (closed)
+# Hermes Optimizer /todo — v0.8.0 Agent-Native Tool Surface Optimization
 
-**Status: Closed.** This queue completed the v0.5.1 vault follow-up slice.
+**Status: Active.** v0.7.0 is complete; the live queue is now the v0.8.0 tool-surface optimization slice.
 
 ## Source of truth
-- `ROADMAP.md` v0.5.0/v0.5.1 vault-management section
+- `ROADMAP.md` v0.8.0 tool-surface optimization section
 - `ARCHITECTURE.md` for system shape and file layout expectations
 - `GUIDELINE.md` for release gates and success criteria
-- `VERSION0.5.1.md` for the archived release-note / transition note
+- `/home/agent/.hermes/reports/hermesoptimizer/atoolix-hermes-v0.8-evaluation-2026-04-18.md` for the external concept audit that seeded this slice
+
+## v0.8.0 goal
+Turn the atoolix/agent-clip interface ideas into a Hermes-grade, agent-native tool-surface optimization layer: auditable tool contracts, a hybrid read-only command layer, and a stronger LLM-facing presentation model without sacrificing Hermes's existing typed safety boundaries.
+
+## Scope
+- define a normalized Tool Surface IR for Hermes-native tools and command families
+- score tool surfaces for discoverability, composability, safety, observability, token efficiency, and recovery quality
+- prototype a read-only hybrid command namespace for provider/report/workflow/memory-or-dreams inspection flows
+- support chainable command composition where it helps (`|`, `&&`, `||`, `;`)
+- harden output presentation with binary/media routing, overflow handles, stderr retention, and stable result footers
+- generate ranked provider/model recommendations from live config + auth + catalog + provenance data instead of static menus
+- keep mutation-heavy or high-risk paths on typed tools
+
+## Non-goals
+- replacing Hermes's typed browser/filesystem/github/cron tools with a single shell-style supertool
+- routing destructive writes or credential mutations through the textual command layer
+- broad cross-harness rollout before the Hermes-first proof is stable
+
+## Acceptance criteria
+- a Tool Surface IR exists and can describe Hermes-native tool/command surfaces
+- audits emit concrete findings for missing help, poor error navigation, missing overflow artifacts, and unsafe untyped mutation patterns
+- the hybrid command layer exists for at least a few high-value read-only inspection families
+- presentation-layer output preserves raw execution truth while rendering an LLM-friendly contract with status, duration, and truncation cues
+- provider/model recommendation output is ranked, provenance-aware, and lane-classified
+- focused tests cover the new IR, audits, command-layer parsing, and presentation behavior
+
+## v0.8.0 queue
+
+### 1. Tool Surface IR
+- add a normalized schema/module for agent-facing tool surfaces
+- capture command name, risk level, help contract, output contract, overflow support, binary handling, and recommended usage class
+- map at least Hermes-native candidate surfaces into the IR
+
+### 2. Tool audit engine
+- build scoring around discoverability, composability, safety, observability, token efficiency, and recovery quality
+- emit concrete findings rather than prose-only opinions
+- include failure classes such as missing subcommand help, missing next-step errors, no overflow path, and unsafe untyped mutation
+
+### 3. Hybrid read-only command layer
+- prototype a Hermes command namespace for a few high-value inspection domains
+- likely starting families: `provider`, `report`, `workflow`, `memory` or `dreams`
+- support chained execution where the contract remains deterministic and testable
+
+### 4. Presentation-layer hardening
+- separate raw execution data from LLM-facing rendering
+- add content-based binary guard and media routing
+- add overflow artifact persistence plus follow-up navigation hints
+- add consistent status/duration/truncation footer behavior
+- preserve stderr on failure paths
+
+### 5. Provider/model recommender
+- replace static picker ergonomics with a Hermes-grade ranked recommender
+- use live config, known auth presence, checked-in catalogs, provenance, and safety lane logic
+- emit config snippets only after validation passes
+
+### 6. Evaluation
+- add focused tests for the new contracts
+- run transcript-oriented checks that show fewer dead-end retries or clearer recovery hints
+- keep `git diff --check` clean and avoid regressing the existing mainline suite
+
+## Execution note
+- v0.7.0 dreaming sidecar is already complete and should be treated as foundation, not reopened scope
+- the atoolix audit is research input; implementation should improve on it rather than mirror it
+
+## Historical note
+The sections below are preserved as release history for v0.5.x through v0.7.0 and should not be treated as the active execution queue.
 
 ## What closed in v0.5.0
 - vault package skeleton exists under `src/hermesoptimizer/vault/`

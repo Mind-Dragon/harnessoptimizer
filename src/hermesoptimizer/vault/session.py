@@ -151,10 +151,98 @@ class VaultSession:
             vault_root.mkdir(parents=True, exist_ok=True)
             return
 
-        # Load all YAML files in vault root (not hidden files)
-        for path in vault_root.iterdir():
-            if path.is_file() and path.suffix in (".yaml", ".yml") and not path.name.startswith("."):
-                self._load_yaml_file(path)
+        # Load from vault.enc.json (single source of truth)
+        enc_path = vault_root / "vault.enc.json"
+        if enc_path.exists():
+            self._load_encrypted_store(enc_path)
+
+    def _load_salt(self) -> bytes | None:
+        """Load salt from vault.enc.json if it exists."""
+        import base64
+        import json
+
+        enc_path = self._vault_root / "vault.enc.json"
+        if not enc_path.exists():
+            return None
+
+        try:
+            content = enc_path.read_text(encoding="utf-8")
+            data = json.loads(content)
+        except (json.JSONDecodeError, OSError):
+            return None
+
+        if not isinstance(data, dict):
+            return None
+
+        salt_b64 = data.get("salt")
+        if salt_b64:
+            try:
+                return base64.b64decode(salt_b64)
+            except Exception:
+                pass
+        return None
+
+    def _load_encrypted_store(self, path: Path) -> None:
+        """Load entries from vault.enc.json file."""
+        import json
+
+        try:
+            content = path.read_text(encoding="utf-8")
+            data = json.loads(content)
+        except (json.JSONDecodeError, OSError):
+            return
+
+        if not isinstance(data, dict):
+            return
+
+        entries = data.get("entries", [])
+        if not isinstance(entries, list):
+            return
+
+        for entry_data in entries:
+            if not isinstance(entry_data, dict):
+                continue
+
+            key_name = entry_data.get("key_name")
+            if not key_name:
+                continue
+
+            is_encrypted = entry_data.get("is_encrypted", False)
+            encrypted_value = entry_data.get("encrypted_value")
+            plaintext_value = entry_data.get("plaintext_value")
+            fingerprint = entry_data.get("fingerprint")
+
+            # If encrypted and we have a master key, decrypt
+            if is_encrypted and encrypted_value:
+                if self._master_key:
+                    try:
+                        plaintext_value = self._crypto.decrypt(encrypted_value, self._master_key)
+                    except Exception:
+                        # Decryption failed - wrong key or corrupted data
+                        raise VaultLockedError(
+                            f"Cannot decrypt {key_name} - vault is locked. "
+                            "Provide correct master key."
+                        )
+                else:
+                    # Encrypted but no key available - vault is locked
+                    raise VaultLockedError(
+                        f"Cannot decrypt {key_name} - vault is locked. "
+                        "Provide correct master key."
+                    )
+
+            if fingerprint is None:
+                fingerprint = fingerprint_secret(plaintext_value) if plaintext_value else fingerprint_secret("")
+
+            entry = VaultEntry(
+                source_path=path,
+                source_kind="vault",
+                key_name=key_name,
+                fingerprint=fingerprint,
+                is_encrypted=is_encrypted,
+                encrypted_value=encrypted_value,
+                plaintext_value=plaintext_value,
+            )
+            self._secrets[key_name] = entry
 
     def _load_yaml_file(self, path: Path) -> None:
         """Load entries from a single YAML file."""
@@ -209,14 +297,54 @@ class VaultSession:
         self._secrets[key_name] = entry
 
     def _save_vault(self) -> None:
-        """Save dirty entries back to disk atomically."""
-        for key_name in self._dirty:
-            entry = self._secrets.get(key_name)
+        """Save dirty entries back to disk atomically to vault.enc.json."""
+        import base64
+        import json
+
+        # Determine the salt - use stored salt or generate a new one
+        salt = self._load_salt()
+        if salt is None:
+            # Generate new salt for first save
+            salt = os.urandom(16)
+
+        # Collect all entries (not just dirty ones) for full rewrite
+        entries = []
+        for key_name, entry in self._secrets.items():
             if entry is None:
-                # Entry was deleted - remove file
-                self._remove_entry_file(key_name)
+                continue
+
+            # Re-encrypt if needed (entry may have plaintext_value but no encrypted_value)
+            if entry.is_encrypted and entry.plaintext_value and self._master_key:
+                encrypted_value = self._crypto.encrypt(entry.plaintext_value, self._master_key)
             else:
-                self._save_entry(entry)
+                encrypted_value = entry.encrypted_value
+
+            entry_dict = {
+                "key_name": entry.key_name,
+                "fingerprint": entry.fingerprint,
+                "is_encrypted": entry.is_encrypted,
+                "encrypted_value": encrypted_value,
+                "plaintext_value": entry.plaintext_value if not entry.is_encrypted else None,
+            }
+            entries.append(entry_dict)
+
+        # Handle deleted entries (in _dirty but not in _secrets)
+        for key_name in self._dirty:
+            if key_name not in self._secrets:
+                # Entry was deleted - filter it out from entries if it exists
+                entries = [e for e in entries if e.get("key_name") != key_name]
+
+        # Build the vault data structure
+        vault_data = {
+            "version": 1,
+            "salt": base64.b64encode(salt).decode("ascii"),
+            "entries": entries,
+        }
+
+        # Write atomically to vault.enc.json
+        enc_path = self._vault_root / "vault.enc.json"
+        content = json.dumps(vault_data, indent=2)
+        atomic_write(enc_path, content)
 
     def _save_entry(self, entry: VaultEntry) -> None:
         """Save a single entry to its YAML file."""

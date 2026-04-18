@@ -2,6 +2,45 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.7.0 -- Vault encryption overhaul and agent plugins
+
+### Added
+
+- `vault/crypto.py`: ChaCha20-Poly1305 encryption with Argon2id KDF for secrets at rest
+- `vault/session.py`: VaultSession context manager with get/set/delete/list_entries, real-value write-back, and atomic writes (temp+rename)
+- `vault/plugins/base.py`: VaultPlugin ABC with abstract CRUD methods, status helper, and context manager protocol
+- `vault/plugins/hermes_plugin.py`: HermesPlugin — direct Python VaultSession wrapper for Hermes Agent
+- `vault/plugins/openclaw_plugin.py`: OpenClawPlugin — HTTP bridge sidecar (http.server, port 8599) with bearer token auth
+- `vault/plugins/opencode_plugin.py`: OpenCodePlugin — read-only plugin with generate_config() and inject_env()
+- `scripts/convert_vault.py`: Conversion script with --dry-run mode; creates backup, encrypts secrets, writes vault.enc.json
+- Dual-type VaultEntry: is_encrypted, encrypted_value, plaintext_value fields with auto-classification
+- 20-char hex fingerprints (80 bits) with migrate_fingerprint() for legacy 12-char support
+- Hermes and OpenClaw provider status providers
+- TOML parser (tomllib) and pyyaml-based YAML parser
+
+### Changed
+
+- Fingerprint length: 12 chars (48 bits) -> 20 chars (80 bits) throughout vault module
+- AWS STS and Azure AD providers: stubbed with NotImplementedError (broken auth logic removed)
+- `discover_vault_files()`: added skip_dirs parameter (default excludes .venv, .git, __pycache__, etc.)
+- CSV parser: filters entries by secret-pattern key names to reduce noise
+- JSON parser: guards against list-root files that caused crashes
+- VaultSession now reads/writes vault.enc.json as single source of truth (no individual YAML files)
+- argon2-cffi made a lazy import in crypto.py to avoid CLI subprocess failures
+
+### Fixed
+
+- Salt mismatch in convert_vault.py: now stores actual derivation salt in vault.enc.json (not random)
+- EnvFileRotationAdapter non-atomic writes replaced with temp+rename pattern
+- Inventory scan: 809 entries (mostly CSV noise) -> 330 entries after filter fixes
+
+### Tests
+
+- 955 tests passing (113 new), 0 failures
+- 16 plugin unit tests + 5 cross-plugin integration tests
+- 12 conversion round-trip tests
+- Real ~/.vault converted: 19 secrets encrypted, 311 metadata plaintext, 19/19 round-trip decrypt verified
+
 ## v0.4.0 -- Workflow engine and multi-agent orchestration
 
 ### Added

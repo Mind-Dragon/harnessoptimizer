@@ -189,6 +189,16 @@ Phase 4 reflection artifacts live outside the repo:
 
 The sidecar respects the same no-core-change constraint as the vault: all mutations are sidecar-local.
 
+### v0.7.0 — Vault encryption overhaul and agent plugins
+
+- `vault/crypto.py`: ChaCha20-Poly1305 encryption with Argon2id KDF
+- `vault/session.py`: VaultSession CRUD with atomic writes and real-value write-back
+- `vault/plugins/`: VaultPlugin ABC + HermesPlugin (Python), OpenClawPlugin (HTTP sidecar), OpenCodePlugin (read-only config gen)
+- Dual-type VaultEntry (encrypted secrets + plaintext metadata in same record)
+- 20-char fingerprints (80 bits), conversion script with --dry-run, vault.enc.json as single source of truth
+- AWS/Azure providers stubbed, inventory bugs fixed (dir exclusions, CSV filter, JSON list guard)
+- 955 tests passing (113 new)
+
 ### Later versions
 
 Future harnesses should only need:
@@ -258,6 +268,8 @@ The system should treat those as evidence sources, not as interchangeable copies
 - `src/hermesoptimizer/catalog.py` — SQLite schema and CRUD
 - `src/hermesoptimizer/sources/` — harness-specific source readers
 - `src/hermesoptimizer/dreams/` — dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
+- `src/hermesoptimizer/vault/` — credential vault (crypto, session, inventory, fingerprint, dedup, validation, rotation)
+- `src/hermesoptimizer/vault/plugins/` — agent plugins (base ABC, hermes_plugin, openclaw_plugin, opencode_plugin)
 - `src/hermesoptimizer/verify/endpoints.py` — live status and endpoint verification helpers, model validation, RKWE detection
 - `src/hermesoptimizer/sources/provider_truth.py` — ProviderTruthStore, canonical provider names, model validation helpers
 - `src/hermesoptimizer/route/diagnosis.py` — RoutingDiagnosis, Recommendation, priority ranking, broken fallback chain detection
