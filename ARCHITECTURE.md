@@ -168,16 +168,26 @@ That means the adapter must inspect and reconcile:
 - provider-management state: dedupe/canonical collapse, fallback hygiene, endpoint quarantine TTL, credential-source provenance, and known-good model pins
 - report output that makes provider health, model validity, repair priority, lane-aware repair tuples, and provenance collisions first-class surfaces
 
-### v0.7.0 — OpenCode provider routing and worktree behavior
+### v0.7.0 — TEMM1E-inspired dreaming/memory sidecar
 
-OpenCode adds another layer of agent config and provider mapping.
+v0.7.0 introduces a dreaming and memory-consolidation sidecar for Hermes, inspired by TEMM1E principles (Test-Time Memory Management for Language Models).
 
-The adapter must understand:
-- provider registry entries
-- model aliases
-- auth file locations
-- worktree or runtime metadata
-- task or agent failures that are not actually provider failures
+No core changes — all work happens in scripts, skills, and a sidecar SQLite database at `~/.hermes/dreams/memory_meta.db`.
+
+The sidecar package `src/hermesoptimizer/dreams/` implements:
+- **memory_meta**: Sidecar SQLite wrapper for per-entry metadata including `supermemory_id`, `content_hash`, `importance`, `created_at`, `last_recalled`, `recall_count`, and `fidelity_tier` (Phase 0)
+- **decay**: Exponential decay scoring and adaptive thresholds — `classify_tier` maps scores to `full`, `summary`, `essence`, and `gone` tiers (Phase 1)
+- **sweep**: Dreaming sweep logic — scores entries, produces keep/demote/prune decisions, runs via `scripts/dreaming_pre_sweep.py` (Phase 1)
+- **fidelity**: Structured fidelity-tier storage with `full` / `summary` / `essence` JSON payloads and `best_representation` selection (Phase 2)
+- **recall**: Session transcript parsing, recall_log fallback, and sidecar DB reheating for explicitly recalled entries (Phase 3)
+
+Phase 4 reflection artifacts live outside the repo:
+- `~/.hermes/scripts/dreaming_reflection_context.py` — reflection context builder
+- `~/.hermes/scripts/supermemory_store.js` — supermemory store integration
+- Skills: `dreaming`, `memory-decay`, `dreaming-reflection`
+- Cron job: `30b51a980bc4` for scheduled reflection sweeps
+
+The sidecar respects the same no-core-change constraint as the vault: all mutations are sidecar-local.
 
 ### Later versions
 
@@ -247,6 +257,7 @@ The system should treat those as evidence sources, not as interchangeable copies
 
 - `src/hermesoptimizer/catalog.py` — SQLite schema and CRUD
 - `src/hermesoptimizer/sources/` — harness-specific source readers
+- `src/hermesoptimizer/dreams/` — dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
 - `src/hermesoptimizer/verify/endpoints.py` — live status and endpoint verification helpers, model validation, RKWE detection
 - `src/hermesoptimizer/sources/provider_truth.py` — ProviderTruthStore, canonical provider names, model validation helpers
 - `src/hermesoptimizer/route/diagnosis.py` — RoutingDiagnosis, Recommendation, priority ranking, broken fallback chain detection

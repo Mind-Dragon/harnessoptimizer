@@ -124,3 +124,37 @@ All seven items are now complete and verified.
 - OpenClaw adapter and health/config probes
 - OpenCode adapter and config/routing parsing
 - later multi-harness correlation after the Hermes repair path is mature
+
+## v0.7.0 completion status
+
+**Status: Complete.** Phases 0–4 fully implemented and tested. Acceptance verified.
+
+### What completed (v0.7.0)
+
+v0.7.0 delivers a TEMM1E-inspired dreaming and memory-consolidation sidecar for Hermes, implemented entirely within `src/hermesoptimizer/dreams/` and `scripts/` without modifying the Hermes core.
+
+#### Phase 0 — Sidecar DB bootstrap
+- `src/hermesoptimizer/dreams/memory_meta.py` — SQLite sidecar at `~/.hermes/dreams/memory_meta.db`
+- Tracks per-entry: `supermemory_id`, `content_hash`, `importance`, `created_at`, `last_recalled`, `recall_count`, `fidelity_tier`
+- `init_db`, `upsert`, `query_by_score`, `set_fidelity`, `update_recall`, `bootstrap_from_entries`, `apply_recall_reheat`
+
+#### Phase 1 — Decay and Sweep
+- `src/hermesoptimizer/dreams/decay.py` — exponential decay scoring, `classify_tier` (`full` / `summary` / `essence` / `gone`), adaptive thresholds
+- `src/hermesoptimizer/dreams/sweep.py` — `run_sweep`, `sweep_entry_score`, keep/demote/prune decisions
+- `scripts/dreaming_pre_sweep.py` — pre-sweep script entry point
+
+#### Phase 2 — Fidelity tiers
+- `src/hermesoptimizer/dreams/fidelity.py` — structured fidelity storage (`full` / `summary` / `essence` JSON payloads), `best_representation`, `get_active_content`, `make_fidelity_payload` / `parse_fidelity_payload`, downgrade path
+
+#### Phase 3 — Recall and reheating
+- `src/hermesoptimizer/dreams/recall.py` — transcript parsing, recall_log fallback, `reheat_recalled_ids`, `scan_sessions_directory`
+
+#### Phase 4 — Reflection (outside repo)
+- `~/.hermes/scripts/dreaming_reflection_context.py` — reflection context builder
+- `~/.hermes/scripts/supermemory_store.js` — supermemory store integration
+- Skills: `dreaming`, `memory-decay`, `dreaming-reflection`
+- Cron job: `30b51a980bc4`
+
+#### Test coverage
+- `tests/test_dreams_memory_meta.py`, `tests/test_dreams_decay.py`, `tests/test_dreams_sweep.py`, `tests/test_dreams_fidelity.py`, `tests/test_dreams_recall.py`
+- All 938 repo tests pass; 4 skipped (docling OCR/PDF fixture limitations)

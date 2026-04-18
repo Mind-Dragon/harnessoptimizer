@@ -1,6 +1,6 @@
 # Hermes Optimizer
 
-Current release: v0.5.3.
+Current release: v0.5.3. v0.7.0 dreaming/memory sidecar is now implemented in-repo.
 
 Analysis, hygiene, and workflow orchestration for Hermes Agent environments.
 
@@ -65,6 +65,7 @@ src/hermesoptimizer/
     provider_truth.py     ProviderTruthStore and model validation
     model_catalog.py      Provider-model catalog (OpenAI, Anthropic, Google, Qwen, etc.)
   verify/endpoints.py     Live endpoint and model validation
+  dreams/                  Dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
   validate/               normalizer and lane validators
   route/diagnosis.py      routing diagnosis and fallback-chain detection
   report/                 JSON, Markdown, metrics, and issues
@@ -83,7 +84,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-501 tests, 0 failures, 4 skipped. Run with:
+938 tests, 0 failures, 4 skipped. Run with:
 
 ```
 pytest

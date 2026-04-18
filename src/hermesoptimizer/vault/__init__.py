@@ -8,6 +8,7 @@ from .bridge import (
     plan_bridge,
     plan_write_back,
 )
+from .classify import classify_key
 from .dedup import DeduplicationResult, deduplicate_entries
 from .fingerprint import fingerprint_secret
 from .inventory import (
@@ -26,6 +27,7 @@ from .rotation import (
     execute_rotation,
     track_rotation,
 )
+from .session import VaultSession
 from .validator import StatusProvider, ValidationResult, validate_inventory
 
 __all__ = [
@@ -40,9 +42,11 @@ __all__ = [
     "VaultBridgePlan",
     "VaultEntry",
     "VaultInventory",
+    "VaultSession",
     "WriteBackPlan",
     "WriteBackResult",
     "build_vault_inventory",
+    "classify_key",
     "deduplicate_entries",
     "default_vault_roots",
     "discover_vault_files",

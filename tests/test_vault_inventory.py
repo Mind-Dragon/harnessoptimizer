@@ -76,6 +76,7 @@ def test_build_vault_inventory_collects_entries(tmp_path: Path) -> None:
         source_kind="env",
         key_name="OPENAI_API_KEY",
         fingerprint=fingerprint_secret("abc123"),
+        is_encrypted=True,
     )
 
 

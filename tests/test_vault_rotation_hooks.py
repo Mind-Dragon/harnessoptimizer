@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -562,3 +563,290 @@ def test_rotation_system_has_concrete_provider_adapters(tmp_path) -> None:
 
     json_entry = VaultEntry(Path("/tmp/test.json"), "json", "API_KEY", "oldfp")
     assert env_adapter.supports(json_entry) is False  # not env entry
+
+
+# --- Tests for atomic EnvFile rotation with backup ---
+
+
+def test_env_rotation_creates_backup(tmp_path) -> None:
+    """EnvFileRotationAdapter.rotate() creates a timestamped backup file."""
+    from hermesoptimizer.vault.providers import EnvFileRotationAdapter
+
+    env_file = tmp_path / "test.env"
+    env_file.write_text("API_KEY=old-secret\nOTHER=value\n")
+
+    adapter = EnvFileRotationAdapter()
+    entry = VaultEntry(env_file, "env", "API_KEY", "oldfp")
+
+    result = adapter.rotate(entry, "new-secret")
+
+    assert result is True
+
+    # Verify backup was created
+    backups = list(tmp_path.glob("*.vault-backup.*"))
+    assert len(backups) == 1
+
+    # Verify backup contains old content
+    backup_content = backups[0].read_text()
+    assert "API_KEY=old-secret" in backup_content
+    assert "OTHER=value" in backup_content
+
+
+def test_env_rotation_is_atomic(tmp_path) -> None:
+    """EnvFileRotationAdapter.rotate() uses atomic write (temp file + rename)."""
+    from hermesoptimizer.vault.providers import EnvFileRotationAdapter
+
+    env_file = tmp_path / "test.env"
+    env_file.write_text("API_KEY=old-secret\n")
+
+    adapter = EnvFileRotationAdapter()
+    entry = VaultEntry(env_file, "env", "API_KEY", "oldfp")
+
+    result = adapter.rotate(entry, "new-secret")
+
+    assert result is True
+
+    # Verify the main file has new content
+    content = env_file.read_text()
+    assert "API_KEY=new-secret" in content
+
+    # Verify no temp files left behind
+    temp_files = list(tmp_path.glob("*.env.tmp"))
+    assert len(temp_files) == 0
+
+
+def test_env_rotation_rollback_restores_backup(tmp_path) -> None:
+    """EnvFileRotationAdapter.rollback() restores from the backup file."""
+    from hermesoptimizer.vault.providers import EnvFileRotationAdapter
+
+    env_file = tmp_path / "test.env"
+    env_file.write_text("API_KEY=original-secret\nOTHER=value\n")
+
+    adapter = EnvFileRotationAdapter()
+    entry = VaultEntry(env_file, "env", "API_KEY", "oldfp")
+
+    # First rotate to create a backup
+    result = adapter.rotate(entry, "rotated-secret")
+    assert result is True
+
+    # Verify content was rotated
+    content_after_rotate = env_file.read_text()
+    assert "API_KEY=rotated-secret" in content_after_rotate
+
+    # Now rollback
+    rollback_result = adapter.rollback(entry)
+    assert rollback_result is True
+
+    # Verify content was restored
+    restored_content = env_file.read_text()
+    assert "API_KEY=original-secret" in restored_content
+    assert "OTHER=value" in restored_content
+
+    # Verify backup was cleaned up
+    backups = list(tmp_path.glob("*.vault-backup.*"))
+    assert len(backups) == 0
+
+
+def test_env_rotation_rollback_returns_false_when_no_backup(tmp_path) -> None:
+    """EnvFileRotationAdapter.rollback() returns False when no backup exists."""
+    from hermesoptimizer.vault.providers import EnvFileRotationAdapter
+
+    env_file = tmp_path / "test.env"
+    env_file.write_text("API_KEY=original-secret\n")
+
+    adapter = EnvFileRotationAdapter()
+    entry = VaultEntry(env_file, "env", "API_KEY", "oldfp")
+
+    # No rotation was done, so no backup exists
+
+    result = adapter.rollback(entry)
+    assert result is False
+
+
+# --- Tests for StubRotationAdapter registry cleanup ---
+
+
+def test_stub_registry_does_not_grow_unboundedly() -> None:
+    """StubRotationAdapter registry uses WeakSet so it doesn't grow unboundedly."""
+    from hermesoptimizer.vault.providers import StubRotationAdapter
+
+    initial_size = StubRotationAdapter.registry_size()
+
+    # Create and discard adapters
+    adapters = [StubRotationAdapter() for _ in range(10)]
+    del adapters
+
+    # Registry size should not have grown (WeakSet auto-cleans)
+    # Note: if initial_size was 0, it should still be 0
+    final_size = StubRotationAdapter.registry_size()
+    assert final_size == initial_size
+
+
+def test_stub_cleanup_registry_method_exists() -> None:
+    """StubRotationAdapter.cleanup_registry() is available for API compatibility."""
+    from hermesoptimizer.vault.providers import StubRotationAdapter
+
+    adapter = StubRotationAdapter()
+
+    # Method should exist and be callable
+    assert hasattr(StubRotationAdapter, "cleanup_registry")
+    assert callable(StubRotationAdapter.cleanup_registry)
+
+    # Should be a no-op with WeakSet
+    StubRotationAdapter.cleanup_registry()
+
+
+# --- Tests for VaultFileRotationAdapter ---
+
+
+def test_vault_file_rotation_adapter_supports_vault_native() -> None:
+    """VaultFileRotationAdapter supports entries with source_kind == 'vault-native'."""
+    from hermesoptimizer.vault.providers import VaultFileRotationAdapter
+
+    adapter = VaultFileRotationAdapter(session=None)
+
+    # vault-native entry should be supported (but needs session)
+    vault_entry = VaultEntry(Path("/tmp/test.vault"), "vault-native", "API_KEY", "oldfp")
+    assert adapter.supports(vault_entry) is False  # No session
+
+    # Create a mock session
+    from unittest.mock import MagicMock
+    mock_session = MagicMock()
+    adapter_with_session = VaultFileRotationAdapter(session=mock_session)
+
+    assert adapter_with_session.supports(vault_entry) is True
+
+    # Non-vault-native entries should not be supported
+    env_entry = VaultEntry(Path("/tmp/test.env"), "env", "API_KEY", "oldfp")
+    assert adapter_with_session.supports(env_entry) is False
+
+
+def test_vault_file_rotation_adapter_delegates_to_session(tmp_path) -> None:
+    """VaultFileRotationAdapter.rotate() delegates to VaultSession.set()."""
+    from hermesoptimizer.vault.providers import VaultFileRotationAdapter
+    from hermesoptimizer.vault.session import VaultSession
+    from hermesoptimizer.vault.crypto import generate_master_key
+
+    # Create a real vault session
+    vault_root = tmp_path / ".vault"
+    vault_root.mkdir()
+    master_key = generate_master_key()
+    session = VaultSession(vault_root, master_key)
+
+    adapter = VaultFileRotationAdapter(session=session)
+    entry = VaultEntry(vault_root / "test.vault", "vault-native", "API_KEY", "oldfp")
+
+    # Set initial secret
+    session.set("API_KEY", "original-secret")
+
+    # Rotate
+    result = adapter.rotate(entry, "new-secret")
+    assert result is True
+
+    # Verify session.set was called
+    mock_session = adapter._session  # type: ignore
+    assert mock_session is session
+
+    # Verify the new secret is in the vault
+    retrieved = session.get("API_KEY")
+    assert retrieved == "new-secret"
+
+
+def test_vault_file_rotation_adapter_rollback(tmp_path) -> None:
+    """VaultFileRotationAdapter.rollback() restores from audit log."""
+    from hermesoptimizer.vault.providers import VaultFileRotationAdapter
+    from hermesoptimizer.vault.session import VaultSession
+    from hermesoptimizer.vault.crypto import generate_master_key
+
+    # Create a real vault session
+    vault_root = tmp_path / ".vault"
+    vault_root.mkdir()
+    master_key = generate_master_key()
+    session = VaultSession(vault_root, master_key)
+
+    adapter = VaultFileRotationAdapter(session=session)
+    entry = VaultEntry(vault_root / "test.vault", "vault-native", "API_KEY", "oldfp")
+
+    # Set initial secret
+    session.set("API_KEY", "original-secret")
+
+    # Rotate to new secret
+    adapter.rotate(entry, "new-secret")
+
+    # Verify rotation worked
+    assert session.get("API_KEY") == "new-secret"
+
+    # Rollback
+    result = adapter.rollback(entry)
+    assert result is True
+
+    # Verify original is restored
+    assert session.get("API_KEY") == "original-secret"
+
+
+# --- Tests for backup management ---
+
+
+def test_clean_old_backups_removes_old_files(tmp_path) -> None:
+    """clean_old_backups() removes backup files older than max_age_days."""
+    from hermesoptimizer.vault.providers import clean_old_backups
+
+    # Create old and new backup files
+    old_backup = tmp_path / "test.vault-backup.20200101000000000000"
+    old_backup.touch()
+    new_backup = tmp_path / "other.vault-backup.20990101000000000000"
+    new_backup.touch()
+
+    # Set old backup mtime to 60 days ago
+    import time
+    old_time = time.time() - (60 * 24 * 60 * 60)
+    os.utime(old_backup, (old_time, old_time))
+
+    # Clean with max_age_days=30
+    deleted = clean_old_backups(tmp_path, max_age_days=30)
+
+    assert deleted == 1
+    assert not old_backup.exists()
+    assert new_backup.exists()
+
+
+def test_clean_old_backups_returns_zero_when_no_files(tmp_path) -> None:
+    """clean_old_backups() returns 0 when no backup files exist."""
+    from hermesoptimizer.vault.providers import clean_old_backups
+
+    deleted = clean_old_backups(tmp_path, max_age_days=30)
+    assert deleted == 0
+
+
+def test_clean_old_backups_handles_nonexistent_root(tmp_path) -> None:
+    """clean_old_backups() returns 0 for nonexistent vault root."""
+    from hermesoptimizer.vault.providers import clean_old_backups
+
+    nonexistent = tmp_path / "nonexistent"
+    deleted = clean_old_backups(nonexistent, max_age_days=30)
+    assert deleted == 0
+
+
+def test_find_backup_files(tmp_path) -> None:
+    """find_backup_files() returns all backup files sorted by mtime."""
+    from hermesoptimizer.vault.providers import find_backup_files
+
+    # Create backup files with different mtimes
+    old_backup = tmp_path / "old.vault-backup.20200101000000000000"
+    old_backup.touch()
+    new_backup = tmp_path / "new.vault-backup.20990101000000000000"
+    new_backup.touch()
+
+    # Set different mtimes
+    import time
+    old_time = time.time() - (30 * 24 * 60 * 60)
+    new_time = time.time()
+    os.utime(old_backup, (old_time, old_time))
+    os.utime(new_backup, (new_time, new_time))
+
+    backups = find_backup_files(tmp_path)
+
+    assert len(backups) == 2
+    # Should be sorted newest first
+    assert backups[0] == new_backup
+    assert backups[1] == old_backup

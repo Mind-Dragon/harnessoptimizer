@@ -193,96 +193,53 @@ class TestAWSProvider:
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Valid AWS credentials return ok=True."""
+        """Valid AWS credentials raise NotImplementedError (SigV4 not implemented)."""
         provider = AWSProvider(
             endpoint="https://sts.amazonaws.com",
-            token="AKIAEXAMPLE123456789",
+            token="AKIAEX...6789",
         )
 
-        with patch("requests.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.text = """<?xml version="1.0" encoding="UTF-8"?>
-            <GetCallerIdentityResponse>
-                <Arn>arn:aws:iam::123456789012:user/test</Arn>
-                <UserId>AKIAEXAMPLE123456789</UserId>
-                <Account>123456789012</Account>
-            </GetCallerIdentityResponse>"""
-            mock_post.return_value = mock_response
-
-            result = provider(sample_entry)
-
-        assert result is not None
-        assert result.ok is True
-        assert result.status == "active"
+        with pytest.raises(NotImplementedError, match="SigV4"):
+            provider(sample_entry)
 
     def test_aws_provider_returns_degraded_on_invalid_credentials(
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Invalid AWS credentials return ok=False."""
+        """Invalid AWS credentials raise NotImplementedError (SigV4 not implemented)."""
         provider = AWSProvider(
             endpoint="https://sts.amazonaws.com",
             token="AKIAINVALID",
         )
 
-        with patch("requests.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.status_code = 403
-            mock_post.return_value = mock_response
-
-            result = provider(sample_entry)
-
-        assert result is not None
-        assert result.ok is False
-        assert result.status == "degraded"
+        with pytest.raises(NotImplementedError, match="SigV4"):
+            provider(sample_entry)
 
     def test_aws_provider_returns_unavailable_on_connection_error(
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Connection error returns ok=False with unavailable status."""
+        """Connection error raises NotImplementedError (SigV4 not implemented)."""
         provider = AWSProvider(
             endpoint="https://sts.amazonaws.com",
-            token="AKIAEXAMPLE123456789",
+            token="AKIAEX...6789",
         )
 
-        with patch("requests.post") as mock_post:
-            mock_post.side_effect = requests.RequestException("Connection refused")
-
-            result = provider(sample_entry)
-
-        assert result is not None
-        assert result.ok is False
-        assert result.status == "unavailable"
+        with pytest.raises(NotImplementedError, match="SigV4"):
+            provider(sample_entry)
 
     def test_aws_provider_injects_aws_headers(
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Provider injects AWS-specific headers including Authorization."""
+        """Provider injects AWS-specific headers (raises NotImplementedError)."""
         provider = AWSProvider(
             endpoint="https://sts.amazonaws.com",
-            token="AKIAEXAMPLE123456789",
+            token="AKIAEX...6789",
         )
 
-        with patch("requests.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.text = """<?xml version="1.0" encoding="UTF-8"?>
-            <GetCallerIdentityResponse>
-                <Arn>arn:aws:iam::123456789012:user/test</Arn>
-                <UserId>AKIAEXAMPLE123456789</UserId>
-                <Account>123456789012</Account>
-            </GetCallerIdentityResponse>"""
-            mock_post.return_value = mock_response
-
+        with pytest.raises(NotImplementedError, match="SigV4"):
             provider(sample_entry)
-
-        mock_post.assert_called_once()
-        call_kwargs = mock_post.call_args.kwargs
-        assert "headers" in call_kwargs
-        assert "Authorization" in call_kwargs["headers"]
 
 
 # ---------------------------------------------------------------------------
@@ -347,44 +304,27 @@ class TestAzureProvider:
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Valid Azure token returns ok=True."""
+        """Valid Azure token raises NotImplementedError (JWT verification not implemented)."""
         provider = AzureProvider(
             endpoint="https://login.microsoftonline.com/common/discovery/v2.0/keys",
-            token="eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.valid",
+            token="eyJ0eX...alid",
         )
 
-        with patch("requests.get") as mock_get:
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {"keys": []}
-            mock_get.return_value = mock_response
-
-            result = provider(sample_entry)
-
-        assert result is not None
-        assert result.ok is True
-        assert result.status == "active"
+        with pytest.raises(NotImplementedError, match="JWKS"):
+            provider(sample_entry)
 
     def test_azure_provider_returns_degraded_on_invalid_token(
         self,
         sample_entry: VaultEntry,
     ) -> None:
-        """Invalid Azure token returns ok=False."""
+        """Invalid Azure token raises NotImplementedError (JWT verification not implemented)."""
         provider = AzureProvider(
             endpoint="https://login.microsoftonline.com/common/discovery/v2.0/keys",
             token="invalid_token",
         )
 
-        with patch("requests.get") as mock_get:
-            mock_response = MagicMock()
-            mock_response.status_code = 401
-            mock_get.return_value = mock_response
-
-            result = provider(sample_entry)
-
-        assert result is not None
-        assert result.ok is False
-        assert result.status == "degraded"
+        with pytest.raises(NotImplementedError, match="JWKS"):
+            provider(sample_entry)
 
 
 # ---------------------------------------------------------------------------
@@ -401,30 +341,24 @@ class TestProviderIntegration:
         """Multiple providers can be composed together."""
         vault = tmp_path / ".vault"
         vault.mkdir()
-        f1 = vault / "aws.env"
-        f1.write_text("AWS_KEY=foo\n", encoding="utf-8")
+        f1 = vault / "http.env"
+        f1.write_text("HTTP_KEY=foo\n", encoding="utf-8")
         f2 = vault / "gcp.env"
         f2.write_text("GCP_KEY=bar\n", encoding="utf-8")
         inventory = build_vault_inventory([vault])
 
         # Create a chain that routes to different providers based on entry
         def chained_provider(entry: VaultEntry) -> ValidationResult | None:
-            if "aws" in str(entry.source_path):
-                aws_provider = AWSProvider(
-                    endpoint="https://sts.amazonaws.com",
-                    token="AKIAEXAMPLE123456789",
+            if "http" in str(entry.source_path):
+                http_provider = HTTPStatusProvider(
+                    endpoint="https://api.example.com/health",
+                    token="Bearer secret",
                 )
-                with patch("requests.post") as mock_post:
+                with patch("requests.get") as mock_get:
                     mock_response = MagicMock()
                     mock_response.status_code = 200
-                    mock_response.text = """<?xml version="1.0" encoding="UTF-8"?>
-                    <GetCallerIdentityResponse>
-                        <Arn>arn:aws:iam::123456789012:user/test</Arn>
-                        <UserId>AKIAEXAMPLE123456789</UserId>
-                        <Account>123456789012</Account>
-                    </GetCallerIdentityResponse>"""
-                    mock_post.return_value = mock_response
-                    return aws_provider(entry)
+                    mock_get.return_value = mock_response
+                    return http_provider(entry)
             elif "gcp" in str(entry.source_path):
                 gcp_provider = GCPProvider(
                     endpoint="https://oauth2.googleapis.com/token_info",

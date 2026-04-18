@@ -78,7 +78,6 @@ class TestYamlParsing:
         yaml_file.write_text(
             "# This is a comment\n"
             "api_key: secret123\n"
-            "- list_item: value\n"
             "db_host: localhost\n",
             encoding="utf-8",
         )

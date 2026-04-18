@@ -85,20 +85,17 @@ class HTTPStatusProvider:
 
 
 # ---------------------------------------------------------------------------
-# AWS Status Provider
+# AWS Status Provider (NotImplementedError)
 # ---------------------------------------------------------------------------
 
 
 class AWSProvider:
     """AWS-specific status provider using STS GetCallerIdentity.
 
-    Performs an HTTP POST to the AWS STS endpoint to validate credentials.
-    This is the recommended way to check if AWS credentials are valid.
+    Raises NotImplementedError because AWS STS requires SigV4 signing
+    which is not yet implemented.
 
-    Args:
-        endpoint: STS endpoint URL (default: https://sts.amazonaws.com).
-        token: AWS access key ID (or any token that can be validated via STS).
-        timeout: Request timeout in seconds (default 5.0).
+    Use the generic HTTPStatusProvider with an AWS health endpoint instead.
     """
 
     def __init__(
@@ -107,55 +104,18 @@ class AWSProvider:
         token: str | None = None,
         timeout: float = 5.0,
     ) -> None:
-        self.endpoint = endpoint
-        self.token = token
-        self.timeout = timeout
+        pass
 
     def __call__(self, entry: VaultEntry) -> ValidationResult:
-        """Validate AWS credentials via STS GetCallerIdentity.
+        """Raise NotImplementedError.
 
-        Returns:
-            ValidationResult with:
-            - ok=True, status="active" if STS returns 200
-            - ok=False, status="degraded" if credentials are invalid (403)
-            - ok=False, status="unavailable" if request fails
+        AWS STS requires SigV4 signing which is not yet implemented.
+        Use the generic HTTPStatusProvider with an AWS health endpoint instead.
         """
-        headers: dict[str, str] = {
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}" if not self.token.startswith("AKIA") else self.token
-
-        # AWS STS GetCallerIdentity request body
-        body = "Action=GetCallerIdentity&Version=2011-06-15"
-
-        try:
-            response = requests.post(
-                self.endpoint,
-                headers=headers,
-                data=body,
-                timeout=self.timeout,
-            )
-            if response.status_code == 200:
-                return ValidationResult(
-                    source_path=str(entry.source_path),
-                    ok=True,
-                    status="active",
-                    message=f"AWS credentials valid (STS check passed for {self.endpoint})",
-                )
-            return ValidationResult(
-                source_path=str(entry.source_path),
-                ok=False,
-                status="degraded",
-                message=f"AWS credentials invalid (STS returned {response.status_code})",
-            )
-        except requests.RequestException as exc:
-            return ValidationResult(
-                source_path=str(entry.source_path),
-                ok=False,
-                status="unavailable",
-                message=f"AWS STS check failed: {exc}",
-            )
+        raise NotImplementedError(
+            "AWS STS requires SigV4 signing which is not yet implemented. "
+            "Use the generic HTTPStatusProvider with an AWS health endpoint instead."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -231,20 +191,17 @@ class GCPProvider:
 
 
 # ---------------------------------------------------------------------------
-# Azure Status Provider
+# Azure Status Provider (NotImplementedError)
 # ---------------------------------------------------------------------------
 
 
 class AzureProvider:
     """Azure-specific status provider using Microsoft identity validation.
 
-    Performs an HTTP GET to the Microsoft identity JWKS endpoint to
-    validate if an Azure AD token is valid.
+    Raises NotImplementedError because Azure AD token validation requires
+    JWKS-based JWT verification which is not yet implemented.
 
-    Args:
-        endpoint: Azure AD JWKS endpoint (default: https://login.microsoftonline.com/common/discovery/v2.0/keys).
-        token: Azure AD access token to validate.
-        timeout: Request timeout in seconds (default 5.0).
+    Use the generic HTTPStatusProvider with an Azure health endpoint instead.
     """
 
     def __init__(
@@ -253,27 +210,59 @@ class AzureProvider:
         token: str | None = None,
         timeout: float = 5.0,
     ) -> None:
-        self.endpoint = endpoint
-        self.token = token
-        self.timeout = timeout
+        pass
 
     def __call__(self, entry: VaultEntry) -> ValidationResult:
-        """Validate Azure AD token via JWKS endpoint.
+        """Raise NotImplementedError.
+
+        Azure AD token validation requires JWKS-based JWT verification
+        which is not yet implemented.
+        Use the generic HTTPStatusProvider with an Azure health endpoint instead.
+        """
+        raise NotImplementedError(
+            "Azure AD token validation requires JWKS-based JWT verification "
+            "which is not yet implemented. "
+            "Use the generic HTTPStatusProvider with an Azure health endpoint instead."
+        )
+
+
+# ---------------------------------------------------------------------------
+# Hermes Status Provider
+# ---------------------------------------------------------------------------
+
+
+class HermesProvider:
+    """Hermes-specific status provider using main thread health endpoint.
+
+    Performs an HTTP GET to the Hermes main thread health endpoint
+    to check if the service is running.
+
+    Args:
+        host: Hermes host (default: 127.0.0.1).
+        port: Hermes port (default: 18080).
+        timeout: Request timeout in seconds (default 5.0).
+    """
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 18080,
+        timeout: float = 5.0,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.endpoint = f"http://{host}:{port}"
+
+    def __call__(self, entry: VaultEntry) -> ValidationResult:
+        """Check the Hermes health endpoint and return a ValidationResult.
 
         Returns:
             ValidationResult with:
-            - ok=True, status="active" if token format is valid (HTTP 200)
-            - ok=False, status="degraded" if token is invalid (HTTP 401)
+            - ok=True, status="active" if HTTP 200
+            - ok=False, status="degraded" if HTTP non-200
             - ok=False, status="unavailable" if request fails
         """
-        if not self.token:
-            return ValidationResult(
-                source_path=str(entry.source_path),
-                ok=False,
-                status="degraded",
-                message="Azure token not provided",
-            )
-
         try:
             response = requests.get(
                 self.endpoint,
@@ -284,18 +273,99 @@ class AzureProvider:
                     source_path=str(entry.source_path),
                     ok=True,
                     status="active",
-                    message=f"Azure AD endpoint reachable (status {response.status_code})",
+                    message=f"Hermes health check passed for {self.endpoint}",
                 )
             return ValidationResult(
                 source_path=str(entry.source_path),
                 ok=False,
                 status="degraded",
-                message=f"Azure AD endpoint returned {response.status_code}",
+                message=f"Hermes health check returned {response.status_code} for {self.endpoint}",
             )
         except requests.RequestException as exc:
             return ValidationResult(
                 source_path=str(entry.source_path),
                 ok=False,
                 status="unavailable",
-                message=f"Azure AD check failed: {exc}",
+                message=f"Hermes health check failed for {self.endpoint}: {exc}",
+            )
+
+
+# ---------------------------------------------------------------------------
+# OpenClaw Status Provider
+# ---------------------------------------------------------------------------
+
+
+class OpenClawProvider:
+    """OpenClaw-specific status provider using gateway HTTP health endpoint.
+
+    Performs an HTTP GET to the OpenClaw gateway HTTP health endpoint
+    to check if the service is running and returns JSON with ok/live status.
+
+    Args:
+        host: OpenClaw host (default: 127.0.0.1).
+        port: OpenClaw port (default: 18789).
+        timeout: Request timeout in seconds (default 5.0).
+    """
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 18789,
+        timeout: float = 5.0,
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.endpoint = f"http://{host}:{port}"
+
+    def __call__(self, entry: VaultEntry) -> ValidationResult:
+        """Check the OpenClaw health endpoint and return a ValidationResult.
+
+        Returns:
+            ValidationResult with:
+            - ok=True, status="active" if HTTP 200 and JSON {"ok": true, "status": "live"}
+            - ok=False, status="degraded" if HTTP non-200 or wrong JSON response
+            - ok=False, status="unavailable" if request fails
+        """
+        try:
+            response = requests.get(
+                self.endpoint,
+                timeout=self.timeout,
+            )
+            if response.status_code != 200:
+                return ValidationResult(
+                    source_path=str(entry.source_path),
+                    ok=False,
+                    status="degraded",
+                    message=f"OpenClaw health check returned {response.status_code} for {self.endpoint}",
+                )
+            # Parse JSON response
+            try:
+                data = response.json()
+                if data.get("ok") is True and data.get("status") == "live":
+                    return ValidationResult(
+                        source_path=str(entry.source_path),
+                        ok=True,
+                        status="active",
+                        message=f"OpenClaw health check passed for {self.endpoint}",
+                    )
+                return ValidationResult(
+                    source_path=str(entry.source_path),
+                    ok=False,
+                    status="degraded",
+                    message=f"OpenClaw health check returned unexpected response: {data}",
+                )
+            except ValueError:
+                return ValidationResult(
+                    source_path=str(entry.source_path),
+                    ok=False,
+                    status="degraded",
+                    message=f"OpenClaw health check returned invalid JSON for {self.endpoint}",
+                )
+        except requests.RequestException as exc:
+            return ValidationResult(
+                source_path=str(entry.source_path),
+                ok=False,
+                status="unavailable",
+                message=f"OpenClaw health check failed for {self.endpoint}: {exc}",
             )
