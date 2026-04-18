@@ -6,7 +6,8 @@
 - `ROADMAP.md` v0.8.0 tool-surface optimization section
 - `ARCHITECTURE.md` for system shape and file layout expectations
 - `GUIDELINE.md` for release gates and success criteria
-- `/home/agent/.hermes/reports/hermesoptimizer/atoolix-hermes-v0.8-evaluation-2026-04-18.md` for the external concept audit that seeded this slice
+- `.hermes/reports/hermesoptimizer/atoolix-hermes-v0.8-evaluation-2026-04-18.md` for the external concept audit that seeded this slice
+- `.hermes/reports/hermesoptimizer/v0.8-kickoff-2026-04-18.md` for the concrete kickoff order, file-path suggestions, and verification gates
 
 ## v0.8.0 goal
 Turn the atoolix/agent-clip interface ideas into a Hermes-grade, agent-native tool-surface optimization layer: auditable tool contracts, a hybrid read-only command layer, and a stronger LLM-facing presentation model without sacrificing Hermes's existing typed safety boundaries.
@@ -35,37 +36,160 @@ Turn the atoolix/agent-clip interface ideas into a Hermes-grade, agent-native to
 
 ## v0.8.0 queue
 
-### 1. Tool Surface IR
-- add a normalized schema/module for agent-facing tool surfaces
-- capture command name, risk level, help contract, output contract, overflow support, binary handling, and recommended usage class
-- map at least Hermes-native candidate surfaces into the IR
+### 1. Tool Surface IR foundation
+- create `src/hermesoptimizer/tool_surface/__init__.py`
+- create `src/hermesoptimizer/tool_surface/schema.py`
+- define the minimal shared types for agent-facing surfaces:
+  - `SurfaceKind` (`typed`, `textual`, `hybrid`)
+  - `RiskLevel`
+  - `HelpContract`
+  - `OutputContract`
+  - `ToolSurface`
+  - `CommandSurface`
+- required minimum fields:
+  - `surface_name`
+  - `command_name`
+  - `kind`
+  - `risk_level`
+  - `supports_help`
+  - `supports_partial_discovery`
+  - `supports_overflow_handle`
+  - `supports_binary_guard`
+  - `read_only`
+  - `recommended_for_agent`
+  - `notes`
+- create `tests/test_tool_surface_schema.py`
+- verify the schema layer first before introducing registries or scoring
 
-### 2. Tool audit engine
-- build scoring around discoverability, composability, safety, observability, token efficiency, and recovery quality
-- emit concrete findings rather than prose-only opinions
-- include failure classes such as missing subcommand help, missing next-step errors, no overflow path, and unsafe untyped mutation
+### 2. Tool Surface registry
+- create `src/hermesoptimizer/tool_surface/registry.py`
+- map real HermesOptimizer surfaces into the IR instead of inventing toy examples
+- first registry targets:
+  - provider/config surfaces backed by:
+    - `src/hermesoptimizer/sources/provider_truth.py`
+    - `src/hermesoptimizer/verify/config_fix.py`
+    - `src/hermesoptimizer/verify/provider_management.py`
+    - `src/hermesoptimizer/verify/endpoints.py`
+  - workflow inspection surfaces backed by:
+    - `src/hermesoptimizer/workflow/schema.py`
+    - `src/hermesoptimizer/workflow/store.py`
+    - `src/hermesoptimizer/commands/todo_cmd.py`
+    - `src/hermesoptimizer/commands/devdo_cmd.py`
+  - dreams/memory inspection surfaces backed by:
+    - `src/hermesoptimizer/dreams/memory_meta.py`
+    - `src/hermesoptimizer/dreams/decay.py`
+    - `src/hermesoptimizer/dreams/sweep.py`
+    - `src/hermesoptimizer/dreams/recall.py`
+  - report surfaces backed by:
+    - `src/hermesoptimizer/report/markdown.py`
+    - `src/hermesoptimizer/report/json_export.py`
+    - `src/hermesoptimizer/report/health.py`
+    - `src/hermesoptimizer/report/issues.py`
+- model vault plugin surfaces only if the registry cleanly distinguishes read-only vs mutating paths
+- create `tests/test_tool_surface_registry.py`
+- success condition: registry emits at least 8-12 normalized entries from current HermesOptimizer surfaces
 
-### 3. Hybrid read-only command layer
-- prototype a Hermes command namespace for a few high-value inspection domains
-- likely starting families: `provider`, `report`, `workflow`, `memory` or `dreams`
-- support chained execution where the contract remains deterministic and testable
+### 3. Tool audit engine
+- create `src/hermesoptimizer/tool_surface/audit.py`
+- create `src/hermesoptimizer/tool_surface/findings.py`
+- add scoring buckets:
+  - discoverability
+  - composability
+  - safety
+  - observability
+  - token_efficiency
+  - recovery_quality
+- emit concrete finding kinds rather than prose-only judgments, starting with:
+  - `tool-help-missing-subcommand-usage`
+  - `tool-error-missing-next-step`
+  - `tool-output-no-overflow-path`
+  - `tool-binary-routing-weak`
+  - `tool-surface-high-risk-untyped-mutation`
+- create `tests/test_tool_surface_audit.py`
+- keep the first audit engine fixture-driven and deterministic
 
 ### 4. Presentation-layer hardening
-- separate raw execution data from LLM-facing rendering
-- add content-based binary guard and media routing
-- add overflow artifact persistence plus follow-up navigation hints
-- add consistent status/duration/truncation footer behavior
-- preserve stderr on failure paths
+- create `src/hermesoptimizer/tool_surface/presentation.py`
+- separate raw execution truth from LLM-facing rendering
+- add explicit support for:
+  - stable footer with status, duration, and truncation metadata
+  - overflow artifact handles for large output
+  - stderr retention on failure
+  - next-step navigation hints for large/failing output
+  - binary/media routing based on content, not just file extension
+- create `tests/test_tool_surface_presentation.py`
+- keep this module reusable by later command-layer and audit outputs
 
-### 5. Provider/model recommender
-- replace static picker ergonomics with a Hermes-grade ranked recommender
-- use live config, known auth presence, checked-in catalogs, provenance, and safety lane logic
-- emit config snippets only after validation passes
+### 5. Hybrid read-only command layer
+- create `src/hermesoptimizer/tool_surface/commands.py`
+- create `src/hermesoptimizer/tool_surface/chain.py`
+- create `tests/test_tool_surface_commands.py`
+- create `tests/test_tool_surface_chain.py`
+- keep the first command namespace deliberately narrow and read-only
+- initial command families should come from the current source of truth:
+  - `provider list`
+  - `provider recommend`
+  - `workflow list`
+  - `dreams inspect`
+  - `report latest`
+- support composition operators only where deterministic and testable:
+  - `|`
+  - `&&`
+  - `||`
+  - `;`
+- do not route destructive or credential-mutating actions through this layer
+- help behavior must be progressive:
+  - top-level list
+  - command usage
+  - subcommand-specific usage
 
-### 6. Evaluation
-- add focused tests for the new contracts
-- run transcript-oriented checks that show fewer dead-end retries or clearer recovery hints
-- keep `git diff --check` clean and avoid regressing the existing mainline suite
+### 6. Provider/model recommender
+- create `src/hermesoptimizer/tool_surface/provider_recommend.py`
+- create `tests/test_tool_surface_provider_recommend.py`
+- replace atoolix-style static picker ergonomics with a Hermes-grade recommender using:
+  - live config evidence
+  - known auth presence
+  - checked-in provider endpoint/model catalogs
+  - provenance information
+  - safety lane logic
+- output contract should include:
+  - ranked recommendations
+  - reason strings
+  - lane classification
+  - config snippet generation only after validation
+- reuse existing provider fixtures where possible instead of creating parallel truth sets
+
+### 7. Evaluation and proof
+- add focused tests for every new contract before broad integration
+- add transcript-oriented checks that show the new contracts reduce dead-end retries or improve recovery hints
+- prove at least one real audit output against current HermesOptimizer surfaces
+- prove at least one real command/help/error path from the hybrid read-only namespace
+- keep the slice measurable rather than purely architectural
+
+### 8. Verification gates
+- per sub-slice:
+  - targeted tests for the touched files
+  - `git diff --check`
+- after slices 1-3:
+  - one auditable report or fixture output showing the registry + audit engine scoring real HermesOptimizer surfaces
+- after slices 4-5:
+  - one read-only command flow with working progressive help and deterministic chained behavior
+- after slice 6:
+  - one provider/model recommendation example grounded in existing provider truth data
+- global gate throughout:
+  - `python3 -m pytest -q` stays green
+
+### 9. Execution order
+- implement in this order:
+  1. Tool Surface IR foundation
+  2. Tool Surface registry
+  3. Tool audit engine
+  4. Presentation-layer hardening
+  5. Hybrid read-only command layer
+  6. Provider/model recommender
+  7. Evaluation and proof
+- preserve small commits with one verification story each
+- do not start broad non-Hermes rollout before the Hermes-first proof is stable
 
 ## Execution note
 - v0.7.0 dreaming sidecar is already complete and should be treated as foundation, not reopened scope

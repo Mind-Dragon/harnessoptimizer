@@ -2,6 +2,15 @@
 .pytest_cache/
 __pycache__/
 *.pyc
+*.pyo
+.DS_Store
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.log
+*.tmp
 catalog.db
 reports/
 src/hermesoptimizer.egg-info/
