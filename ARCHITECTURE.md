@@ -156,16 +156,17 @@ Implementation shape:
 - `tests/test_caveman_cli.py` — CLI toggle smoke checks
 - `tests/test_caveman_config.py` — persistent config behavior
 
-### v0.6.0 — OpenClaw gateway and config diagnosis
+### v0.6.0 — Hermes provider/model/config repair pass
 
-OpenClaw adds a gateway and more direct provider plumbing.
+v0.6.0 stays Hermes-only and hardens the existing Hermes adapter rather than adding a new harness.
 
-That means the adapter must inspect:
-- gateway health
-- config integrity
-- provider profiles
-- plugin allowlists and entries
-- logs that show auth or endpoint failures
+That means the adapter must inspect and reconcile:
+- canonical provider truth: endpoint, auth type, region, transport, and known-good endpoint candidates
+- model validity: stale aliases, deprecated models, missing capabilities, and wrong-endpoint routing
+- config drift evidence across config, sessions, logs, auth store, credential pools, and live endpoint validation
+- checked-in provider endpoint and model catalogs used by the repair path
+- provider-management state: dedupe/canonical collapse, fallback hygiene, endpoint quarantine TTL, credential-source provenance, and known-good model pins
+- report output that makes provider health, model validity, repair priority, lane-aware repair tuples, and provenance collisions first-class surfaces
 
 ### v0.7.0 — OpenCode provider routing and worktree behavior
 
