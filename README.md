@@ -1,6 +1,6 @@
 # Hermes Optimizer
 
-Current release: v0.5.3. v0.7.0 dreaming/memory sidecar is now implemented in-repo.
+Current release: v0.7.0.
 
 Analysis, hygiene, and workflow orchestration for Hermes Agent environments.
 
