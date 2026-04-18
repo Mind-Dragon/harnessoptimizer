@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from hermesoptimizer.vault.plugins.base import VaultPlugin
+from hermesoptimizer.vault.plugins.hermes_plugin import _resolve_plugin_master_key
 from hermesoptimizer.vault.session import VaultSession
 
 DEFAULT_VAULT_PATH = os.path.expanduser("~/.vault/")
@@ -37,9 +38,6 @@ class OpenCodePlugin(VaultPlugin):
         vault_path: str | Path | None = None,
         passphrase: str = DEFAULT_PASSPHRASE,
     ) -> None:
-        import base64
-        from hermesoptimizer.vault.crypto import derive_key
-
         self._vault_path = vault_path or DEFAULT_VAULT_PATH
         self._passphrase = passphrase
 
@@ -48,21 +46,7 @@ class OpenCodePlugin(VaultPlugin):
         if not vault_root.exists():
             vault_root.mkdir(parents=True, exist_ok=True)
 
-        # Check VAULT_MASTER_KEY env var first (like VaultSession does)
-        env_key = os.environ.get("VAULT_MASTER_KEY")
-        if env_key:
-            try:
-                master_key = base64.b64decode(env_key)
-            except Exception:
-                master_key, _ = derive_key(passphrase)
-        else:
-            # Try to load salt from existing vault.enc.json to derive consistent key
-            enc_path = vault_root / "vault.enc.json"
-            stored_salt = self._load_salt_from_vault(enc_path)
-            if stored_salt:
-                master_key, _ = derive_key(passphrase, stored_salt)
-            else:
-                master_key, _ = derive_key(passphrase)
+        master_key = _resolve_plugin_master_key(vault_root, passphrase)
 
         self._session = VaultSession(vault_root=vault_root, master_key=master_key)
         self._session_entered = False

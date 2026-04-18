@@ -13,6 +13,72 @@ DEFAULT_VAULT_PATH = os.path.expanduser("~/.vault/")
 DEFAULT_PASSPHRASE = "hermes-vault-default"
 
 
+def _resolve_plugin_master_key(vault_root: Path, passphrase: str) -> bytes:
+    """Resolve plugin master key by validating candidates against the current store."""
+    import base64
+    import json
+
+    from hermesoptimizer.vault.crypto import VaultCrypto, derive_key
+
+    enc_path = vault_root / "vault.enc.json"
+    probe_ciphertext: str | None = None
+    salt: bytes | None = None
+    if enc_path.exists():
+        try:
+            content = enc_path.read_text(encoding="utf-8")
+            data = json.loads(content)
+            if isinstance(data, dict):
+                salt_b64 = data.get("salt")
+                if salt_b64:
+                    salt = base64.b64decode(salt_b64)
+                entries = data.get("entries")
+                if isinstance(entries, list):
+                    for entry in entries:
+                        if (
+                            isinstance(entry, dict)
+                            and entry.get("is_encrypted")
+                            and entry.get("encrypted_value")
+                        ):
+                            probe_ciphertext = entry["encrypted_value"]
+                            break
+        except Exception:
+            pass
+
+    candidates: list[bytes] = []
+    env_key = os.environ.get("VAULT_MASTER_KEY")
+    if env_key:
+        try:
+            candidates.append(base64.b64decode(env_key))
+        except Exception:
+            pass
+    if salt is not None:
+        try:
+            candidates.append(derive_key(passphrase, salt)[0])
+        except Exception:
+            pass
+    else:
+        candidates.append(derive_key(passphrase)[0])
+
+    unique_candidates: list[bytes] = []
+    for candidate in candidates:
+        if candidate not in unique_candidates:
+            unique_candidates.append(candidate)
+
+    if probe_ciphertext is not None:
+        crypto = VaultCrypto()
+        for candidate in unique_candidates:
+            try:
+                crypto.decrypt(probe_ciphertext, candidate)
+                return candidate
+            except Exception:
+                continue
+
+    if unique_candidates:
+        return unique_candidates[0]
+
+    return derive_key(passphrase)[0]
+
+
 class HermesPlugin(VaultPlugin):
     """
     Direct VaultSession plugin for hermesoptimizer vault.
@@ -42,30 +108,12 @@ class HermesPlugin(VaultPlugin):
             vault_path: Path to vault root. Defaults to ~/.vault/
             passphrase: Passphrase for key derivation. Defaults to 'hermes-vault-default'
         """
-        import base64
-        from hermesoptimizer.vault.crypto import derive_key
-
         self._vault_path = vault_path or DEFAULT_VAULT_PATH
         vault_root = Path(self._vault_path)
         if not vault_root.exists():
             vault_root.mkdir(parents=True, exist_ok=True)
 
-        # Check VAULT_MASTER_KEY env var first (like VaultSession does)
-        env_key = os.environ.get("VAULT_MASTER_KEY")
-        if env_key:
-            try:
-                self._master_key = base64.b64decode(env_key)
-            except Exception:
-                # Fall back to derive_key if decode fails
-                self._master_key, _ = derive_key(passphrase)
-        else:
-            # Try to load salt from existing vault.enc.json to derive consistent key
-            enc_path = vault_root / "vault.enc.json"
-            stored_salt = self._load_salt_from_vault(enc_path)
-            if stored_salt:
-                self._master_key, _ = derive_key(passphrase, stored_salt)
-            else:
-                self._master_key, _ = derive_key(passphrase)
+        self._master_key = _resolve_plugin_master_key(vault_root, passphrase)
 
         # Create internal session (not entered yet)
         self._session = VaultSession(vault_root=vault_root, master_key=self._master_key)
