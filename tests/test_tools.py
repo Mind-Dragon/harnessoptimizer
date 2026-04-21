@@ -123,6 +123,17 @@ class TestDetectRepeatedToolFailures:
 
 
 class TestToolAnalyzer:
+    def test_recovers_from_non_utf8_session_bytes(self, tmp_path: Path) -> None:
+        raw = b'{"session_id":"s1","provider":"openai","model":"gpt-4o","lane":"coding","messages":[{"role":"assistant","content":"bad \xe6 byte","tool_calls":[{"function":{"name":"web_search"}}]}]}'
+        p = tmp_path / "sess_bad.json"
+        p.write_bytes(raw)
+
+        analyzer = ToolAnalyzer([p])
+        analyzer.analyze()
+
+        assert len(analyzer.usages) == 1
+        assert analyzer.usages[0].tool_name == "web_search"
+
     def test_by_tool(self, tmp_path: Path) -> None:
         session = {
             "session_id": "s1",

@@ -238,6 +238,20 @@ def upsert_finding(db_path: str | Path, finding: Finding) -> None:
         conn.commit()
 
 
+def insert_findings_batch(db_path: str | Path, findings: Sequence[Finding]) -> None:
+    sql = """
+    INSERT INTO findings (
+      file_path, line_num, category, severity, kind, fingerprint,
+      sample_text, count, confidence, router_note, lane
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    if not findings:
+        return
+    with connect(db_path) as conn:
+        conn.executemany(sql, [finding.to_row() for finding in findings])
+        conn.commit()
+
+
 def get_records(db_path: str | Path) -> list[dict]:
     with connect(db_path) as conn:
         rows = conn.execute("SELECT * FROM records ORDER BY id").fetchall()

@@ -8,7 +8,7 @@ from typing import Callable
 
 from hermesoptimizer.catalog import (
     init_db,
-    upsert_finding,
+    insert_findings_batch,
     start_run,
     finish_run,
     get_records,
@@ -222,8 +222,7 @@ def handle_run(args: argparse.Namespace) -> int:
         print(f"[network validation] ERROR: {exc}", flush=True)
 
     # Store findings
-    for finding in findings:
-        upsert_finding(db_path, finding)
+    insert_findings_batch(db_path, findings)
     print(f"Stored {len(findings)} finding(s).")
 
     # Finish run

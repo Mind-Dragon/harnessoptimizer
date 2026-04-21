@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from hermesoptimizer.catalog import Finding, Record, finish_run, get_findings, get_records, get_run_history, init_db, start_run, upsert_finding, upsert_record
+from hermesoptimizer.catalog import Finding, Record, finish_run, get_findings, get_records, get_run_history, init_db, start_run, upsert_finding, upsert_record, insert_findings_batch
 from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
 
@@ -88,3 +88,30 @@ def test_finish_run_persists_metrics_history(tmp_path: Path) -> None:
     assert history[0]["metrics"]["findings_total"] == 3
     assert history[0]["metrics"]["gateway_findings"] == 1
     assert history[0]["metrics"]["inspected_inputs_total"] == 4
+
+
+def test_insert_findings_batch_handles_large_finding_sets(tmp_path: Path) -> None:
+    db = tmp_path / "catalog.db"
+    init_db(db)
+
+    findings = [
+        Finding(
+            file_path=None,
+            line_num=None,
+            category="token_waste",
+            severity="WARNING",
+            kind=f"kind-{i}",
+            fingerprint=None,
+            sample_text=f"finding-{i}",
+            count=1,
+            confidence="high",
+            router_note=None,
+            lane=None,
+        )
+        for i in range(2500)
+    ]
+
+    insert_findings_batch(db, findings)
+
+    stored = get_findings(db)
+    assert len(stored) == 2500

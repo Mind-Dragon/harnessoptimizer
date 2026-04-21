@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from hermesoptimizer.json_utils import load_json_text_lossy
 from hermesoptimizer.tokens.models import TokenUsage, TokenWaste
 
 
@@ -22,8 +23,8 @@ def parse_session_tokens(session_path: Path) -> tuple[list[TokenUsage], list[Tok
     wastes: list[TokenWaste] = []
 
     try:
-        data = json.loads(session_path.read_text())
-    except (json.JSONDecodeError, OSError):
+        data = load_json_text_lossy(session_path)
+    except (json.JSONDecodeError, OSError, UnicodeDecodeError):
         return usages, wastes
 
     session_id = data.get("session_id", session_path.stem)

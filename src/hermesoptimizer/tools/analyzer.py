@@ -5,6 +5,7 @@ import json
 import re
 from pathlib import Path
 
+from hermesoptimizer.json_utils import load_json_text_lossy
 from hermesoptimizer.tools.models import ToolUsage, ToolMiss
 
 
@@ -167,8 +168,8 @@ class ToolAnalyzer:
 
     def _parse_session(self, path: Path) -> None:
         try:
-            data = json.loads(path.read_text())
-        except (json.JSONDecodeError, OSError):
+            data = load_json_text_lossy(path)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
             return
 
         session_id = data.get("session_id", path.stem)

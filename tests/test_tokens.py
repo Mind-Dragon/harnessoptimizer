@@ -120,6 +120,18 @@ class TestParseSessionTokens:
 
 
 class TestTokenAnalyzer:
+    def test_skips_utf8_decode_failure_by_recovering_with_replacement(self, tmp_path: Path) -> None:
+        raw = b'{"session_id":"s1","provider":"openai","model":"gpt-4o","lane":"coding","messages":[{"role":"user","content":"bad \xe6 byte"}],"created_at":"2025-01-15T10:00:00Z"}'
+        p = tmp_path / "sess_bad.json"
+        p.write_bytes(raw)
+
+        usages, wastes = parse_session_tokens(p)
+
+        assert len(usages) == 1
+        assert usages[0].session_id == "s1"
+        assert usages[0].provider == "openai"
+        assert wastes == []
+
     def test_by_provider(self, tmp_path: Path) -> None:
         sessions = [
             {

@@ -12,6 +12,19 @@ from hermesoptimizer.perf.models import ProviderPerf, ProviderOutage
 
 
 class TestPerfAnalyzer:
+    def test_recovers_from_non_utf8_session_bytes(self, tmp_path: Path) -> None:
+        raw = b'{"session_id":"s1","provider":"openai","model":"gpt-4o","status":"completed","duration_ms":1200,"messages":[{"role":"user","content":"bad \xe6 byte"}],"created_at":"2025-01-15T10:00:00Z"}'
+        p = tmp_path / "sess_bad.json"
+        p.write_bytes(raw)
+
+        analyzer = PerfAnalyzer([p])
+        analyzer.analyze()
+        perf = analyzer.get_provider_perf()
+
+        assert len(perf) == 1
+        assert perf[0].provider == "openai"
+        assert perf[0].total_requests == 1
+
     def test_successful_session(self, tmp_path: Path) -> None:
         session = {
             "session_id": "s1",

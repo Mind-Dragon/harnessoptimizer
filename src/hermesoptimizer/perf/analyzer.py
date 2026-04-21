@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from hermesoptimizer.json_utils import load_json_text_lossy
 from hermesoptimizer.perf.models import ProviderPerf, ProviderOutage
 
 
@@ -24,8 +25,8 @@ class PerfAnalyzer:
 
     def _parse_session(self, path: Path) -> None:
         try:
-            data = json.loads(path.read_text())
-        except (json.JSONDecodeError, OSError):
+            data = load_json_text_lossy(path)
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
             return
 
         provider = data.get("provider", "unknown")
@@ -84,8 +85,8 @@ class PerfAnalyzer:
         sessions_by_key: dict[str, list[dict]] = {}
         for path in self.session_paths:
             try:
-                data = json.loads(path.read_text())
-            except (json.JSONDecodeError, OSError):
+                data = load_json_text_lossy(path)
+            except (json.JSONDecodeError, OSError, UnicodeDecodeError):
                 continue
             key = f"{data.get('provider', 'unknown')}:{data.get('model', 'unknown')}"
             if key not in sessions_by_key:
