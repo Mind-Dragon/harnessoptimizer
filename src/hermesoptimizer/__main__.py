@@ -13,7 +13,8 @@ def main() -> int:
         print("          add-finding, list-records, list-findings,")
         print("          port-reserve, port-list, port-release, ip-list, ip-add, network-scan,")
         print("          token-report, token-check,")
-        print("          perf-report, perf-check")
+        print("          perf-report, perf-check,")
+        print("          tool-report, tool-check")
         return 1
 
     command = args[0]
@@ -118,6 +119,22 @@ def main() -> int:
         p = argparse.ArgumentParser()
         p.add_argument("path", help="Path to session file")
         return handle_perf_check(p.parse_args(rest))
+
+    # Tool usage analysis commands
+    if command == "tool-report":
+        from hermesoptimizer.tools.commands import handle_tool_report
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("path", help="Path to session file or directory")
+        p.add_argument("--json-out", help="Write JSON report to file")
+        return handle_tool_report(p.parse_args(rest))
+
+    if command == "tool-check":
+        from hermesoptimizer.tools.commands import handle_tool_check
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("path", help="Path to session file")
+        return handle_tool_check(p.parse_args(rest))
 
     # Delegate unknown commands (like init-db, add-record, etc.) to run_standalone
     from hermesoptimizer.run_standalone import main as run_main
