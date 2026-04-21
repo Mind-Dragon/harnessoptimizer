@@ -24,6 +24,13 @@ Harness Optimizer reads agent config, sessions, logs, and runtime health surface
 
 ## What it does
 
+**Performance Intelligence Suite (v0.9.1):**
+- `token-report` / `token-check` — track token usage, detect waste (bloat, retries, tool loops, overflow), optimize provider/model selection
+- `perf-report` / `perf-check` — monitor AI API response times, error rates, retry rates, detect provider outages
+- `tool-report` / `tool-check` — detect manual workarounds, encourage proper tool usage via MCP/gateway/inline tools
+- `port-reserve` / `port-list` / `port-release` — reserve ports, forbid 3000/8080 forever, prevent conflicts
+- `ip-list` / `ip-add` / `network-scan` — manage local IPv4 addresses, ban localhost/127.0.0.1, auto-detect network IPs
+
 **Analysis and hygiene:**
 - discovers agent config, sessions, logs, databases, and runtime surfaces
 - detects failures, auth errors, timeouts, crashes, and config drift
@@ -97,22 +104,19 @@ src/hermesoptimizer/
   budget/                 turn-budget tuning sidecar
   tokens/                 token usage tracking and optimization
     models.py             TokenUsage, TokenWaste, TokenRecommendation
-    extractor.py          parse sessions/logs for token counts
-    analyzer.py           compute waste ratios and efficiency
-    recommender.py        suggest better provider/model/lane combos
-    commands.py           token-review, token-report CLI
+    analyzer.py           parse sessions for token counts, detect waste
+    optimizer.py          generate token optimization recommendations
+    commands.py           token-report, token-check CLI
   perf/                   API provider performance monitoring
-    models.py             ProviderPerf, PerfSummary
-    collector.py          gather perf signals from sessions/logs
-    aggregator.py         roll up per-provider stats
+    models.py             ProviderPerf, ProviderOutage
+    analyzer.py           gather perf signals from sessions
     reporter.py           generate health dashboard
     commands.py           perf-report, perf-check CLI
   tools/                  tool usage optimization
-    models.py             ToolUsage, ToolGap, ToolRecommendation
-    detector.py           detect manual workarounds vs tool usage
-    analyzer.py           compute adoption rates
-    recommender.py        suggest tools for manual patterns
-    commands.py           tool-review, tool-report CLI
+    models.py             ToolUsage, ToolMiss, ToolRecommendation
+    analyzer.py           detect manual workarounds vs tool usage
+    optimizer.py          suggest tools for manual patterns
+    commands.py           tool-report, tool-check CLI
   network/                port and IP discipline
     models.py             PortReservation, IPAssignment
     inventory.py          SQLite-backed port/IP registry
@@ -144,7 +148,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-1,534 tests collected, 5 skipped. Run with:
+1,610 tests collected, 5 skipped. Run with:
 
 ```
 pytest

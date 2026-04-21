@@ -7,34 +7,36 @@ All notable changes to Hermes Optimizer.
 ### Added
 
 - `tokens/` subpackage: token usage tracking, waste detection, and provider/model optimization
-  - `tokens/extractor.py`: Parse sessions/logs for input/output/total token counts
-  - `tokens/analyzer.py`: Detect retry burn, loop burn, empty output, over-context waste
-  - `tokens/recommender.py`: Recommend best provider+model per lane based on token efficiency
-  - CLI: `token-review`, `token-report`
+  - `tokens/models.py`: TokenUsage, TokenWaste, TokenRecommendation dataclasses
+  - `tokens/analyzer.py`: Parse sessions for token counts, detect waste patterns (bloat, retries, tool loops, overflow)
+  - `tokens/optimizer.py`: Generate token optimization recommendations (model efficiency, prompt compression, lane tuning)
+  - CLI: `token-report`, `token-check`
 - `perf/` subpackage: AI API provider performance monitoring
-  - `perf/collector.py`: Gather response times, error codes, tokens/sec from sessions/logs
-  - `perf/aggregator.py`: Roll up p50/p99 percentiles, success rates, tool usage rates
-  - `perf/reporter.py`: Health dashboard with green/yellow/red provider classification
+  - `perf/models.py`: ProviderPerf, ProviderOutage dataclasses
+  - `perf/analyzer.py`: Gather response times, error rates, retry rates, tokens/sec from sessions
+  - `perf/reporter.py`: Generate health dashboard with provider classifications
   - CLI: `perf-report`, `perf-check`
 - `tools/` subpackage: tool usage optimization
-  - `tools/detector.py`: Detect manual workarounds (scripts, text generation) vs available tools
-  - `tools/analyzer.py`: Compute tool adoption rates by provider/model/lane
-  - `tools/recommender.py`: Suggest specific tools for detected manual patterns
-  - CLI: `tool-review`, `tool-report`
+  - `tools/models.py`: ToolUsage, ToolMiss, ToolRecommendation dataclasses
+  - `tools/analyzer.py`: Detect manual workarounds (scripts, image gen, shell) vs available tools
+  - `tools/optimizer.py`: Generate tool usage improvement recommendations
+  - CLI: `tool-report`, `tool-check`
 - `network/` subpackage: port and IP discipline
+  - `network/models.py`: PortReservation, IPAssignment dataclasses
   - `network/inventory.py`: SQLite-backed port/IP registry with reserve/forbid/available states
   - `network/scanner.py`: Auto-detect local IPv4 addresses (excludes loopback)
   - `network/validator.py`: Flag forbidden ports (3000, 8080) and localhost/127.0.0.1 in configs
   - `network/enforcer.py`: Emit critical findings when AI uses bad ports or IPs
-  - CLI: `port-reserve`, `port-list`, `ip-list`, `ip-add`, `network-scan`
+  - CLI: `port-reserve`, `port-list`, `port-release`, `ip-list`, `ip-add`, `network-scan`
 - New catalog tables: `token_usage`, `provider_perf`, `tool_usage`, `network_inventory`
-- ~175 new tests across tokens, perf, tools, network domains
+- 76 new tests across tokens, perf, tools, network domains (1,610 total)
 
 ### Changed
 
 - Version bumped to 0.9.1
-- README.md updated with new commands and architecture diagram
-- `loop.py` enriched with token, perf, tool, and network integration points
+- README.md updated with new commands, architecture diagram, and test count
+- `__main__.py` wired with all new CLI commands
+- `catalog.py` extended with CRUD for all new tables
 
 ## v0.9.0 -- Agent Turn Budget Tuning
 
