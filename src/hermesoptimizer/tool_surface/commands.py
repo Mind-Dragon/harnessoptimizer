@@ -27,7 +27,10 @@ Composition operators (where deterministic and testable):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
+
+from hermesoptimizer.paths import get_report_dir
 
 # --------------------------------------------------------------------------:
 # Command result structure
@@ -96,23 +99,64 @@ def _handle_provider_list(_args: Optional[list[str]] = None) -> CommandResult:
 
 
 def _handle_provider_recommend(_args: Optional[list[str]] = None) -> CommandResult:
-    """Handle 'provider recommend' command.
+    """Handle 'provider recommend' command with real recommendation output."""
+    try:
+        from hermesoptimizer.schemas.provider_endpoint import ProviderEndpointCatalog
+        from hermesoptimizer.schemas.provider_model import ProviderModelCatalog
+        from hermesoptimizer.sources.provider_truth import ProviderTruthStore, seed_from_config
+        from hermesoptimizer.tool_surface.provider_recommend import (
+            ProviderRecommendInput,
+            ProviderRecommender,
+            SafetyLane,
+        )
 
-    This is a placeholder stub for Task 6 recommender implementation.
-    Returns a read-only response indicating the feature is pending.
-    """
-    return CommandResult(
-        success=True,
-        read_only=True,
-        stdout=(
-            "provider recommend is a placeholder for Task 6.\n"
-            "The provider recommender will be implemented in Task 6.\n"
-            "It will use live config evidence, known auth presence,\n"
-            "checked-in provider endpoint/model catalogs, provenance information,\n"
-            "and safety lane logic to produce ranked recommendations."
-        ),
-        exit_code=0,
-    )
+        repo_root = Path(__file__).resolve().parents[3]
+        endpoint_catalog = ProviderEndpointCatalog.from_file(repo_root / "data" / "provider_endpoints.json")
+        model_catalog = ProviderModelCatalog.from_file(repo_root / "data" / "provider_models.json")
+        config_path = Path.home() / ".hermes" / "config.yaml"
+        truth_store = seed_from_config(config_path) if config_path.exists() else ProviderTruthStore()
+
+        recommender = ProviderRecommender(
+            truth_store=truth_store,
+            endpoint_catalog=endpoint_catalog,
+            model_catalog=model_catalog,
+        )
+        result = recommender.recommend(
+            ProviderRecommendInput(
+                desired_capabilities=["text"],
+                desired_lane=SafetyLane.GENERAL,
+            )
+        )
+
+        recommendations = result.recommendations[:5]
+        if not recommendations:
+            stdout = "No provider recommendations matched the requested filters."
+        else:
+            lines = [
+                f"Recommendations: {len(recommendations)} shown / {result.total_candidates} candidates considered",
+                f"Validation passed: {result.validation_passed}",
+                "",
+            ]
+            for idx, rec in enumerate(recommendations, start=1):
+                lines.extend(
+                    [
+                        f"{idx}. provider={rec.provider} model={rec.model or '-'} lane={rec.lane.value} score={rec.rank_score:.2f}",
+                        f"   endpoint: {rec.endpoint}",
+                        f"   reason: {rec.reason}",
+                        f"   provenance: {rec.provenance}",
+                    ]
+                )
+            stdout = "\n".join(lines)
+
+        return CommandResult(success=True, read_only=True, stdout=stdout, exit_code=0)
+    except Exception as e:
+        return CommandResult(
+            success=False,
+            read_only=True,
+            stdout="",
+            stderr=f"Error recommending providers: {e}",
+            exit_code=1,
+        )
 
 
 def _handle_workflow_list(_args: Optional[list[str]] = None) -> CommandResult:
@@ -201,15 +245,14 @@ def _handle_dreams_inspect(_args: Optional[list[str]] = None) -> CommandResult:
 def _handle_report_latest(_args: Optional[list[str]] = None) -> CommandResult:
     """Handle 'report latest' command.
 
-    Gets the latest report from the reports directory.
+    Gets the latest report from the runtime reports directory.
     This is a read-only operation.
     """
     try:
         import os
-        from datetime import datetime
 
-        reports_dir = "reports"
-        if not os.path.exists(reports_dir):
+        reports_dir = get_report_dir()
+        if not reports_dir.exists():
             return CommandResult(
                 success=True,
                 read_only=True,
@@ -217,13 +260,10 @@ def _handle_report_latest(_args: Optional[list[str]] = None) -> CommandResult:
                 exit_code=0,
             )
 
-        # List report files sorted by modification time
-        report_files = []
-        for f in os.listdir(reports_dir):
-            if f.endswith((".md", ".json")):
-                fpath = os.path.join(reports_dir, f)
-                mtime = os.path.getmtime(fpath)
-                report_files.append((f, mtime))
+        report_files: list[tuple[Path, float]] = []
+        for path in reports_dir.iterdir():
+            if path.is_file() and path.suffix in {".md", ".json"}:
+                report_files.append((path, path.stat().st_mtime))
 
         if not report_files:
             return CommandResult(
@@ -233,22 +273,15 @@ def _handle_report_latest(_args: Optional[list[str]] = None) -> CommandResult:
                 exit_code=0,
             )
 
-        # Sort by modification time, newest first
-        report_files.sort(key=lambda x: x[1], reverse=True)
-        latest = report_files[0]
+        report_files.sort(key=lambda item: item[1], reverse=True)
+        latest_path = report_files[0][0]
+        content = latest_path.read_text(encoding="utf-8")
 
-        # Read the latest report
-        latest_path = os.path.join(reports_dir, latest[0])
-        with open(latest_path, "r") as f:
-            content = f.read()
-
-        # Truncate if too long
         max_len = 2000
         if len(content) > max_len:
-            content = content[:max_len] + f"\n... [truncated, full report: {latest[0]}]"
+            content = content[:max_len] + f"\n... [truncated, full report: {latest_path.name}]"
 
-        stdout = f"Latest report: {latest[0]}\n\n{content}"
-
+        stdout = f"Latest report: {latest_path.name}\n\n{content}"
         return CommandResult(success=True, read_only=True, stdout=stdout, exit_code=0)
     except Exception as e:
         return CommandResult(
@@ -393,14 +426,12 @@ def get_help(topic: Optional[str] = None) -> str:
             ])
         elif topic == "provider recommend":
             lines.extend([
-                "Placeholder for Task 6 provider recommender.",
+                "Produces ranked provider/model recommendations.",
                 "",
                 "Usage: provider recommend",
                 "",
-                "This command will eventually provide ranked provider recommendations",
-                "based on live config, auth presence, catalogs, and provenance.",
-                "For now, it returns a placeholder message indicating",
-                "the feature is pending Task 6 implementation.",
+                "This command ranks provider/model candidates using checked-in",
+                "endpoint/model catalogs plus any locally seeded provider truth.",
             ])
         elif topic == "workflow list":
             lines.extend([
@@ -427,7 +458,7 @@ def get_help(topic: Optional[str] = None) -> str:
                 "Usage: report latest",
                 "",
                 "This command finds and displays the most recent report",
-                "from the reports directory.",
+                "from the runtime report directory.",
             ])
 
         return "\n".join(lines)

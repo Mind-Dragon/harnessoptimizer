@@ -1,79 +1,78 @@
-# Harness Optimizer /todo — v0.9.1 Post-Release Refactor
+# Harness Optimizer /todo — v0.9.1 Closeout Complete
 
-Previous release: v0.9.1 (Performance Intelligence Suite) — archived.
-Current focus: unify CLI surface, make `run` work, wire orphaned modules.
+Current package version: `0.9.1`
+Repo state for this plan: closeout queue completed and verified.
 
-Plan documents:
-- `VERSION0.9.1.md` — gap assessment and priority order
-- `PRD-0.9.1-RUN-CLI.md` — detailed design for P1 + P2
+This file now serves as the completion record for the `0.9.1` closeout pass.
+If new work starts, seed a fresh plan instead of reopening the completed checklist below.
 
----
-
-## Phase A: CLI Consolidation (P2)
-
-- [ ] Create `src/hermesoptimizer/cli/` package
-  - [ ] `cli/__init__.py` — `build_parser()`, `dispatch()`
-  - [ ] `cli/parser.py` — single argparse tree with all subparsers
-  - [ ] `cli/legacy.py` — handlers for init-db, add-record, add-finding, export, list-records, list-findings, vault-audit, vault-writeback, budget-review, budget-set
-  - [ ] `cli/v091.py` — handlers for token-report, token-check, perf-report, perf-check, tool-report, tool-check, port-reserve, port-list, port-release, ip-list, ip-add, network-scan
-  - [ ] `cli/workflow.py` — handlers for todo, devdo, caveman
-  - [ ] `cli/orphan.py` — stubs for provider list, provider recommend, verify-endpoints, dreams-sweep
-- [ ] Refactor `__main__.py` to import `build_parser` + `dispatch`, remove all hand-rolled if-chains
-- [ ] Refactor `run_standalone.py` — move handlers to `cli/legacy.py`, keep thin re-export or delete after verifying no imports
-- [ ] Update `setup.py` / `pyproject.toml` entry points if needed
-- [ ] Add `tests/test_cli_unified.py` — assert every expected subparser exists
-- [ ] Add `tests/test_cli_dispatch.py` — mock handlers, assert correct routing
-- [ ] Full test suite passes (1,614+ tests)
-
-## Phase B: `run` Pipeline (P1)
-
-- [ ] Implement `src/hermesoptimizer/discovery.py` — `discover_hermes_surfaces()` scans known Hermes directories
-- [ ] Implement `src/hermesoptimizer/cli/run.py` — `handle_run(args)`
-  - [ ] Phase 1: discover files
-  - [ ] Phase 2: execute analyzers (token, perf, tools, network) in sequence
-  - [ ] Phase 3: store findings in catalog DB
-  - [ ] Phase 4: emit unified JSON + Markdown report
-- [ ] Add `--out-dir` default to `~/.hoptimizer/reports/`
-- [ ] Add `--title` for report naming
-- [ ] Add `tests/test_run_pipeline.py` — temp dir with fake sessions, assert findings stored and reports written
-- [ ] Verify `hermesoptimizer run` produces a report with inspected inputs, findings, and metrics
-
-## Phase C: Auto-Discovery for Analyzers (P3)
-
-- [ ] Update `token-report`, `perf-report`, `tool-report` signatures: `path` becomes `nargs="?"`
-- [ ] Add `--auto-discover` flag (default True) to all three report commands
-- [ ] If no `path` given, use `discover_hermes_surfaces()`
-- [ ] Add tests for auto-discovery path vs explicit path
-
-## Phase D: Catalog Data Lifecycle (P4)
-
-- [ ] Add `db-vacuum` command — `VACUUM` the SQLite DB
-- [ ] Add `db-retention --days N` command — prune runs/findings older than N days
-- [ ] Add `db-stats` command — print table row counts and DB file size
-- [ ] Add tests for each command
-
-## Phase E: Integration Tests (P5)
-
-- [ ] Add `tests/test_cli_integration.py`
-  - [ ] Subprocess test for every command (legacy + v0.9.1 + new)
-  - [ ] Assert exit code 0 and non-empty output
-  - [ ] Run in CI / local pytest
-
-## Phase F: Documentation and Release Prep
-
-- [ ] Update README.md command table
-- [ ] Update CHANGELOG.md with refactor notes
-- [ ] Verify `python3 -m pytest -q` passes
-- [ ] Archive this TODO.md and seed v0.9.2 plan if needed
+Plan references:
+- `VERSION0.9.1.md` — preserved as historical gap assessment
+- `PRD-0.9.1-RUN-CLI.md` — preserved as historical design doc
 
 ---
 
-## Acceptance Criteria
+## Completion status
 
-- `hermesoptimizer --help` shows a single unified command tree
-- `hermesoptimizer run` discovers sessions and produces a report without manual `--path`
-- All legacy commands still work with identical arguments
-- All v0.9.1 commands still work with identical arguments
-- Orphaned modules (`tool_surface`, `verify`, `dreams`) have at least one CLI command each
-- Full test suite passes with zero failures
-- Integration test runs every command as a subprocess
+### Implemented in code and verified
+
+- [x] Unified CLI package exists under `src/hermesoptimizer/cli/`
+- [x] `src/hermesoptimizer/__main__.py` uses `build_parser()` + `dispatch()`
+- [x] `src/hermesoptimizer/run_standalone.py` is a backward-compatible shim
+- [x] `src/hermesoptimizer/discovery.py` exists and discovers Hermes surfaces
+- [x] `src/hermesoptimizer/cli/run.py` performs the real run pipeline and writes JSON + Markdown reports
+- [x] Auto-discovery landed for `token-report`, `perf-report`, and `tool-report`
+- [x] DB lifecycle commands exist: `db-vacuum`, `db-retention`, `db-stats`
+- [x] `verify-endpoints` is a real CLI surface with parser/help/output
+- [x] `dreams-sweep` is a real CLI surface with parser/help/output
+- [x] `provider-recommend` is a real CLI surface with ranked output
+- [x] `report-latest` reads from the runtime report directory via `get_report_dir()`
+- [x] Focused CLI/run test files exist:
+  - [x] `tests/test_cli_unified.py`
+  - [x] `tests/test_cli_dispatch.py`
+  - [x] `tests/test_run_pipeline.py`
+  - [x] `tests/test_cli_integration.py`
+- [x] Release docs reconciled:
+  - [x] `README.md`
+  - [x] `GUIDELINE.md`
+  - [x] `ROADMAP.md`
+  - [x] `CHANGELOG.md`
+  - [x] `VERSION0.9.1.md` historical note added
+  - [x] `PRD-0.9.1-RUN-CLI.md` historical note added
+
+---
+
+## Verification evidence
+
+### Focused closeout command/tests
+
+- [x] `PYTHONPATH=src python -m pytest tests/test_cli_unified.py tests/test_cli_dispatch.py tests/test_run_pipeline.py tests/test_cli_integration.py -q`
+- [x] `PYTHONPATH=src python -m pytest tests/test_tool_surface_commands.py tests/test_tool_surface_provider_recommend.py tests/test_provider_truth.py tests/test_dreams_sweep.py -q`
+- [x] `PYTHONPATH=src python -m pytest tests/test_caveman_config.py::TestCavemanCLISmoke tests/test_vault_audit.py::test_vault_audit_default_vault_root -q`
+
+### Full-suite and live CLI probes
+
+- [x] `PYTHONPATH=src python -m pytest -q`
+- [x] `PYTHONPATH=src pytest --collect-only`
+- [x] `PYTHONPATH=src python -m hermesoptimizer --help`
+- [x] `PYTHONPATH=src python -m hermesoptimizer run --help`
+- [x] `PYTHONPATH=src python -m hermesoptimizer verify-endpoints --help`
+- [x] `PYTHONPATH=src python -m hermesoptimizer provider-recommend --help`
+- [x] `PYTHONPATH=src python -m hermesoptimizer dreams-sweep --help`
+- [ ] Installed entrypoint check: `hermesoptimizer --help`
+  - [ ] Not available in the current shell (`command not found`), so src-layout verification remained the reliable gate for this session.
+- [x] `git diff --check`
+
+---
+
+## Outcome
+
+- [x] Shipped commands are real, or explicitly grounded in current runtime behavior
+- [x] Focused parser/dispatch/run/integration tests exist and pass
+- [x] `README.md`, `GUIDELINE.md`, `ROADMAP.md`, `CHANGELOG.md`, and `TODO.md` are aligned with live code
+- [x] Full suite passes on the unified CLI branch state
+
+## Next action
+
+No active `0.9.1` closeout items remain.
+Next work should start from a fresh TODO seeded from the next requested feature or release slice.

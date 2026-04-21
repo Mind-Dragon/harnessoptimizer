@@ -29,14 +29,32 @@ All notable changes to Hermes Optimizer.
   - `network/enforcer.py`: Emit critical findings when AI uses bad ports or IPs
   - CLI: `port-reserve`, `port-list`, `port-release`, `ip-list`, `ip-add`, `network-scan`
 - New catalog tables: `token_usage`, `provider_perf`, `tool_usage`, `network_inventory`
-- 76 new tests across tokens, perf, tools, network domains (1,610 total)
+- Focused CLI closeout tests:
+  - `tests/test_cli_unified.py`
+  - `tests/test_cli_dispatch.py`
+  - `tests/test_run_pipeline.py`
+  - `tests/test_cli_integration.py`
 
 ### Changed
 
 - Version bumped to 0.9.1
-- README.md updated with new commands, architecture diagram, and test count
-- `__main__.py` wired with all new CLI commands
+- CLI consolidated behind `src/hermesoptimizer/cli/` with `src/hermesoptimizer/__main__.py` dispatching through `build_parser()` + `dispatch()`
+- `src/hermesoptimizer/run_standalone.py` reduced to a backward-compatible shim
+- `src/hermesoptimizer/cli/run.py` now performs the real report pipeline instead of falling through to help
+- Analyzer report commands support auto-discovery when `path` is omitted
+- DB lifecycle commands added to the unified CLI: `db-vacuum`, `db-retention`, `db-stats`
+- Orphan command surfaces are real handlers now:
+  - `provider-recommend`
+  - `verify-endpoints`
+  - `dreams-sweep`
+  - `report-latest` now reads from the runtime report directory
+- README, roadmap, guideline, and TODO documentation reconciled to the unified CLI state
 - `catalog.py` extended with CRUD for all new tables
+
+### Tests
+
+- 1,626 tests collected after the closeout pass
+- Focused closeout validation covers parser construction, dispatch routing, run pipeline behavior, subprocess CLI execution, tool-surface command updates, provider truth, and dreams sweep behavior
 
 ## v0.9.0 -- Agent Turn Budget Tuning
 

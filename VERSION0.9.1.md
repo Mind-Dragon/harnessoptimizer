@@ -1,6 +1,7 @@
 # Hermes Optimizer v0.9.1 Post-Release Plan
 
-v0.9.1 landed the Performance Intelligence Suite (tokens, perf, tools, network) as individually-testable modules with CLI wiring. The modules work, but the tool does not yet function as a unified harness intelligence layer.
+Historical note: this plan is preserved as the original gap assessment for the `0.9.1` closeout pass.
+Much of the work described here has landed. For current truth, see `TODO.md`, `README.md`, and the live CLI help surface.
 
 This document enumerates the gaps and sets priority order for closing them.
 

@@ -22,6 +22,8 @@ Design principles:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 
@@ -342,44 +344,29 @@ class TestCommandIntegrationWithBackingSources:
                 "entries" in output.lower()), \
             f"dreams inspect output should mention database or entries: {output!r}"
 
-    def test_report_latest_handles_missing_reports_dir(self) -> None:
-        """report latest should handle missing reports directory gracefully."""
+    def test_report_latest_handles_missing_reports_dir(self, tmp_path: Path, monkeypatch) -> None:
+        """report latest should handle missing runtime reports directory gracefully."""
         from hermesoptimizer.tool_surface import commands
-        import os
 
-        # Save original reports dir and temporarily rename if exists
-        reports_dir = "reports"
-        backup_dir = "reports_backup_temp"
-        was_missing = not os.path.exists(reports_dir)
+        hoptimizer_home = tmp_path / "hopt-home"
+        monkeypatch.setenv("HOPTIMIZER_HOME", str(hoptimizer_home))
 
-        if not was_missing:
-            os.rename(reports_dir, backup_dir)
+        result = commands.execute_command("report latest")
+        assert result.success is True, f"report latest failed: {result.stderr}"
+        assert result.read_only is True
+        output = result.stdout.lower()
+        assert "no report" in output or "not found" in output, \
+            f"report latest should indicate no reports found: {result.stdout!r}"
 
-        try:
-            result = commands.execute_command("report latest")
-            # Should succeed even without reports
-            assert result.success is True, f"report latest failed: {result.stderr}"
-            # Must be read-only
-            assert result.read_only is True
-            # Should indicate no reports found
-            output = result.stdout.lower()
-            assert "no report" in output or "not found" in output, \
-                f"report latest should indicate no reports found: {result.stdout!r}"
-        finally:
-            # Restore reports directory if it existed
-            if not was_missing and os.path.exists(backup_dir):
-                os.rename(backup_dir, reports_dir)
-
-    def test_provider_recommend_is_placeholder(self) -> None:
-        """provider recommend should indicate it's a placeholder for Task 6."""
+    def test_provider_recommend_returns_ranked_output(self) -> None:
+        """provider recommend should return real ranked recommendations."""
         from hermesoptimizer.tool_surface import commands
 
         result = commands.execute_command("provider recommend")
-        # Must succeed
         assert result.success is True, f"provider recommend failed: {result.stderr}"
-        # Must be read-only
         assert result.read_only is True
-        # Should mention Task 6 or placeholder
         output = result.stdout.lower()
-        assert "task 6" in output or "placeholder" in output, \
-            f"provider recommend should mention Task 6: {result.stdout!r}"
+        assert "recommendations:" in output, \
+            f"provider recommend should emit ranked output: {result.stdout!r}"
+        assert "provider=" in output, \
+            f"provider recommend should include provider rows: {result.stdout!r}"

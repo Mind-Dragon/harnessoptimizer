@@ -1,6 +1,7 @@
 # PRD: Unified CLI and `run` Pipeline (P1 + P2)
 
-## Problem
+Historical note: this design document records the intended `0.9.1` closeout architecture.
+The unified CLI and run pipeline have largely landed; use `TODO.md`, `README.md`, and the live help output as the current source of truth.
 
 The CLI is split across two dispatch systems:
 1. `__main__.py` — hand-rolled `if command == "..."` for v0.9.1 commands

@@ -1,8 +1,8 @@
 # Hermes Optimizer Success Guidelines
 
-This file defines how Hermes Optimizer v0.9.0 capability gates are judged.
+This file defines how Hermes Optimizer capability gates are judged on the current `0.9.1` line.
 
-These are release gates, not a package-version claim.
+These are release gates, not a package-version claim. Capability labels below may lag or lead the installed package version, so the source of truth is always the live CLI, tests, and runtime evidence.
 
 ## The measurement idea
 
@@ -65,6 +65,13 @@ A good run should answer these questions clearly:
 - unit tests cover the discovery, parsing, ranking, verification, and export layers
 - tests do not depend on fragile live network access unless they are explicitly integration tests
 - shared behavior remains stable across Hermes and later harnesses
+- focused CLI coverage exists for parser construction, dispatch routing, run-pipeline behavior, and subprocess integration
+
+### Current closeout expectations for the `0.9.1` line
+- the CLI is unified under `hermesoptimizer --help`
+- `verify-endpoints`, `dreams-sweep`, `provider-recommend`, and `report-latest` are real command surfaces, not placeholders
+- `report-latest` reads from the runtime reports directory, not a repo-local ad hoc path
+- src-layout verification is documented and works with `PYTHONPATH=src python -m hermesoptimizer --help`
 
 ## Operational rule
 

@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.9.0. The milestones below are release/capability labels, not the installed package version.
+> Current package version: 0.9.1. The milestones below are release/capability labels, not the installed package version.
 
 ## Product shape
 
@@ -84,6 +84,10 @@ Done. Defined the canonical layered test model (L0-L4) with explicit domain owne
 
 Done. Budget tuning sidecar for Hermes main TUI agent and subagents. Five-step sliding scale with per-role overrides, session log analysis, and passive budget-watch recommendations. Dry-run by default, explicit `--confirm` required to mutate config. 151 tests across Domain J.
 
+### v0.9.1 -- Performance intelligence and CLI closeout
+
+Done. Added token/perf/tool/network analysis domains, catalog tables, and the unified closeout pass for the CLI surface. `run` now emits reports, analyzer commands support auto-discovery, DB lifecycle commands exist, orphan commands are real surfaces (`verify-endpoints`, `dreams-sweep`, `provider-recommend`, `report-latest`), and focused CLI tests cover parser, dispatch, run-pipeline, and subprocess integrity.
+
 ## Next version
 
 ### v1.0 series -- Other harnesses and remote workflow
@@ -132,9 +136,10 @@ That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into se
 13. ~~Add dreaming sidecar / memory-consolidation workflow without modifying Hermes core~~
 14. ~~Build Tool Surface IR and tool-surface audit scoring for Hermes-first workflows~~
 15. ~~Prototype the hybrid read-only command layer and LLM-facing presentation contract~~
-16. Build the v0.8.1 layered test matrix and installed-artifact smoke strategy
-17. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
-18. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and v0.8.1 validation gates are stable
+16. ~~Build the v0.8.1 layered test matrix and installed-artifact smoke strategy~~
+17. ~~Land the v0.9.1 performance-intelligence and CLI closeout pass~~
+18. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
+19. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and validation gates are stable
 
 ## Definition of done for the roadmap
 

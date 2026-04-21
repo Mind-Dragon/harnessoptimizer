@@ -62,96 +62,77 @@ Harness Optimizer reads agent config, sessions, logs, and runtime health surface
 
 ```
 pip install -e .
-hermesoptimizer                    # run analysis
-hermesoptimizer --help             # CLI options
+hermesoptimizer --help
+PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 ```
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| `hermesoptimizer` | Run full analysis pipeline |
-| `hermesoptimizer run` | Discover, parse, diagnose, and report |
+| `hermesoptimizer run` | Discover Hermes surfaces, analyze them, store findings, and emit JSON/Markdown reports |
 | `hermesoptimizer export` | Write JSON and Markdown reports from the catalog |
-| `hermesoptimizer todo` | Create, list, and freeze workflow plans |
-| `hermesoptimizer devdo` | Execute frozen plans with subagent orchestration |
-| `hermesoptimizer dodev` | Alias for `devdo` |
-| `hermesoptimizer budget-review` | Analyze sessions and recommend turn budgets |
-| `hermesoptimizer budget-set` | Apply a budget profile to config (dry-run by default) |
-| `hermesoptimizer token-review` | Analyze token usage and detect waste |
-| `hermesoptimizer token-report` | Export token usage JSON/Markdown report |
-| `hermesoptimizer perf-report` | Print provider health dashboard |
-| `hermesoptimizer perf-check` | Quick live check of configured providers |
-| `hermesoptimizer tool-review` | Analyze tool usage and detect manual workarounds |
-| `hermesoptimizer tool-report` | Export tool usage JSON/Markdown report |
-| `hermesoptimizer port-reserve` | Reserve a port number |
-| `hermesoptimizer port-list` | List port reservations |
-| `hermesoptimizer ip-list` | List registered IP addresses |
-| `hermesoptimizer ip-add` | Register an IP address |
-| `hermesoptimizer vault-audit` | Audit vault entries, validation, dedup, and rotation state |
-| `hermesoptimizer vault-writeback` | Execute write-back to vault files with `--confirm` flow |
+| `hermesoptimizer init-db` | Initialize the SQLite catalog |
+| `hermesoptimizer add-record` / `add-finding` | Insert catalog fixtures or manual records/findings |
+| `hermesoptimizer list-records` / `list-findings` | Inspect catalog contents |
+| `hermesoptimizer db-vacuum` | Reclaim SQLite DB space |
+| `hermesoptimizer db-retention --days N` | Prune old catalog data |
+| `hermesoptimizer db-stats` | Show DB size and per-table row counts |
+| `hermesoptimizer token-report` / `token-check` | Analyze token usage and detect waste |
+| `hermesoptimizer perf-report` / `perf-check` | Analyze provider performance and quick-check configured providers |
+| `hermesoptimizer tool-report` / `tool-check` | Analyze tool usage and detect manual workarounds |
+| `hermesoptimizer port-reserve` / `port-list` / `port-release` | Manage reserved ports |
+| `hermesoptimizer ip-list` / `ip-add` / `network-scan` | Manage IP inventory and scan local IPv4s |
+| `hermesoptimizer budget-review` / `budget-set` | Review and apply turn-budget profiles |
+| `hermesoptimizer vault-audit` / `vault-writeback` | Audit vault state and execute confirmed write-back |
+| `hermesoptimizer todo` / `devdo` / `dodev` | Plan and execute workflow runs |
+| `hermesoptimizer caveman` | Toggle caveman mode |
+| `hermesoptimizer provider-list` | List available providers |
+| `hermesoptimizer provider-recommend` | Rank provider/model recommendations from checked-in catalogs and local truth |
+| `hermesoptimizer workflow-list` | List workflow plans and runs |
+| `hermesoptimizer dreams-inspect` | Inspect dreams sidecar state |
+| `hermesoptimizer report-latest` | Print the newest report from the runtime report directory |
+| `hermesoptimizer verify-endpoints` | Verify a provider endpoint/model against truth data |
+| `hermesoptimizer dreams-sweep` | Run a read-only dreams memory sweep summary |
 
 ## Architecture
 
 ```
 src/hermesoptimizer/
-  __main__.py             CLI dispatch
-  run_standalone.py       analysis pipeline and catalog export commands
-  run_hermes_mode.py      Hermes-specific runtime entry point
+  __main__.py             unified CLI entrypoint
+  cli/                    unified argparse surface and command dispatch
+    __init__.py           build_parser(), dispatch()
+    legacy.py             init-db/add-record/export/list/vault/budget handlers
+    v091.py               token/perf/tool/network handlers
+    run.py                unified run pipeline
+    workflow.py           todo/devdo/dodev/caveman handlers
+    orphan.py             provider/verify/dreams/report closeout handlers
+  run_standalone.py       backward-compatible shim to unified CLI
+  discovery.py            Hermes surface discovery
   loop.py                 discover → diagnose → report loop
   catalog.py              SQLite schema and CRUD
-  agent_management.py     agent truth and routing helpers
   budget/                 turn-budget tuning sidecar
   tokens/                 token usage tracking and optimization
-    models.py             TokenUsage, TokenWaste, TokenRecommendation
-    analyzer.py           parse sessions for token counts, detect waste
-    optimizer.py          generate token optimization recommendations
-    commands.py           token-report, token-check CLI
-  perf/                   API provider performance monitoring
-    models.py             ProviderPerf, ProviderOutage
-    analyzer.py           gather perf signals from sessions
-    reporter.py           generate health dashboard
-    commands.py           perf-report, perf-check CLI
+  perf/                   provider performance monitoring
   tools/                  tool usage optimization
-    models.py             ToolUsage, ToolMiss, ToolRecommendation
-    analyzer.py           detect manual workarounds vs tool usage
-    optimizer.py          suggest tools for manual patterns
-    commands.py           tool-report, tool-check CLI
   network/                port and IP discipline
-    models.py             PortReservation, IPAssignment
-    inventory.py          SQLite-backed port/IP registry
-    scanner.py            auto-detect local IPv4 addresses
-    validator.py          validate configs for bad ports/IPs
-    enforcer.py           emit findings on violations
-    commands.py           port-reserve, port-list, ip-list, ip-add CLI
-  sources/                agent source readers and provider catalogs
-    hermes_*.py           config, logs, sessions, auth, runtime
-    provider_truth.py     ProviderTruthStore and model validation
-    model_catalog.py      provider-model catalog (OpenAI, Anthropic, Google, Qwen, etc.)
-  verify/endpoints.py     live endpoint and model validation
-  dreams/                 dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
-  validate/               normalizer and lane validators
-  route/diagnosis.py      routing diagnosis and fallback-chain detection
-  report/                 JSON, Markdown, metrics, and issues
+  tool_surface/           read-only command layer and recommender surfaces
+  verify/                 endpoint verification and config-fix helpers
+  dreams/                 dreaming/memory sidecar
+  vault/                  vault audit, validation, write-back, plugins
   workflow/               /todo and /devdo workflow engine
-    schema.py             WorkflowPlan, WorkflowRun, WorkflowTask dataclasses
-    store.py              YAML persistence with locking
-    guard.py              runtime guard (preflight, boundary, drift-repair)
-    scheduler.py          task DAG, role pools, batch computation
-    executor.py           execution state machine
-    plan_shaper.py        plan quality validation and default task generation
-    ux_format.py          terminal-friendly output rendering
-  commands/               workflow command implementations
-    todo_cmd.py           /todo: create, update, freeze plans
-    devdo_cmd.py          /devdo: start runs, update tasks, checkpoint, resume
+  report/                 JSON, Markdown, metrics, and issues
+  sources/                Hermes/runtime/provider source readers
 ```
 
 ## Tests
 
-1,610 tests collected, 5 skipped. Run with:
+`PYTHONPATH=src pytest --collect-only` currently reports 1,626 collected tests.
+
+Run the full suite with:
 
 ```
-pytest
+PYTHONPATH=src python -m pytest -q
 ```
 
 ## Documentation
