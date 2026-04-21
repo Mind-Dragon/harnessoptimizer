@@ -6,7 +6,7 @@ target_paths:
   - ~/.hermes/dreams/memory_meta.db
   - scripts/dreaming_pre_sweep.py
   - scripts/probe_memory_meta.py
-verify_command: python -m hermesoptimizer dreams-sweep --help
+verify_command: python -m hermesoptimizer.extensions.verify_contracts dreams
 ownership: repo_external
 metadata:
   cron_job_id: 30b51a980bc4

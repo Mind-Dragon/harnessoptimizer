@@ -306,10 +306,12 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
             print(f"external: {report['external']}")
             print(f"verify_passed: {report.get('verify_passed', 0)}")
             print(f"verify_failed: {report.get('verify_failed', 0)}")
+            print(f"drift_warnings: {report.get('drift_warnings', 0)}")
+            print(f"drift_errors: {report.get('drift_errors', 0)}")
             if report["issues"]:
                 print("issues:")
                 for issue in report["issues"]:
-                    src = issue.get("source_path", issue.get("command", "n/a"))
+                    src = issue.get("source_path", issue.get("command", issue.get("check", "n/a")))
                     print(f"  - {issue['id']}: {issue['issue']} ({src})")
             return 0
         except Exception as exc:

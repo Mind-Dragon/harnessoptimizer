@@ -18,6 +18,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+if len(sys.argv) > 1 and sys.argv[1] in ("--help", "-h"):
+    print(__doc__)
+    sys.exit(0)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TESTPLAN = REPO_ROOT / "TESTPLAN.md"
 TESTS_DIR = REPO_ROOT / "tests"
