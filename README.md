@@ -18,7 +18,7 @@
 
 ---
 
-Current release: **v0.9.0**
+Current release: **v0.9.1**
 
 Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
 
@@ -71,6 +71,16 @@ hermesoptimizer --help             # CLI options
 | `hermesoptimizer dodev` | Alias for `devdo` |
 | `hermesoptimizer budget-review` | Analyze sessions and recommend turn budgets |
 | `hermesoptimizer budget-set` | Apply a budget profile to config (dry-run by default) |
+| `hermesoptimizer token-review` | Analyze token usage and detect waste |
+| `hermesoptimizer token-report` | Export token usage JSON/Markdown report |
+| `hermesoptimizer perf-report` | Print provider health dashboard |
+| `hermesoptimizer perf-check` | Quick live check of configured providers |
+| `hermesoptimizer tool-review` | Analyze tool usage and detect manual workarounds |
+| `hermesoptimizer tool-report` | Export tool usage JSON/Markdown report |
+| `hermesoptimizer port-reserve` | Reserve a port number |
+| `hermesoptimizer port-list` | List port reservations |
+| `hermesoptimizer ip-list` | List registered IP addresses |
+| `hermesoptimizer ip-add` | Register an IP address |
 | `hermesoptimizer vault-audit` | Audit vault entries, validation, dedup, and rotation state |
 | `hermesoptimizer vault-writeback` | Execute write-back to vault files with `--confirm` flow |
 
@@ -85,12 +95,31 @@ src/hermesoptimizer/
   catalog.py              SQLite schema and CRUD
   agent_management.py     agent truth and routing helpers
   budget/                 turn-budget tuning sidecar
-    profile.py            BudgetProfile presets and per-role defaults
-    analyzer.py           session log signal extraction
-    recommender.py        sliding-scale recommendation logic
-    tuner.py              config writer (dry-run / confirm)
-    commands.py           budget-review and budget-set CLI
-    watch.py              passive post-session monitor
+  tokens/                 token usage tracking and optimization
+    models.py             TokenUsage, TokenWaste, TokenRecommendation
+    extractor.py          parse sessions/logs for token counts
+    analyzer.py           compute waste ratios and efficiency
+    recommender.py        suggest better provider/model/lane combos
+    commands.py           token-review, token-report CLI
+  perf/                   API provider performance monitoring
+    models.py             ProviderPerf, PerfSummary
+    collector.py          gather perf signals from sessions/logs
+    aggregator.py         roll up per-provider stats
+    reporter.py           generate health dashboard
+    commands.py           perf-report, perf-check CLI
+  tools/                  tool usage optimization
+    models.py             ToolUsage, ToolGap, ToolRecommendation
+    detector.py           detect manual workarounds vs tool usage
+    analyzer.py           compute adoption rates
+    recommender.py        suggest tools for manual patterns
+    commands.py           tool-review, tool-report CLI
+  network/                port and IP discipline
+    models.py             PortReservation, IPAssignment
+    inventory.py          SQLite-backed port/IP registry
+    scanner.py            auto-detect local IPv4 addresses
+    validator.py          validate configs for bad ports/IPs
+    enforcer.py           emit findings on violations
+    commands.py           port-reserve, port-list, ip-list, ip-add CLI
   sources/                agent source readers and provider catalogs
     hermes_*.py           config, logs, sessions, auth, runtime
     provider_truth.py     ProviderTruthStore and model validation

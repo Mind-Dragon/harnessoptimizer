@@ -2,6 +2,40 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.1 -- Performance Intelligence Suite
+
+### Added
+
+- `tokens/` subpackage: token usage tracking, waste detection, and provider/model optimization
+  - `tokens/extractor.py`: Parse sessions/logs for input/output/total token counts
+  - `tokens/analyzer.py`: Detect retry burn, loop burn, empty output, over-context waste
+  - `tokens/recommender.py`: Recommend best provider+model per lane based on token efficiency
+  - CLI: `token-review`, `token-report`
+- `perf/` subpackage: AI API provider performance monitoring
+  - `perf/collector.py`: Gather response times, error codes, tokens/sec from sessions/logs
+  - `perf/aggregator.py`: Roll up p50/p99 percentiles, success rates, tool usage rates
+  - `perf/reporter.py`: Health dashboard with green/yellow/red provider classification
+  - CLI: `perf-report`, `perf-check`
+- `tools/` subpackage: tool usage optimization
+  - `tools/detector.py`: Detect manual workarounds (scripts, text generation) vs available tools
+  - `tools/analyzer.py`: Compute tool adoption rates by provider/model/lane
+  - `tools/recommender.py`: Suggest specific tools for detected manual patterns
+  - CLI: `tool-review`, `tool-report`
+- `network/` subpackage: port and IP discipline
+  - `network/inventory.py`: SQLite-backed port/IP registry with reserve/forbid/available states
+  - `network/scanner.py`: Auto-detect local IPv4 addresses (excludes loopback)
+  - `network/validator.py`: Flag forbidden ports (3000, 8080) and localhost/127.0.0.1 in configs
+  - `network/enforcer.py`: Emit critical findings when AI uses bad ports or IPs
+  - CLI: `port-reserve`, `port-list`, `ip-list`, `ip-add`, `network-scan`
+- New catalog tables: `token_usage`, `provider_perf`, `tool_usage`, `network_inventory`
+- ~175 new tests across tokens, perf, tools, network domains
+
+### Changed
+
+- Version bumped to 0.9.1
+- README.md updated with new commands and architecture diagram
+- `loop.py` enriched with token, perf, tool, and network integration points
+
 ## v0.9.0 -- Agent Turn Budget Tuning
 
 ### Added
