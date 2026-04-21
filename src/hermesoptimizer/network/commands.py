@@ -15,13 +15,14 @@ from hermesoptimizer.network.inventory import (
     ensure_forbidden_ports,
 )
 from hermesoptimizer.network.scanner import scan_local_ips, get_primary_ip
+from hermesoptimizer.paths import get_db_path
 
 
-_DEFAULT_DB = Path("catalog.db")
+_DEFAULT_DB = get_db_path()
 
 
 def _db_path(args: argparse.Namespace) -> Path:
-    return Path(getattr(args, "db", "catalog.db"))
+    return Path(getattr(args, "db", str(_DEFAULT_DB)))
 
 
 def handle_port_reserve(args: argparse.Namespace) -> int:
@@ -115,28 +116,28 @@ def add_port_reserve_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("port-reserve", help="Reserve a port number")
     parser.add_argument("port", type=int, help="Port number to reserve")
     parser.add_argument("--purpose", default="", help="Description of what this port is for")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser
 
 
 def add_port_list_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("port-list", help="List port reservations")
     parser.add_argument("--status", choices=["reserved", "available", "forbidden"], help="Filter by status")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser
 
 
 def add_port_release_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("port-release", help="Release a reserved port")
     parser.add_argument("port", type=int, help="Port number to release")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser
 
 
 def add_ip_list_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("ip-list", help="List registered IP addresses")
     parser.add_argument("--type", choices=["local_v4", "vpn", "public", "custom"], help="Filter by type")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser
 
 
@@ -145,11 +146,11 @@ def add_ip_add_subparser(subparsers) -> argparse.ArgumentParser:
     parser.add_argument("ip", help="IP address to register")
     parser.add_argument("--type", default="custom", choices=["local_v4", "vpn", "public", "custom"], help="IP type")
     parser.add_argument("--purpose", default="", help="Description")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser
 
 
 def add_network_scan_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("network-scan", help="Auto-detect and register local IPs")
-    parser.add_argument("--db", default="catalog.db", help="Path to catalog database")
+    parser.add_argument("--db", default=str(get_db_path()), help="Path to catalog database")
     return parser

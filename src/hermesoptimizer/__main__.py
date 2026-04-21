@@ -4,6 +4,10 @@ import sys
 from pathlib import Path
 
 
+from hermesoptimizer.paths import get_db_path, ensure_dirs
+
+ensure_dirs()
+
 def main() -> int:
     args = sys.argv[1:]
     if not args:
@@ -44,7 +48,7 @@ def main() -> int:
         p = argparse.ArgumentParser()
         p.add_argument("port", type=int)
         p.add_argument("--purpose", default="")
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_port_reserve(p.parse_args(rest))
 
     if command == "port-list":
@@ -52,7 +56,7 @@ def main() -> int:
         import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--status", choices=["reserved", "available", "forbidden"])
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_port_list(p.parse_args(rest))
 
     if command == "port-release":
@@ -60,7 +64,7 @@ def main() -> int:
         import argparse
         p = argparse.ArgumentParser()
         p.add_argument("port", type=int)
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_port_release(p.parse_args(rest))
 
     if command == "ip-list":
@@ -68,7 +72,7 @@ def main() -> int:
         import argparse
         p = argparse.ArgumentParser()
         p.add_argument("--type", choices=["local_v4", "vpn", "public", "custom"])
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_ip_list(p.parse_args(rest))
 
     if command == "ip-add":
@@ -78,14 +82,14 @@ def main() -> int:
         p.add_argument("ip")
         p.add_argument("--type", default="custom", choices=["local_v4", "vpn", "public", "custom"])
         p.add_argument("--purpose", default="")
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_ip_add(p.parse_args(rest))
 
     if command == "network-scan":
         from hermesoptimizer.network.commands import handle_network_scan
         import argparse
         p = argparse.ArgumentParser()
-        p.add_argument("--db", default="catalog.db")
+        p.add_argument("--db", default=str(get_db_path()))
         return handle_network_scan(p.parse_args(rest))
 
     # Token usage analysis commands

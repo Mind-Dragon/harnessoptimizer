@@ -81,15 +81,18 @@ def _inspected_inputs_from_rows(records: list[Record], findings: list[Finding]) 
     return inspected
 
 
+from hermesoptimizer.paths import get_db_path
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="hermesoptimizer")
     sub = parser.add_subparsers(dest="command", required=True)
 
     init_db_cmd = sub.add_parser("init-db", help="Initialize the SQLite database")
-    init_db_cmd.add_argument("--db", default="catalog.db")
+    init_db_cmd.add_argument("--db", default=str(get_db_path()))
 
     add_record = sub.add_parser("add-record", help="Insert or update a record")
-    add_record.add_argument("--db", default="catalog.db")
+    add_record.add_argument("--db", default=str(get_db_path()))
     add_record.add_argument("--provider", required=True)
     add_record.add_argument("--model", required=True)
     add_record.add_argument("--base-url", required=True)
@@ -104,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_record.add_argument("--raw-text")
 
     add_finding = sub.add_parser("add-finding", help="Insert a finding")
-    add_finding.add_argument("--db", default="catalog.db")
+    add_finding.add_argument("--db", default=str(get_db_path()))
     add_finding.add_argument("--category", required=True)
     add_finding.add_argument("--severity", required=True)
     add_finding.add_argument("--file-path")
@@ -118,15 +121,15 @@ def build_parser() -> argparse.ArgumentParser:
     add_finding.add_argument("--lane")
 
     export_cmd = sub.add_parser("export", help="Write JSON and Markdown reports")
-    export_cmd.add_argument("--db", default="catalog.db")
+    export_cmd.add_argument("--db", default=str(get_db_path()))
     export_cmd.add_argument("--out-dir", default="reports")
     export_cmd.add_argument("--title", default="Hermes Optimizer Report")
 
     list_records = sub.add_parser("list-records", help="Print stored records")
-    list_records.add_argument("--db", default="catalog.db")
+    list_records.add_argument("--db", default=str(get_db_path()))
 
     list_findings = sub.add_parser("list-findings", help="Print stored findings")
-    list_findings.add_argument("--db", default="catalog.db")
+    list_findings.add_argument("--db", default=str(get_db_path()))
 
     vault_audit = sub.add_parser("vault-audit", help="Audit a vault root for entries, validation, dedup, and rotation state")
     vault_audit.add_argument("--vault-root", help="Path to vault root (default: ~/.vault)")
@@ -316,7 +319,7 @@ def _vault_writeback(args: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    db_path = Path(getattr(args, "db", "catalog.db"))
+    db_path = Path(getattr(args, "db", str(get_db_path())))
 
     if args.command == "init-db":
         init_db(db_path)
