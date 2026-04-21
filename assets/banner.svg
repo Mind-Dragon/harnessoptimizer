@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e27;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0f1535;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0e27;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#00ff9d;stop-opacity:0.6" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bgGrad)"/>
+
+  <!-- Grid pattern -->
+  <g stroke="#1a2342" stroke-width="1" opacity="0.5">
+    <line x1="0" y1="100" x2="1200" y2="100"/>
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="200" y1="0" x2="200" y2="400"/>
+    <line x1="400" y1="0" x2="400" y2="400"/>
+    <line x1="600" y1="0" x2="600" y2="400"/>
+    <line x1="800" y1="0" x2="800" y2="400"/>
+    <line x1="1000" y1="0" x2="1000" y2="400"/>
+  </g>
+
+  <!-- Decorative circuit nodes -->
+  <g fill="#00d4ff" opacity="0.4">
+    <circle cx="150" cy="100" r="4"/>
+    <circle cx="350" cy="300" r="4"/>
+    <circle cx="850" cy="80" r="4"/>
+    <circle cx="1050" cy="320" r="4"/>
+  </g>
+  <g stroke="#00d4ff" stroke-width="1.5" opacity="0.3" fill="none">
+    <path d="M150 100 L250 100 L250 200 L350 200 L350 300"/>
+    <path d="M850 80 L950 80 L950 180 L1050 180 L1050 320"/>
+  </g>
+
+  <!-- Accent lines -->
+  <line x1="0" y1="180" x2="1200" y2="180" stroke="url(#accentGrad)" stroke-width="2" opacity="0.6"/>
+  <line x1="0" y1="220" x2="1200" y2="220" stroke="url(#accentGrad)" stroke-width="1" opacity="0.3"/>
+
+  <!-- Main title -->
+  <text x="600" y="175" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+    Harness Optimizer
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="230" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="24" font-weight="300" fill="#00d4ff" text-anchor="middle" letter-spacing="4" opacity="0.9">
+    AGENT INTELLIGENCE &amp; WORKFLOW ORCHESTRATION
+  </text>
+
+  <!-- Decorative brackets -->
+  <g stroke="#00ff9d" stroke-width="2" fill="none" opacity="0.5">
+    <path d="M200 140 L180 140 L180 260 L200 260"/>
+    <path d="M1000 140 L1020 140 L1020 260 L1000 260"/>
+  </g>
+
+  <!-- Bottom tag -->
+  <rect x="520" y="300" width="160" height="30" rx="15" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity="0.6"/>
+  <text x="600" y="321" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="14" font-weight="500" fill="#00d4ff" text-anchor="middle" letter-spacing="1">
+    v0.9.0
+  </text>
+</svg>

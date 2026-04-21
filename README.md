@@ -1,15 +1,31 @@
-# Hermes Optimizer
+<p align="center">
+  <img src="assets/banner.svg" alt="Harness Optimizer" width="100%">
+</p>
 
-Current release: v0.9.0.
+<h1 align="center">Harness Optimizer</h1>
 
-Analysis, hygiene, and workflow orchestration for Hermes Agent environments.
+<p align="center">
+  <strong>Analysis, hygiene, and workflow orchestration for agent environments.</strong>
+</p>
 
-Reads Hermes config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
+<p align="center">
+  <a href="#commands">Commands</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#tests">Tests</a> ·
+  <a href="#documentation">Docs</a> ·
+  <a href="#license">License</a>
+</p>
+
+---
+
+Current release: **v0.9.0**
+
+Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
 
 ## What it does
 
 **Analysis and hygiene:**
-- discovers Hermes config, sessions, logs, databases, and runtime surfaces
+- discovers agent config, sessions, logs, databases, and runtime surfaces
 - detects failures, auth errors, timeouts, crashes, and config drift
 - validates provider endpoints and model names against live truth
 - detects stale, deprecated, and misconfigured models
@@ -23,6 +39,12 @@ Reads Hermes config, sessions, logs, and runtime health surfaces. Detects what i
 - task DAGs with dependency resolution and role pools
 - two-stage review, checkpoint/resume, blocker routing
 - scales to 10+ concurrent subagents
+
+**Budget tuning:**
+- `budget-review` analyzes session utilization and recommends profiles
+- `budget-set` applies turn-budget profiles with dry-run safety
+- five-step sliding scale (low → high) with per-role overrides
+- passive `budget-watch` monitor for post-session advice
 
 **Reports:**
 - grouped findings with plain-language recommendations
@@ -47,25 +69,34 @@ hermesoptimizer --help             # CLI options
 | `hermesoptimizer todo` | Create, list, and freeze workflow plans |
 | `hermesoptimizer devdo` | Execute frozen plans with subagent orchestration |
 | `hermesoptimizer dodev` | Alias for `devdo` |
+| `hermesoptimizer budget-review` | Analyze sessions and recommend turn budgets |
+| `hermesoptimizer budget-set` | Apply a budget profile to config (dry-run by default) |
 | `hermesoptimizer vault-audit` | Audit vault entries, validation, dedup, and rotation state |
-| `hermesoptimizer vault-writeback` | Execute write-back to vault files with --confirm flow |
+| `hermesoptimizer vault-writeback` | Execute write-back to vault files with `--confirm` flow |
 
 ## Architecture
 
 ```
 src/hermesoptimizer/
-  __main__.py             CLI dispatch for run / todo / devdo / dodev
+  __main__.py             CLI dispatch
   run_standalone.py       analysis pipeline and catalog export commands
   run_hermes_mode.py      Hermes-specific runtime entry point
-  loop.py                 discover -> diagnose -> report loop
+  loop.py                 discover → diagnose → report loop
   catalog.py              SQLite schema and CRUD
   agent_management.py     agent truth and routing helpers
-  sources/                Hermes source readers and provider catalogs
-    hermes_*.py           Hermes config, logs, sessions, auth, runtime
+  budget/                 turn-budget tuning sidecar
+    profile.py            BudgetProfile presets and per-role defaults
+    analyzer.py           session log signal extraction
+    recommender.py        sliding-scale recommendation logic
+    tuner.py              config writer (dry-run / confirm)
+    commands.py           budget-review and budget-set CLI
+    watch.py              passive post-session monitor
+  sources/                agent source readers and provider catalogs
+    hermes_*.py           config, logs, sessions, auth, runtime
     provider_truth.py     ProviderTruthStore and model validation
-    model_catalog.py      Provider-model catalog (OpenAI, Anthropic, Google, Qwen, etc.)
-  verify/endpoints.py     Live endpoint and model validation
-  dreams/                  Dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
+    model_catalog.py      provider-model catalog (OpenAI, Anthropic, Google, Qwen, etc.)
+  verify/endpoints.py     live endpoint and model validation
+  dreams/                 dreaming/memory sidecar (memory_meta, decay, sweep, fidelity, recall)
   validate/               normalizer and lane validators
   route/diagnosis.py      routing diagnosis and fallback-chain detection
   report/                 JSON, Markdown, metrics, and issues
@@ -84,7 +115,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-1,250 tests collected, 4 skipped in the current baseline. Run with:
+1,534 tests collected, 5 skipped. Run with:
 
 ```
 pytest
@@ -92,14 +123,13 @@ pytest
 
 ## Documentation
 
-- `ARCHITECTURE.md` -- system shape, data flow, design constraints
-- `GUIDELINE.md` -- success rules and release gates
-- `ROADMAP.md` -- release sequence through the active v0.8.1 testing hardening slice and the v1.0 series
-- `VERSION0.8.0.md` -- archived completed queue for the v0.8.0 tool-surface slice
-- `VERSION0.8.1.md` -- active release note for the testing and validation-hardening slice
-- `TESTPLAN.md` -- canonical layered test matrix, selectors, and release gates
-- `docs/WORKFLOW.md` -- operator guide for /todo and /devdo
-- `TODO.md` -- current execution queue
+- `ARCHITECTURE.md` — system shape, data flow, design constraints
+- `GUIDELINE.md` — success rules and release gates
+- `ROADMAP.md` — release sequence
+- `TESTPLAN.md` — canonical layered test matrix, selectors, and release gates
+- `CHANGELOG.md` — version history
+- `docs/WORKFLOW.md` — operator guide for /todo and /devdo
+- `TODO.md` — current execution queue
 
 ## What this is not
 
@@ -110,4 +140,6 @@ pytest
 
 ## License
 
-MIT
+Apache License 2.0 with Non-Commercial Clause.
+
+This software is licensed under the Apache License, Version 2.0, with the additional restriction that it may not be used for commercial purposes without explicit written permission. See [LICENSE](LICENSE) for full terms.
