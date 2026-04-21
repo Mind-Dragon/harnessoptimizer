@@ -7,6 +7,8 @@ This module exposes:
 from __future__ import annotations
 
 import argparse
+import tempfile
+from pathlib import Path
 from typing import Callable
 
 from hermesoptimizer.paths import get_db_path
@@ -15,7 +17,13 @@ from hermesoptimizer.paths import get_db_path
 # Token usage analysis commands
 def _add_token_report_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("token-report", help="Generate token usage report")
-    parser.add_argument("path", help="Path to session file or directory")
+    parser.add_argument("path", nargs="?", help="Path to session file or directory")
+    parser.add_argument(
+        "--auto-discover",
+        action="store_true",
+        default=True,
+        help="Scan known Hermes directories for sessions (default: True)",
+    )
     parser.add_argument("--json-out", help="Write JSON report to file")
     return parser
 
@@ -29,7 +37,13 @@ def _add_token_check_subparser(subparsers) -> argparse.ArgumentParser:
 # Performance monitoring commands
 def _add_perf_report_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("perf-report", help="Generate performance report")
-    parser.add_argument("path", help="Path to session file or directory")
+    parser.add_argument("path", nargs="?", help="Path to session file or directory")
+    parser.add_argument(
+        "--auto-discover",
+        action="store_true",
+        default=True,
+        help="Scan known Hermes directories for sessions (default: True)",
+    )
     parser.add_argument("--json-out", help="Write JSON report to file")
     return parser
 
@@ -43,7 +57,13 @@ def _add_perf_check_subparser(subparsers) -> argparse.ArgumentParser:
 # Tool usage analysis commands
 def _add_tool_report_subparser(subparsers) -> argparse.ArgumentParser:
     parser = subparsers.add_parser("tool-report", help="Generate tool usage report")
-    parser.add_argument("path", help="Path to session file or directory")
+    parser.add_argument("path", nargs="?", help="Path to session file or directory")
+    parser.add_argument(
+        "--auto-discover",
+        action="store_true",
+        default=True,
+        help="Scan known Hermes directories for sessions (default: True)",
+    )
     parser.add_argument("--json-out", help="Write JSON report to file")
     return parser
 
@@ -104,6 +124,30 @@ def _add_network_scan_subparser(subparsers) -> argparse.ArgumentParser:
 # -----------------------------------------------------------------------
 
 def _handle_token_report(args: argparse.Namespace) -> int:
+    if args.path is None and args.auto_discover:
+        from hermesoptimizer.discovery import discover_hermes_surfaces
+
+        files = discover_hermes_surfaces()
+        if not files:
+            print("No Hermes session files found. Run with --no-auto-discover or provide a path.")
+            return 0
+        # Create a temp dir with symlinks to discovered files for the analyzer
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            for f in files:
+                try:
+                    (tmp_path / f.name).symlink_to(f)
+                except FileExistsError:
+                    # Handle duplicate filenames from different roots
+                    import uuid
+                    (tmp_path / f"{f.stem}_{uuid.uuid4().hex[:6]}{f.suffix}").symlink_to(f)
+            import argparse as _argparse
+            new_args = _argparse.Namespace(
+                path=str(tmp_path),
+                json_out=args.json_out,
+            )
+            from hermesoptimizer.tokens.commands import handle_token_report as _handle
+            return _handle(new_args)
     from hermesoptimizer.tokens.commands import handle_token_report
     return handle_token_report(args)
 
@@ -114,6 +158,28 @@ def _handle_token_check(args: argparse.Namespace) -> int:
 
 
 def _handle_perf_report(args: argparse.Namespace) -> int:
+    if args.path is None and args.auto_discover:
+        from hermesoptimizer.discovery import discover_hermes_surfaces
+
+        files = discover_hermes_surfaces()
+        if not files:
+            print("No Hermes session files found. Run with --no-auto-discover or provide a path.")
+            return 0
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            for f in files:
+                try:
+                    (tmp_path / f.name).symlink_to(f)
+                except FileExistsError:
+                    import uuid
+                    (tmp_path / f"{f.stem}_{uuid.uuid4().hex[:6]}{f.suffix}").symlink_to(f)
+            import argparse as _argparse
+            new_args = _argparse.Namespace(
+                path=str(tmp_path),
+                json_out=args.json_out,
+            )
+            from hermesoptimizer.perf.commands import handle_perf_report as _handle
+            return _handle(new_args)
     from hermesoptimizer.perf.commands import handle_perf_report
     return handle_perf_report(args)
 
@@ -124,6 +190,28 @@ def _handle_perf_check(args: argparse.Namespace) -> int:
 
 
 def _handle_tool_report(args: argparse.Namespace) -> int:
+    if args.path is None and args.auto_discover:
+        from hermesoptimizer.discovery import discover_hermes_surfaces
+
+        files = discover_hermes_surfaces()
+        if not files:
+            print("No Hermes session files found. Run with --no-auto-discover or provide a path.")
+            return 0
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            for f in files:
+                try:
+                    (tmp_path / f.name).symlink_to(f)
+                except FileExistsError:
+                    import uuid
+                    (tmp_path / f"{f.stem}_{uuid.uuid4().hex[:6]}{f.suffix}").symlink_to(f)
+            import argparse as _argparse
+            new_args = _argparse.Namespace(
+                path=str(tmp_path),
+                json_out=args.json_out,
+            )
+            from hermesoptimizer.tools.commands import handle_tool_report as _handle
+            return _handle(new_args)
     from hermesoptimizer.tools.commands import handle_tool_report
     return handle_tool_report(args)
 

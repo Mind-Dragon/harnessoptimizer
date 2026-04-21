@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
-from hermesoptimizer.cli import legacy, v091, workflow, orphan
+from hermesoptimizer.cli import db_mgmt, legacy, run, v091, workflow, orphan
 
 
 # ----------------------------------------------------------------------
@@ -12,8 +12,10 @@ from hermesoptimizer.cli import legacy, v091, workflow, orphan
 # ----------------------------------------------------------------------
 
 def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
-    """Register CLI subcommands from all four command-group modules."""
+    """Register CLI subcommands from all command-group modules."""
+    db_mgmt.add_subparsers(subparsers)
     legacy.add_subparsers(subparsers)
+    run.add_subparsers(subparsers)
     v091.add_subparsers(subparsers)
     workflow.add_subparsers(subparsers)
     orphan.add_subparsers(subparsers)
@@ -68,7 +70,9 @@ class _CombinedHandlers(dict[str, Callable[[argparse.Namespace], int]]):
 
 def _build() -> dict[str, Callable[[argparse.Namespace], int]]:
     merged: dict[str, Callable[[argparse.Namespace], int]] = {}
+    merged.update(db_mgmt.HANDLERS)
     merged.update(legacy.HANDLERS)
+    merged.update(run.HANDLERS)
     merged.update(v091.HANDLERS)
     merged.update(workflow.HANDLERS)
     merged.update(orphan.HANDLERS)
