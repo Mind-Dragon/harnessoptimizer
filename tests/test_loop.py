@@ -373,3 +373,135 @@ class TestReadinessCriteria:
         assert final_state.current_step == "repeat"
         # And we should have a run_marker
         assert final_state.run_marker is not None
+
+
+# -------------------------------------------------------------------------
+# Lane A: scan_gateway_state_file tests
+# -------------------------------------------------------------------------
+
+import json as _json
+
+from hermesoptimizer.sources.hermes_runtime import scan_gateway_state_file
+
+
+class TestScanGatewayStateFile:
+    """Lane A — gateway_state.json is a first-class health source."""
+
+    def test_running_state_produces_no_finding(self, tmp_path: Path) -> None:
+        """gateway_state=running with invalid PID should still report no gateway-down finding."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "running", "pid": 0}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        # running state means no gateway-down finding, but PID check fires
+        kinds = {f.kind for f in findings}
+        assert "gateway-down" not in kinds
+        # PID check should still fire
+        assert any(f.kind == "gateway-pid-invalid" for f in findings)
+
+    def test_stopped_state_produces_critical_finding(self, tmp_path: Path) -> None:
+        """gateway_state=stopped should produce a critical gateway-down finding."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "stopped"}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.severity == "critical"
+        assert f.kind == "gateway-down"
+        assert f.category == "gateway-signal"
+        assert f.lane == "A"
+
+    def test_error_state_produces_critical_finding(self, tmp_path: Path) -> None:
+        """gateway_state=error should produce a critical gateway-down finding."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "error"}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        assert len(findings) == 1
+        assert findings[0].severity == "critical"
+        assert findings[0].kind == "gateway-down"
+
+    def test_invalid_pid_produces_high_finding(self, tmp_path: Path) -> None:
+        """PID that does not correspond to a running process should produce a finding."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "running", "pid": 99999}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        pid_findings = [f for f in findings if f.kind == "gateway-pid-invalid"]
+        assert len(pid_findings) == 1
+        assert pid_findings[0].severity == "high"
+        assert pid_findings[0].lane == "A"
+
+    def test_restart_requested_produces_medium_finding(self, tmp_path: Path) -> None:
+        """restart_requested=true should produce a medium severity finding."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "running", "pid": 1, "restart_requested": True}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        restart_findings = [f for f in findings if f.kind == "gateway-restart-requested"]
+        assert len(restart_findings) == 1
+        assert restart_findings[0].severity == "medium"
+        assert restart_findings[0].lane == "A"
+
+    def test_missing_file_returns_empty(self, tmp_path: Path) -> None:
+        """Non-existent gateway_state.json should return an empty list."""
+        findings = scan_gateway_state_file(tmp_path / "nonexistent.json")
+        assert findings == []
+
+    def test_malformed_json_returns_empty(self, tmp_path: Path) -> None:
+        """Malformed JSON should return an empty list, not raise."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text("not valid json{", encoding="utf-8")
+        findings = scan_gateway_state_file(gs_path)
+        assert findings == []
+
+    def test_stopped_with_invalid_pid_produces_two_findings(self, tmp_path: Path) -> None:
+        """gateway_state=stopped AND invalid PID should produce two findings."""
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "stopped", "pid": 99999}),
+            encoding="utf-8",
+        )
+        findings = scan_gateway_state_file(gs_path)
+        assert len(findings) == 2
+        kinds = {f.kind for f in findings}
+        assert kinds == {"gateway-down", "gateway-pid-invalid"}
+
+    def test_parse_step_wires_gateway_state_file(self, tmp_path: Path) -> None:
+        """The parse step should invoke scan_gateway_state_file for gateway entries."""
+        from hermesoptimizer.loop import LoopConfig, LoopState, parse, discover
+        from hermesoptimizer.sources.hermes_discover import SourceEntry
+
+        # Create a gateway_state.json fixture
+        gs_path = tmp_path / "gateway_state.json"
+        gs_path.write_text(
+            _json.dumps({"gateway_state": "stopped", "pid": 99999}),
+            encoding="utf-8",
+        )
+
+        # Build a minimal inventory pointing at the file
+        inv_file = tmp_path / "inventory.yaml"
+        inv_file.write_text(
+            f"gateway:\n  - path: {gs_path}\n    type: gateway\n    authoritative: true\n",
+            encoding="utf-8",
+        )
+        cfg = LoopConfig(inventory_path=inv_file, db_path=tmp_path / "catalog.db")
+        state = LoopState()
+        state = discover(state, cfg)
+        state = parse(state, cfg)
+
+        gateway_findings = [f for f in state.findings if f.category == "gateway-signal"]
+        assert len(gateway_findings) >= 1
+        assert any(f.kind == "gateway-down" for f in gateway_findings)
+        assert all(f.lane == "A" for f in gateway_findings)

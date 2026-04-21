@@ -26,10 +26,10 @@ from hermesoptimizer.sources.hermes_config import scan_config_paths
 from hermesoptimizer.sources.hermes_diagnosis import Diagnosis, diagnose_all
 from hermesoptimizer.sources.hermes_discover import discover_live_paths, load_inventory
 from hermesoptimizer.sources.hermes_logs import scan_log_paths
-from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_runtime_paths, scan_cli_status
+from hermesoptimizer.sources.hermes_runtime import scan_gateway_health, scan_gateway_state_file, scan_runtime_paths, scan_cli_status
 from hermesoptimizer.sources.hermes_sessions import scan_session_files
 from hermesoptimizer.sources.hermes_auth import scan_auth_files
-from hermesoptimizer.sources.provider_truth import ProviderTruthStore, load_provider_truth
+from hermesoptimizer.sources.provider_truth import ProviderTruthStore, load_provider_truth, seed_from_config
 from hermesoptimizer.verify.endpoints import EndpointCheckResult, verify_provider_truth
 
 
@@ -94,6 +94,23 @@ def _expand(path: str | Path) -> Path:
     return Path(path).expanduser()
 
 
+def _normalize_provider_def(name: str, provider_def: dict[str, Any]) -> dict[str, Any]:
+    """Normalize provider config to canonical fields.
+
+    Real config uses: api, default_model, key_env, name
+    Fixture/test config uses: base_url, model, auth_type, auth_key
+
+    We normalize both to a common shape.
+    """
+    return {
+        "provider": name,
+        "base_url": provider_def.get("base_url") or provider_def.get("api", ""),
+        "model": provider_def.get("model") or provider_def.get("default_model"),
+        "auth_type": provider_def.get("auth_type") or ("bearer" if provider_def.get("api") else None),
+        "auth_key_env": provider_def.get("auth_key_env") or provider_def.get("key_env"),
+    }
+
+
 def _extract_configured_providers(config_path: Path) -> list[dict[str, Any]]:
     try:
         data = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
@@ -106,13 +123,17 @@ def _extract_configured_providers(config_path: Path) -> list[dict[str, Any]]:
     for provider_name, provider_def in providers.items():
         if not isinstance(provider_def, dict):
             continue
-        configured.append(
-            {
-                "provider": provider_name,
-                "base_url": provider_def.get("base_url", ""),
-                "model": provider_def.get("model"),
-            }
-        )
+        configured.append(_normalize_provider_def(provider_name, provider_def))
+    # Also check top-level model config
+    top_model = data.get("model")
+    if isinstance(top_model, dict) and top_model.get("provider"):
+        configured.append({
+            "provider": top_model.get("provider", "unknown"),
+            "base_url": top_model.get("base_url", ""),
+            "model": top_model.get("default"),
+            "auth_type": None,
+            "auth_key_env": None,
+        })
     return configured
 
 
@@ -142,8 +163,14 @@ def parse(state: LoopState, config: LoopConfig) -> LoopState:
                 findings.extend(scan_runtime_paths([path]))
             elif category == "auth":
                 findings.extend(scan_auth_files([path]))
-            elif category == "gateway" and entry.command:
-                findings.extend(scan_gateway_health([entry.command]))
+            elif category == "gateway":
+                expanded = _expand(entry.expand_path())
+                # First-class gateway_state.json scanner
+                if expanded.exists() and expanded.suffix == ".json" and "gateway_state" in expanded.name:
+                    findings.extend(scan_gateway_state_file(expanded))
+                # Fallback: command-based health check
+                if entry.command:
+                    findings.extend(scan_gateway_health([entry.command]))
             elif category == "cli" and entry.command:
                 findings.extend(scan_cli_status([entry.command]))
 
@@ -156,13 +183,29 @@ def diagnose(state: LoopState, config: LoopConfig) -> LoopState:
     return _clone_state(state, diagnoses=diagnoses)
 
 
+def _find_config_path(state: LoopState) -> Path | None:
+    """Extract config.yaml path from discovered paths."""
+    for category, entries in state.discovered_paths.items():
+        for entry in entries:
+            if hasattr(entry, "path") and "config.yaml" in str(entry.path):
+                expanded = _expand(entry.expand_path()) if hasattr(entry, "expand_path") else _expand(entry.path)
+                if expanded.exists():
+                    return expanded
+    return None
+
+
 def enrich(state: LoopState, config: LoopConfig) -> LoopState:
     state.record_step("enrich")
     truth_store = state.provider_truth_store
     if config.provider_truth_path and config.provider_truth_path.exists():
         truth_store = load_provider_truth(config.provider_truth_path)
     elif truth_store is None:
-        truth_store = ProviderTruthStore()
+        # Seed from config.yaml providers instead of starting empty
+        config_path = _find_config_path(state)
+        if config_path:
+            truth_store = seed_from_config(config_path)
+        else:
+            truth_store = ProviderTruthStore()
     agent_registry = init_registry(truth_store=truth_store)
     return _clone_state(state, provider_truth_store=truth_store, agent_registry=agent_registry)
 

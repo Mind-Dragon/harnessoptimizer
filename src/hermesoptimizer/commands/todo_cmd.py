@@ -33,7 +33,7 @@ def create_plan(
 ) -> WorkflowPlan:
     """Create a new workflow plan with status 'draft'."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     workflow_id = str(uuid.uuid4())
     now = _now_iso()
@@ -77,7 +77,7 @@ def update_plan(
 ) -> WorkflowPlan:
     """Update an existing workflow plan."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     plan = load_plan(plan_dir)
@@ -112,7 +112,7 @@ def freeze_plan(
 ) -> WorkflowPlan:
     """Freeze a workflow plan after validation."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     plan = load_plan(plan_dir)
@@ -143,7 +143,7 @@ def add_task(
 ) -> WorkflowTask:
     """Add a task to a workflow plan."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     plan = load_plan(plan_dir)
@@ -178,7 +178,7 @@ def list_plans(
 ) -> list[WorkflowPlan]:
     """List all workflow plans."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     workflow_ids = list_workflows(base_dir)
     plans: list[WorkflowPlan] = []

@@ -1,0 +1,19 @@
+{
+  "session_id": "loop_detected_session",
+  "tasks": [
+    {
+      "task_id": "t_loop",
+      "role": "research",
+      "turns_used": 80,
+      "turns_budget": 100,
+      "retries": 2,
+      "loops": true,
+      "status": "incomplete",
+      "fix_cycles": 4,
+      "tokens_used": 38000,
+      "productive_calls": 25,
+      "total_calls": 80,
+      "duration_seconds": 150.0
+    }
+  ]
+}

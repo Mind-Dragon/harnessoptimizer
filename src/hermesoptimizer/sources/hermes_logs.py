@@ -22,6 +22,8 @@ _AUTH_PATTERNS = [
     re.compile(r"invalid.*api.?key", re.IGNORECASE),
     re.compile(r"authentication.*failed", re.IGNORECASE),
     re.compile(r"bearer.*token.*invalid", re.IGNORECASE),
+    # Real log format patterns
+    re.compile(r"Error code:\s*40[13]", re.IGNORECASE),
 ]
 
 _PROVIDER_PATTERNS = [
@@ -35,6 +37,10 @@ _PROVIDER_PATTERNS = [
     re.compile(r"upstream.*error", re.IGNORECASE),
     re.compile(r"connection.*reset", re.IGNORECASE),
     re.compile(r"connection.*timeout", re.IGNORECASE),
+    # Real log format patterns
+    re.compile(r"unknown provider", re.IGNORECASE),
+    re.compile(r"Request timed out", re.IGNORECASE),
+    re.compile(r"unknown model", re.IGNORECASE),
 ]
 
 _RUNTIME_PATTERNS = [
@@ -49,6 +55,8 @@ _RUNTIME_PATTERNS = [
     re.compile(r"internal\s+error", re.IGNORECASE),
     re.compile(r"nil\s+pointer", re.IGNORECASE),
     re.compile(r"stack\s+trace", re.IGNORECASE),
+    # Real log format patterns
+    re.compile(r"\w+Error:", re.IGNORECASE),
 ]
 
 # Severity override per category
@@ -122,10 +130,18 @@ def scan_log(path: str | Path) -> list[Finding]:
         if not line.strip():
             continue
         kind, cat = _classify(line)
+        # Fallback: ERROR-prefix lines that don't match any pattern still get detected
         if kind is None:
-            continue
+            if re.search(r"\bERROR\b", line):
+                kind = "log-runtime-failure"
+                cat = "log-runtime"
+            else:
+                continue
 
         severity = _CATEGORY_SEVERITY.get(kind, "medium")
+        # ERROR-prefix detection for high severity
+        if re.search(r"\bERROR\b", line):
+            severity = "high"
         retry_count = _count_retries(line)
 
         findings.append(

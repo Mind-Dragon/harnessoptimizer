@@ -347,3 +347,47 @@ The slightly more operational version is:
 - /dodev is aliased to /devdo and will be supported until the next major version
 - All existing optimizer functionality (run, report, verify) continues unchanged
 - Workflow state is stored in .hermes/workflows/ and does not interfere with existing reports/
+
+## Budget tuning system (v0.9.0)
+
+### Overview
+
+Turn-budget tuning for Hermes main TUI agent and subagents. Five-step sliding scale with per-role overrides, session log analysis, and passive budget-watch recommendations.
+
+The budget module is a sidecar/recommendation layer — it does not modify the Hermes agent core. Recommendations are advisory, not enforced.
+
+### Budget modules
+
+- `budget/profile.py` — BudgetProfile and RoleBudgetDefaults dataclasses, 5-step presets (low / low-medium / medium / medium-high / high), supporting axes (retry_limit, fix_iterate_cycles, max_parallel_workers, token_budget_per_task, verification_depth)
+- `budget/analyzer.py` — BudgetSignal dataclass extraction from Hermes session JSON logs. Parses `~/.hermes/sessions/` for per-task utilization, retry, loop, completion, and token metrics
+- `budget/recommender.py` — BudgetRecommendation production from BudgetSignal lists. Sliding-scale logic: low utilization → step down, high utilization → step up, loop/fix-cycle signals → axis overrides
+- `budget/tuner.py` — Config writer. Applies recommendations to Hermes config.yaml under `turn_budget:` key. Dry-run by default, explicit `--confirm` required to mutate
+- `budget/commands.py` — CLI subcommands `budget-review` and `budget-set`, wired into run_standalone.py
+- `budget/watch.py` — Passive post-session monitor. Appends one-line recommendations to `~/.hermes/budget-advice.log`
+
+### Profile presets
+
+| Profile | Main turns | Subagent turns |
+|---------|-----------|----------------|
+| low | 90 | 50 |
+| low-medium | 200 | 75 |
+| medium | 500 | 100 |
+| medium-high | 750 | 150 |
+| high | 1000 | 200 |
+
+### Data flow (budget)
+
+1. Session logs accumulate in `~/.hermes/sessions/`
+2. Analyzer extracts BudgetSignal per task from session JSON
+3. Recommender aggregates signals and produces BudgetRecommendation
+4. Tuner writes to config (dry-run or confirmed)
+5. Watch hook appends passive log entries after each session
+
+### CLI
+
+```
+hermesoptimizer budget-review                    # analyze last 10 sessions
+hermesoptimizer budget-review --sessions 50      # broader sample
+hermesoptimizer budget-set medium                # write to config
+hermesoptimizer budget-set --role implement 150  # single-role override
+```

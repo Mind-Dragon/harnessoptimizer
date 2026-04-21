@@ -19,9 +19,21 @@ MAX_RETRIES_BEFORE_FLAG = 2
 MAX_DURATION_MS = 30_000  # 30 seconds
 
 
+def _error_to_str(error: str | dict | None) -> str:
+    """Normalize error field to string. Real sessions have error as dict with type/message."""
+    if isinstance(error, dict):
+        parts = []
+        if error.get("type"):
+            parts.append(str(error["type"]))
+        if error.get("message"):
+            parts.append(str(error["message"]))
+        return " ".join(parts)
+    return str(error or "")
+
+
 def _detect_timeout(session: dict) -> bool:
     """Return True if session shows timeout characteristics."""
-    error = session.get("error", "") or ""
+    error = _error_to_str(session.get("error"))
     duration = session.get("duration_ms", 0) or 0
     return (
         "timeout" in error.lower()
@@ -32,8 +44,8 @@ def _detect_timeout(session: dict) -> bool:
 
 def _detect_crash(session: dict) -> bool:
     """Return True if session shows crash characteristics."""
-    error = session.get("error", "") or ""
-    status = session.get("status", "") or ""
+    error = _error_to_str(session.get("error"))
+    status = str(session.get("status", "") or "")
     crash_keywords = {"crash", "killed", "segmentation fault", "core dumped", "panicked", "abort"}
     error_lower = error.lower()
     status_lower = status.lower()
@@ -87,7 +99,7 @@ def scan_session(path: str | Path) -> list[Finding]:
 
     session_id = session.get("session_id", p.stem)
     status = session.get("status", "")
-    error = session.get("error", "") or ""
+    error = _error_to_str(session.get("error"))
     retries = session.get("retries", 0) or 0
     provider = session.get("provider", "")
     model = session.get("model", "")

@@ -1,0 +1,19 @@
+{
+  "session_id": "zero_edge_session",
+  "tasks": [
+    {
+      "task_id": "t_zero_budget",
+      "role": "test",
+      "turns_used": 0,
+      "turns_budget": 0,
+      "retries": 0,
+      "loops": false,
+      "status": "completed",
+      "fix_cycles": 0,
+      "tokens_used": 0,
+      "productive_calls": 0,
+      "total_calls": 0,
+      "duration_seconds": 0.0
+    }
+  ]
+}

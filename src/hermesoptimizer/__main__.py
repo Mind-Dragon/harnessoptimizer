@@ -8,7 +8,9 @@ def main() -> int:
     args = sys.argv[1:]
     if not args:
         print("Usage: python -m hermesoptimizer <command> [args]")
-        print("Commands: todo, devdo, dodev, run, caveman")
+        print("Commands: run, todo, devdo, dodev, caveman, budget-review, budget-set,")
+        print("          vault-audit, vault-writeback, export, init-db, add-record,")
+        print("          add-finding, list-records, list-findings")
         return 1
 
     command = args[0]
@@ -38,7 +40,7 @@ def main() -> int:
 
 def _handle_workflow_command(command: str, args: list[str]) -> None:
     """Handle /todo and /devdo commands with basic CLI arg parsing."""
-    base = Path(".hermes")
+    base = Path(".")
 
     if command == "todo":
         from hermesoptimizer.commands.todo_cmd import create_plan, list_plans, freeze_plan

@@ -283,8 +283,23 @@ def _env_override_conflicts(path: Path, provider_name: str, provider_data: dict[
 
 
 
-# Required top-level keys
-_REQUIRED_PROVIDER_FIELDS = ["base_url", "auth_type", "auth_key_env", "model", "lane"]
+# Required provider fields — supports both old (base_url/model/auth_type) and
+# new (api/default_model) config formats. The trigger check (line 417) fires
+# if ANY of these names appears in the provider dict, then validates each.
+_REQUIRED_PROVIDER_FIELDS = [
+    "base_url", "api",
+    "auth_type",
+    "auth_key_env", "key_env",
+    "model", "default_model",
+    "lane",
+]
+
+# Pairs: if the canonical name is absent, check the alias
+_REQUIRED_PROVIDER_ALIASES = {
+    "base_url": "api",
+    "model": "default_model",
+    "auth_key_env": "key_env",
+}
 
 
 def _check_url(url: str) -> bool:
@@ -414,9 +429,16 @@ def scan_config(path: str | Path) -> list[Finding]:
         findings.extend(_env_override_conflicts(p, provider_name, provider_data))
 
         # Check required fields for the newer provider schema.
+        # Uses _REQUIRED_PROVIDER_ALIASES to handle both old and new field names.
         if any(field in provider_data for field in _REQUIRED_PROVIDER_FIELDS):
-            for field in _REQUIRED_PROVIDER_FIELDS:
-                if field not in provider_data or provider_data[field] is None or provider_data[field] == "":
+            for field in ["base_url", "auth_type", "auth_key_env", "model", "lane"]:
+                alias = _REQUIRED_PROVIDER_ALIASES.get(field)
+                has_field = bool(
+                    provider_data.get(field) not in (None, "")
+                    or (alias and provider_data.get(alias) not in (None, ""))
+                )
+                if not has_field:
+                    field_label = f"{field}/{alias}" if alias else field
                     findings.append(
                         Finding(
                             file_path=str(p),
@@ -424,12 +446,12 @@ def scan_config(path: str | Path) -> list[Finding]:
                             category="config-signal",
                             severity="high",
                             kind="config-missing-field",
-                            fingerprint=f"{p}:{provider_name}:{field}",
-                            sample_text=f"provider '{provider_name}' missing required field '{field}'",
+                            fingerprint=f"{p}:{provider_name}:{field_label}",
+                            sample_text=f"provider '{provider_name}' missing required field '{field_label}'",
                             count=1,
                             confidence="high",
-                            router_note=f"missing '{field}' in provider '{provider_name}'",
-                            lane=provider_data.get("lane"),
+                            router_note=f"missing '{field_label}' in provider '{provider_name}'",
+                            lane=provider_data.get("lane") or provider_data.get("model"),
                         )
                     )
 

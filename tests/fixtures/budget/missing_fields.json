@@ -1,0 +1,22 @@
+{
+  "session_id": "missing_fields_session",
+  "tasks": [
+    {
+      "task_id": "t_partial"
+    },
+    {
+      "task_id": "t_empty",
+      "role": "",
+      "turns_used": 0,
+      "turns_budget": 0,
+      "retries": 0,
+      "loops": false,
+      "status": "",
+      "fix_cycles": 0,
+      "tokens_used": 0,
+      "productive_calls": 0,
+      "total_calls": 0,
+      "duration_seconds": 0.0
+    }
+  ]
+}

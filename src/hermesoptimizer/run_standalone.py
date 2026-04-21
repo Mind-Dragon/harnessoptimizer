@@ -24,6 +24,12 @@ from hermesoptimizer.catalog import (
     upsert_finding,
     upsert_record,
 )
+from hermesoptimizer.budget.commands import (
+    add_budget_review_subparser,
+    add_budget_set_subparser,
+    handle_budget_review,
+    handle_budget_set,
+)
 from hermesoptimizer.report.json_export import write_json_report
 from hermesoptimizer.report.markdown import write_markdown_report
 from hermesoptimizer.report.metrics import compute_report_metrics
@@ -130,6 +136,9 @@ def build_parser() -> argparse.ArgumentParser:
     vault_writeback.add_argument("--vault-root", required=True, help="Path to vault root (required for safety — no auto-discovery)")
     vault_writeback.add_argument("--format", required=True, choices=["env", "yaml"], help="Target format for write-back")
     vault_writeback.add_argument("--confirm", action="store_true", help="Explicit confirmation to actually write changes (without this flag, only dry-run)")
+
+    add_budget_review_subparser(sub)
+    add_budget_set_subparser(sub)
 
     return parser
 
@@ -358,6 +367,12 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "vault-writeback":
         return _vault_writeback(args)
+
+    if args.command == "budget-review":
+        return handle_budget_review(args)
+
+    if args.command == "budget-set":
+        return handle_budget_set(args)
 
     parser.error("unknown command")
     return 2

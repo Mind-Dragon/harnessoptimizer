@@ -57,7 +57,18 @@ def _resolve_plugin_master_key(vault_root: Path, passphrase: str) -> bytes:
         except Exception:
             pass
     else:
-        candidates.append(derive_key(passphrase)[0])
+        key, new_salt = derive_key(passphrase)
+        candidates.append(key)
+        # Persist the new salt so subsequent plugins derive the same key
+        if not enc_path.exists():
+            import json as _json
+            try:
+                enc_path.write_text(
+                    _json.dumps({"salt": base64.b64encode(new_salt).decode("ascii"), "entries": []}),
+                    encoding="utf-8",
+                )
+            except Exception:
+                pass
 
     unique_candidates: list[bytes] = []
     for candidate in candidates:
@@ -73,6 +84,8 @@ def _resolve_plugin_master_key(vault_root: Path, passphrase: str) -> bytes:
             except Exception:
                 continue
 
+    # If we have a salt, the first candidate (derived with salt) is most likely correct.
+    # Only fall back to salt-less derivation if there's no salt at all.
     if unique_candidates:
         return unique_candidates[0]
 

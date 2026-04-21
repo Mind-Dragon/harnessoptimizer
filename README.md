@@ -1,6 +1,6 @@
 # Hermes Optimizer
 
-Current release: v0.7.0.
+Current release: v0.9.0.
 
 Analysis, hygiene, and workflow orchestration for Hermes Agent environments.
 
@@ -84,7 +84,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-938 tests, 0 failures, 4 skipped. Run with:
+1,250 tests collected, 4 skipped in the current baseline. Run with:
 
 ```
 pytest
@@ -94,10 +94,10 @@ pytest
 
 - `ARCHITECTURE.md` -- system shape, data flow, design constraints
 - `GUIDELINE.md` -- success rules and release gates
-- `ROADMAP.md` -- current version plan from v0.1.0 through v0.8.0+
-- `VERSION0.4.md` -- historical transition notes for the shipped 0.4 release line
-- `VERSION0.5.md` -- archived: v0.5.0 vault release note
-- `VERSION0.5.1.md` -- active planning note for the vault follow-up slice
+- `ROADMAP.md` -- release sequence through the active v0.8.1 testing hardening slice and the v1.0 series
+- `VERSION0.8.0.md` -- archived completed queue for the v0.8.0 tool-surface slice
+- `VERSION0.8.1.md` -- active release note for the testing and validation-hardening slice
+- `TESTPLAN.md` -- canonical layered test matrix, selectors, and release gates
 - `docs/WORKFLOW.md` -- operator guide for /todo and /devdo
 - `TODO.md` -- current execution queue
 

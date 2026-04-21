@@ -1,6 +1,6 @@
 # Hermes Optimizer Success Guidelines
 
-This file defines how Hermes 0.4.0 capability gates are judged.
+This file defines how Hermes Optimizer v0.9.0 capability gates are judged.
 
 These are release gates, not a package-version claim.
 
@@ -25,7 +25,7 @@ A good run should answer these questions clearly:
 - What should be fixed first?
 - What is a reasonable next action?
 
-## Success metrics for 0.4.0
+## Success metrics for v0.9.0
 
 ### Discovery
 - 100% of known Hermes config, session, log, and database locations are represented in the path inventory
@@ -72,7 +72,7 @@ If a result cannot be explained in plain language, it is not ready to be trusted
 
 ## Version gates
 
-### 0.4.0 gate
+### v0.9.0 gate
 - Hermes adapter works end to end
 - real source locations are discovered
 - findings are grouped and prioritized

@@ -1,0 +1,33 @@
+{
+  "session_id": "normal_session",
+  "tasks": [
+    {
+      "task_id": "t1",
+      "role": "implement",
+      "turns_used": 45,
+      "turns_budget": 100,
+      "retries": 2,
+      "loops": false,
+      "status": "completed",
+      "fix_cycles": 1,
+      "tokens_used": 25000,
+      "productive_calls": 35,
+      "total_calls": 45,
+      "duration_seconds": 120.5
+    },
+    {
+      "task_id": "t2",
+      "role": "research",
+      "turns_used": 30,
+      "turns_budget": 50,
+      "retries": 0,
+      "loops": false,
+      "status": "completed",
+      "fix_cycles": 0,
+      "tokens_used": 12000,
+      "productive_calls": 25,
+      "total_calls": 30,
+      "duration_seconds": 45.0
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "session_id": "early_exit_session",
+  "tasks": [
+    {
+      "task_id": "t_early",
+      "role": "research",
+      "turns_used": 25,
+      "turns_budget": 100,
+      "retries": 0,
+      "loops": false,
+      "status": "completed",
+      "fix_cycles": 1,
+      "tokens_used": 15000,
+      "productive_calls": 20,
+      "total_calls": 25,
+      "duration_seconds": 60.0
+    }
+  ]
+}

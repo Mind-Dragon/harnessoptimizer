@@ -2,6 +2,55 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.0 -- Agent Turn Budget Tuning
+
+### Added
+
+- `budget/profile.py`: BudgetProfile dataclass with five-step presets (low, low-medium, medium, medium-high, high)
+- `budget/analyzer.py`: BudgetSignal extraction from Hermes session JSON logs
+- `budget/recommender.py`: Sliding-scale recommendation logic based on turn utilization and completion rates
+- `budget/tuner.py`: Config writer with dry-run and --confirm safety flow
+- `budget/commands.py`: CLI subcommands `budget-review` and `budget-set`
+- `budget/watch.py`: Passive post-session monitor appending to `~/.hermes/budget-advice.log`
+- Domain J in TESTPLAN.md with 151 tests across 6 test files
+- Per-role budget defaults (research, implement, test, review, verify, integrate)
+
+### Changed
+
+- ARCHITECTURE.md updated with v0.9.0 budget module section
+- README.md updated with budget command references
+
+### Tests
+
+- 1,534 tests passing (151 new), 0 failures
+- 76 test files covering budget, workflow, vault, dreaming, tool-surface domains
+
+## v0.8.1 -- Test Strategy and Validation Hardening
+
+### Added
+
+- Layered test model (L0-L4) with explicit domain ownership
+- L0: Static/import/schema checks (40 tests)
+- L1: Deterministic unit tests (875 tests)
+- L2: Component integration tests (31 tests)
+- L3: Plugin and installed-artifact smoke tests (25 tests)
+- L4: Release-gate CLI/workflow smoke tests
+- `scripts/validate_testplan.py`: Testplan alignment validator
+- Isolated `HERMES_HOME` sandbox strategy for installed-artifact tests
+
+### Changed
+
+- TESTPLAN.md: Canonical test matrix with real selectors, layer assignments, and domain breakdown
+- No live-network tests in default gate (opt-in behind `HERMES_LIVE_TRUTH_ENABLED=1`)
+- Production vault access explicitly prohibited in test suite
+
+### Tests
+
+- 1,383 tests passing at start of v0.8.1
+- 1,534 tests passing at completion (151 new)
+- Test files: 65 → 76
+- 5 skipped (mostly docling deprecation warnings)
+
 ## v0.7.0 -- Vault encryption overhaul and agent plugins
 
 ### Added

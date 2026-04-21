@@ -1,0 +1,19 @@
+{
+  "session_id": "retry_exhaustion_session",
+  "tasks": [
+    {
+      "task_id": "t_retry",
+      "role": "implement",
+      "turns_used": 100,
+      "turns_budget": 100,
+      "retries": 5,
+      "loops": false,
+      "status": "error",
+      "fix_cycles": 3,
+      "tokens_used": 52000,
+      "productive_calls": 30,
+      "total_calls": 100,
+      "duration_seconds": 240.0
+    }
+  ]
+}

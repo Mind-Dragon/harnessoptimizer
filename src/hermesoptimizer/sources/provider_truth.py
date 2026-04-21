@@ -308,6 +308,51 @@ def _candidate_to_dict(c: EndpointCandidate) -> dict[str, Any]:
     }
 
 
+def seed_from_config(config_path: str | Path) -> ProviderTruthStore:
+    """Build a ProviderTruthStore from a real config.yaml provider definitions.
+
+    Reads providers.X.api, providers.X.default_model, providers.X.key_env
+    and creates truth records so verify_endpoint works without an external YAML.
+    """
+    p = Path(config_path)
+    if not p.exists():
+        return ProviderTruthStore()
+    try:
+        data = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return ProviderTruthStore()
+
+    store = ProviderTruthStore()
+    providers = data.get("providers", {})
+    if not isinstance(providers, dict):
+        return store
+
+    for name, prov in providers.items():
+        if not isinstance(prov, dict):
+            continue
+        endpoint = prov.get("api") or prov.get("base_url", "")
+        model = prov.get("default_model") or prov.get("model", "")
+        known_models = [model] if model else []
+        store.add(ProviderTruthRecord(
+            provider=name,
+            canonical_endpoint=endpoint,
+            known_models=known_models,
+            deprecated_models=[],
+            stale_aliases={},
+            model_endpoints={},
+            capabilities=["text"],
+            context_window=0,
+            source_url=None,
+            confidence="medium",
+            auth_type="bearer",
+            regions=["global"],
+            transport="https",
+            endpoint_candidates=[],
+        ), replace=False)
+
+    return store
+
+
 def load_provider_truth(path: str | Path) -> ProviderTruthStore:
     p = Path(path)
     if not p.exists():

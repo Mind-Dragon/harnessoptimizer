@@ -1,0 +1,19 @@
+{
+  "session_id": "maxed_out_session",
+  "tasks": [
+    {
+      "task_id": "t_maxed",
+      "role": "implement",
+      "turns_used": 95,
+      "turns_budget": 100,
+      "retries": 1,
+      "loops": false,
+      "status": "completed",
+      "fix_cycles": 2,
+      "tokens_used": 48000,
+      "productive_calls": 70,
+      "total_calls": 95,
+      "duration_seconds": 180.5
+    }
+  ]
+}

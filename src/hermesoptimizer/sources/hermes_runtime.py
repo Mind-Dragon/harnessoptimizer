@@ -205,6 +205,98 @@ def scan_cli_status(commands: list[str]) -> list[Finding]:
     return findings
 
 
+def scan_gateway_state_file(gateway_state_path: str | Path) -> list[Finding]:
+    """
+    Phase 1 scan of a gateway_state.json file as a first-class health source.
+
+    Checks:
+    - gateway_state field: running=good, stopped/error=finding
+    - pid validity (process with that PID actually running)
+    - restart_requested flag
+    """
+    findings: list[Finding] = []
+    import os
+    import json
+
+    p = Path(gateway_state_path) if isinstance(gateway_state_path, str) else gateway_state_path
+    if not p.exists():
+        return findings
+
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return findings
+
+    gateway_state = data.get("gateway_state", "")
+    pid = data.get("pid")
+    restart_requested = data.get("restart_requested", False)
+
+    # Check gateway_state field
+    if gateway_state == "running":
+        pass  # healthy — no finding
+    elif gateway_state in ("stopped", "error"):
+        findings.append(
+            Finding(
+                file_path=str(p),
+                line_num=None,
+                category="gateway-signal",
+                severity="critical",
+                kind="gateway-down",
+                fingerprint=f"gateway-state:{p}",
+                sample_text=f"gateway_state={gateway_state}",
+                count=1,
+                confidence="high",
+                router_note=f"gateway_state reports '{gateway_state}'",
+                lane="A",
+            )
+        )
+
+    # Check PID validity
+    if pid is not None:
+        try:
+            pid_int = int(pid)
+            if pid_int <= 0:
+                raise ValueError("PID must be positive")
+            # Send signal 0 to check if process exists (does not actually signal)
+            os.kill(pid_int, 0)
+        except (ValueError, OSError):
+            findings.append(
+                Finding(
+                    file_path=str(p),
+                    line_num=None,
+                    category="gateway-signal",
+                    severity="high",
+                    kind="gateway-pid-invalid",
+                    fingerprint=f"gateway-pid:{p}",
+                    sample_text=f"pid={pid} is not a valid running process",
+                    count=1,
+                    confidence="high",
+                    router_note=f"gateway PID {pid} is not valid or process is dead",
+                    lane="A",
+                )
+            )
+
+    # Check restart_requested flag
+    if restart_requested:
+        findings.append(
+            Finding(
+                file_path=str(p),
+                line_num=None,
+                category="gateway-signal",
+                severity="medium",
+                kind="gateway-restart-requested",
+                fingerprint=f"gateway-restart:{p}",
+                sample_text="restart_requested=true",
+                count=1,
+                confidence="high",
+                router_note="gateway has restart_requested flag set",
+                lane="A",
+            )
+        )
+
+    return findings
+
+
 def scan_runtime_paths(paths: list[str | Path]) -> list[Finding]:
     """
     Phase 1 scan of runtime paths for evidence of running Hermes processes.

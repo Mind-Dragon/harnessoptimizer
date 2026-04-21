@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.7.0. The milestones below are release/capability labels, not the installed package version.
+> Current package version: 0.9.0. The milestones below are release/capability labels, not the installed package version.
 
 ## Product shape
 
@@ -68,30 +68,23 @@ Done. Hermes-only provider truth rework: explicit canonical providers with endpo
 
 Done. TEMM1E-inspired dreaming sidecar implemented under `src/hermesoptimizer/dreams/` plus companion scripts under `scripts/` and `~/.hermes/scripts/`. Covers sidecar DB bootstrap, exponential decay + sweep, fidelity tiers (`full` / `summary` / `essence`), transcript-based recall reheating, and external reflection plumbing without modifying Hermes core. Repo tests cover the dreaming modules and the full suite stays green on main.
 
-## Next version
+## Completed versions
 
 ### v0.8.0 -- Agent-native tool surface optimization
 
-Scope:
-- add a Tool Surface IR for describing agent-facing tool and command surfaces across Hermes and future adapters
-- audit tools for discoverability, composability, safety, observability, token efficiency, and recovery quality
-- prototype a hybrid Hermes command layer for low-risk read-only inspection flows while keeping typed tools for high-risk structured operations
-- add chainable command execution semantics for the read-only command layer (`|`, `&&`, `||`, `;`) where it materially lowers tool-selection entropy
-- harden the LLM-facing presentation layer: content-based binary guard, overflow artifacts, stderr retention, consistent status/duration footers, and next-step navigation hints
-- replace static provider-picker ergonomics with Hermes-grade ranked provider/model recommendations grounded in live config, auth presence, catalogs, provenance, and risk lanes
-- evaluate the command-layer and presentation-layer changes against transcript behavior so the slice is measured by fewer dead-end retries and better operator-visible recovery
+Done. Added the Tool Surface IR, Hermes-first registry, audit engine, presentation-layer rendering contract, narrow read-only command layer, command chaining parser, and ranked provider/model recommendations. The kickoff and evaluation artifacts are archived under `.hermes/reports/hermesoptimizer/archive/v0.8.0/`, and the completed execution snapshot is preserved in `VERSION0.8.0.md`.
 
-Non-goals:
-- replacing Hermes's typed browser/filesystem/github/cron tooling with one shell-style supertool
-- broad non-Hermes adapter rollout; this slice should prove the pattern on Hermes-first surfaces before pushing it outward
-- destructive mutation paths through the textual command layer
+## Next version
 
-Acceptance shape:
-- one normalized schema exists for agent tool surfaces and can be populated for Hermes-native commands/tools
-- audits emit concrete findings for missing help, weak error contracts, missing overflow paths, and unsafe untyped mutation patterns
-- the hybrid command layer exists for at least provider/report/workflow/memory or dreams inspection flows
-- presentation-layer output clearly distinguishes raw execution from LLM-facing rendering and preserves navigation handles for large output
-- provider/model recommendation output is ranked, provenance-aware, and lane-classified rather than a static menu
+### v0.8.1 -- Test strategy and validation hardening
+
+Done. Defined the canonical layered test model (L0-L4) with explicit domain ownership. TESTPLAN.md is the single source of truth. Plugin-backed and installed-artifact behavior treated as first-class test surfaces. 76 test files, 1,534 tests collected, default gate stays green.
+
+### v0.9.0 -- Agent turn budget tuning
+
+Done. Budget tuning sidecar for Hermes main TUI agent and subagents. Five-step sliding scale with per-role overrides, session log analysis, and passive budget-watch recommendations. Dry-run by default, explicit `--confirm` required to mutate config. 151 tests across Domain J.
+
+## Next version
 
 ### v1.0 series -- Other harnesses and remote workflow
 
@@ -137,10 +130,11 @@ That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into se
 11. ~~Rework Hermes provider truth, model validation, and config repair surfaces~~
 12. ~~Tighten Hermes-first normalization and reporting for provider/model/config repair~~
 13. ~~Add dreaming sidecar / memory-consolidation workflow without modifying Hermes core~~
-14. Build Tool Surface IR and tool-surface audit scoring for Hermes-first workflows
-15. Prototype the hybrid read-only command layer and LLM-facing presentation contract
-16. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
-17. Add adapter template for new harness onboarding once the Hermes repair path and v0.8 tool-surface contract are stable
+14. ~~Build Tool Surface IR and tool-surface audit scoring for Hermes-first workflows~~
+15. ~~Prototype the hybrid read-only command layer and LLM-facing presentation contract~~
+16. Build the v0.8.1 layered test matrix and installed-artifact smoke strategy
+17. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
+18. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and v0.8.1 validation gates are stable
 
 ## Definition of done for the roadmap
 

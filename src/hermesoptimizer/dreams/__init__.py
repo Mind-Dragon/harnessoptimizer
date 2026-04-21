@@ -1,4 +1,4 @@
-"""Hermes Optimizer Dreams package — v0.7.0 memory consolidation sidecar.
+"""Hermes Optimizer Dreams package — v0.9.0 memory consolidation sidecar.
 
 This package contains:
 - memory_meta: Sidecar SQLite database wrapper for tracking per-entry metadata

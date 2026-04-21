@@ -29,7 +29,7 @@ def start_run(
 ) -> WorkflowRun:
     """Start a run for a frozen workflow plan."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     plan = load_plan(plan_dir)
@@ -64,7 +64,7 @@ def load_run_state(
 ) -> tuple[WorkflowPlan, WorkflowRun, list[WorkflowTask]]:
     """Load plan, run, and all tasks for a workflow."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     plan = load_plan(plan_dir)
@@ -84,7 +84,7 @@ def update_task_status(
 ) -> WorkflowTask:
     """Update a task's status."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
 
@@ -111,7 +111,7 @@ def record_checkpoint(
 ) -> WorkflowCheckpoint:
     """Record a checkpoint for a run."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     run = load_run(plan_dir)
@@ -148,7 +148,7 @@ def record_blocker(
 ) -> WorkflowBlocker:
     """Record a blocker for a workflow."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
 
@@ -175,7 +175,7 @@ def resolve_run(
 ) -> WorkflowRun:
     """Resolve a run with the given status (completed or failed)."""
     if base_dir is None:
-        base_dir = Path(".hermes")
+        base_dir = Path(".")
 
     plan_dir = base_dir / ".hermes" / "workflows" / workflow_id
     run = load_run(plan_dir)
