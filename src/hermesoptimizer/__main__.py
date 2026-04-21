@@ -10,7 +10,8 @@ def main() -> int:
         print("Usage: python -m hermesoptimizer <command> [args]")
         print("Commands: run, todo, devdo, dodev, caveman, budget-review, budget-set,")
         print("          vault-audit, vault-writeback, export, init-db, add-record,")
-        print("          add-finding, list-records, list-findings")
+        print("          add-finding, list-records, list-findings,")
+        print("          port-reserve, port-list, port-release, ip-list, ip-add, network-scan")
         return 1
 
     command = args[0]
@@ -32,6 +33,57 @@ def main() -> int:
             command = "devdo"
         _handle_workflow_command(command, rest)
         return 0
+
+    # Network resource discipline commands
+    if command == "port-reserve":
+        from hermesoptimizer.network.commands import handle_port_reserve
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("port", type=int)
+        p.add_argument("--purpose", default="")
+        p.add_argument("--db", default="catalog.db")
+        return handle_port_reserve(p.parse_args(rest))
+
+    if command == "port-list":
+        from hermesoptimizer.network.commands import handle_port_list
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("--status", choices=["reserved", "available", "forbidden"])
+        p.add_argument("--db", default="catalog.db")
+        return handle_port_list(p.parse_args(rest))
+
+    if command == "port-release":
+        from hermesoptimizer.network.commands import handle_port_release
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("port", type=int)
+        p.add_argument("--db", default="catalog.db")
+        return handle_port_release(p.parse_args(rest))
+
+    if command == "ip-list":
+        from hermesoptimizer.network.commands import handle_ip_list
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("--type", choices=["local_v4", "vpn", "public", "custom"])
+        p.add_argument("--db", default="catalog.db")
+        return handle_ip_list(p.parse_args(rest))
+
+    if command == "ip-add":
+        from hermesoptimizer.network.commands import handle_ip_add
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("ip")
+        p.add_argument("--type", default="custom", choices=["local_v4", "vpn", "public", "custom"])
+        p.add_argument("--purpose", default="")
+        p.add_argument("--db", default="catalog.db")
+        return handle_ip_add(p.parse_args(rest))
+
+    if command == "network-scan":
+        from hermesoptimizer.network.commands import handle_network_scan
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("--db", default="catalog.db")
+        return handle_network_scan(p.parse_args(rest))
 
     # Delegate unknown commands (like init-db, add-record, etc.) to run_standalone
     from hermesoptimizer.run_standalone import main as run_main
