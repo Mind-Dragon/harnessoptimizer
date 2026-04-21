@@ -88,6 +88,10 @@ Done. Budget tuning sidecar for Hermes main TUI agent and subagents. Five-step s
 
 Done. Added token/perf/tool/network analysis domains, catalog tables, and the unified closeout pass for the CLI surface. `run` now emits reports, analyzer commands support auto-discovery, DB lifecycle commands exist, orphan commands are real surfaces (`verify-endpoints`, `dreams-sweep`, `provider-recommend`, `report-latest`), and focused CLI tests cover parser, dispatch, run-pipeline, and subprocess integrity.
 
+### v0.9.2 -- Extension lifecycle management
+
+Done. Added the extension registry (`extensions/*.yaml`), loader, schema, and CLI commands (`ext-list`, `ext-status`, `ext-verify`, `ext-sync`, `ext-doctor`). Family-specific verification contracts and drift detection for caveman, dreams, vault plugins, and tool-surface. Sync policy is explicit, dry-runnable, and safe for external targets.
+
 ## Next version
 
 ### v1.0 series -- Other harnesses and remote workflow

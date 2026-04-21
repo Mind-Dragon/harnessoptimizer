@@ -391,3 +391,64 @@ hermesoptimizer budget-review --sessions 50      # broader sample
 hermesoptimizer budget-set medium                # write to config
 hermesoptimizer budget-set --role implement 150  # single-role override
 ```
+
+## Extension registry and lifecycle (v1.0.0)
+
+### Overview
+
+All extension-like surfaces are managed through a single registry rather than scattered code and manual side effects.
+
+Extensions are declared in `extensions/*.yaml` (one file per extension) and loaded into a combined registry view at runtime.
+
+### Registry schema
+
+Each extension file defines:
+- `id` — unique identifier
+- `type` — config, skill, script, cron, vault_plugin, sidecar, command_surface
+- `source_path` — repo-relative path to canonical code
+- `target_paths` — runtime/install paths (may be empty)
+- `verify_command` — shell command that validates health
+- `ownership` — repo_only, repo_external, external_runtime
+- `metadata` — family-specific annotations
+
+### Lifecycle commands
+
+- `ext-list` — print registry entries with type and ownership
+- `ext-status` — compare repo source vs installed/runtime target
+- `ext-verify <id|all>` — run the verification contract per extension
+- `ext-sync <id|all> --dry-run --force` — copy repo artifacts to targets
+- `ext-doctor` — summarize missing deps, broken links, stale paths, and drift
+
+### Verification contracts
+
+Family-specific verification lives in `src/hermesoptimizer/extensions/verify_contracts.py`:
+- caveman: config readability, toggle, compression guardrails, skill reference
+- dreams: DB readability, external scripts, sweep callable
+- vault_plugins: importability, status shape, read-only contract, sidecar health, config generation
+- tool_surface: command availability, help drift, placeholder guard
+
+### Drift detection
+
+Family-specific drift checks live in `src/hermesoptimizer/extensions/drift.py`:
+- caveman: config key present but module missing, invalid config type, skill missing when enabled
+- dreams: memory_meta.db missing, external scripts missing, cron surface missing
+- vault_plugins: vault.enc.json missing
+- tool_surface: metadata commands missing from actual handlers
+
+Drift findings are surfaced through `ext-doctor` with severity (error / warning / info).
+
+### Sync policy
+
+- repo_only extensions: sync copies source to target with mkdir/cp
+- repo_external extensions: sync allowed for repo-owned artifacts; external paths are verify-only unless explicitly forced
+- external_runtime extensions: never synced; registry tracks them for visibility only
+- dry-run is required before any destructive sync
+- force is required to overwrite existing targets
+
+### Why this matters
+
+Before the registry, extension state was verified only indirectly through tests.
+With the registry:
+- onboarding a fresh machine is one `ext-doctor` away from knowing what is missing
+- drift between repo truth and runtime truth is explicit
+- evolving an extension surface does not break unrelated commands

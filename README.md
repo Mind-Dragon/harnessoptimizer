@@ -87,6 +87,11 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer vault-audit` / `vault-writeback` | Audit vault state and execute confirmed write-back |
 | `hermesoptimizer todo` / `devdo` / `dodev` | Plan and execute workflow runs |
 | `hermesoptimizer caveman` | Toggle caveman mode |
+| `hermesoptimizer ext-list` | List registered extensions |
+| `hermesoptimizer ext-status` | Show extension source vs runtime status |
+| `hermesoptimizer ext-verify` | Run verification for one or all extensions |
+| `hermesoptimizer ext-sync` | Sync repo-managed artifacts to install targets |
+| `hermesoptimizer ext-doctor` | Run extension health check with drift detection |
 | `hermesoptimizer provider-list` | List available providers |
 | `hermesoptimizer provider-recommend` | Rank provider/model recommendations from checked-in catalogs and local truth |
 | `hermesoptimizer workflow-list` | List workflow plans and runs |
@@ -96,6 +101,9 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer dreams-sweep` | Run a read-only dreams memory sweep summary |
 
 ## Architecture
+
+The project follows a src-layout with a unified CLI entrypoint.
+Extension surfaces (caveman, dreams, vault plugins, tool-surface commands, scripts, skills, cron) are registered as first-class extensions under `extensions/` and managed through `ext-*` commands.
 
 ```
 src/hermesoptimizer/

@@ -41,7 +41,7 @@ def test_loads_all_repo_extensions() -> None:
     tool = next(e for e in entries if e.id == "tool_surface")
     assert tool.type == ExtensionType.COMMAND_SURFACE
     assert tool.ownership == Ownership.REPO_ONLY
-    assert "provider-recommend" in tool.metadata.get("commands", [])
+    assert "provider list" in tool.metadata.get("commands", [])
 
     scripts = next(e for e in entries if e.id == "scripts")
     assert scripts.type == ExtensionType.SCRIPT

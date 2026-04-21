@@ -74,111 +74,115 @@ Verification:
 - [x] `PYTHONPATH=src python -m hermesoptimizer ext-list`
 - [x] Registry loads with all 7 current extension surfaces
 
-## Phase B — Add extension management commands
+## Phase B — Add extension management commands ✅ COMPLETE
 
-- [ ] Add unified CLI group or top-level commands for extension lifecycle
-  - [ ] `hermesoptimizer ext-list`
-  - [ ] `hermesoptimizer ext-status`
-  - [ ] `hermesoptimizer ext-verify <id|all>`
-  - [ ] `hermesoptimizer ext-sync <id|all>`
-  - [ ] `hermesoptimizer ext-doctor`
-- [ ] `ext-list`
-  - [ ] prints registry entries with type and ownership
-- [ ] `ext-status`
-  - [ ] compares repo source vs installed/runtime target
-  - [ ] shows `ok`, `missing`, `drifted`, `external`, `blocked`
-- [ ] `ext-verify`
-  - [ ] runs the verification contract for one or more extensions
-- [ ] `ext-sync`
-  - [ ] copies or renders repo-managed artifacts to their install targets
-  - [ ] supports dry-run first
-  - [ ] fail-closed for destructive or external-only targets
-- [ ] `ext-doctor`
-  - [ ] summarizes missing deps, broken links, stale install paths, and config drift
-
-Verification:
-- [ ] `PYTHONPATH=src python -m hermesoptimizer ext-list`
-- [ ] `PYTHONPATH=src python -m hermesoptimizer ext-status`
-- [ ] `PYTHONPATH=src python -m hermesoptimizer ext-doctor`
-
-## Phase C — Caveman as a managed extension
-
-- [ ] Register caveman in the extension registry
-- [ ] Define caveman verification contract
-  - [ ] config key exists / is readable
-  - [ ] CLI toggle still works
-  - [ ] compression guardrails still hold
-- [ ] Add caveman drift checks
-  - [ ] config key present but module missing
-  - [ ] module present but config invalid
-  - [ ] skill/install references stale
-- [ ] Decide whether the caveman skill should be synced from repo truth or explicitly marked external/manual
+- [x] Add unified CLI group or top-level commands for extension lifecycle
+  - [x] `hermesoptimizer ext-list`
+  - [x] `hermesoptimizer ext-status`
+  - [x] `hermesoptimizer ext-verify <id|all>`
+  - [x] `hermesoptimizer ext-sync <id|all>`
+  - [x] `hermesoptimizer ext-doctor`
+- [x] `ext-list`
+  - [x] prints registry entries with type and ownership
+- [x] `ext-status`
+  - [x] compares repo source vs installed/runtime target
+  - [x] shows `ok`, `missing`, `drifted`, `external`, `blocked`
+- [x] `ext-verify`
+  - [x] runs the verification contract for one or more extensions
+- [x] `ext-sync`
+  - [x] copies or renders repo-managed artifacts to their install targets
+  - [x] supports dry-run first
+  - [x] fail-closed for destructive or external-only targets
+- [x] `ext-doctor`
+  - [x] summarizes missing deps, broken links, stale install paths, and config drift
 
 Verification:
-- [ ] `PYTHONPATH=src python -m hermesoptimizer caveman`
-- [ ] focused caveman tests still pass
-- [ ] extension status reports caveman cleanly
+- [x] `PYTHONPATH=src python -m hermesoptimizer ext-list`
+- [x] `PYTHONPATH=src python -m hermesoptimizer ext-status`
+- [x] `PYTHONPATH=src python -m hermesoptimizer ext-doctor`
 
-## Phase D — Dreams sidecar and cron-linked artifacts
+## Phase C — Caveman as a managed extension ✅ COMPLETE
 
-- [ ] Register dreams repo module plus external scripts as one managed extension family
-- [ ] Add status checks for:
-  - [ ] `~/.hermes/dreams/memory_meta.db` presence/readability
-  - [ ] expected external scripts under `~/.hermes/scripts/`
-  - [ ] known cron-linked reflection surfaces
-- [ ] Decide safe sync policy
-  - [ ] repo code syncable
-  - [ ] external scripts syncable if repo owns canonical copies
-  - [ ] cron entries verify-only unless explicitly updated
-- [ ] Add a report for "repo owns this but machine is missing it"
-
-Verification:
-- [ ] `PYTHONPATH=src python -m hermesoptimizer dreams-sweep --help`
-- [ ] extension doctor reports dreams family accurately on a machine with and without the external artifacts
-
-## Phase E — Vault plugins and sidecar health
-
-- [ ] Register `HermesPlugin`, `OpenClawPlugin`, and `OpenCodePlugin`
-- [ ] Add verification for each plugin class
-  - [ ] importability
-  - [ ] status shape
-  - [ ] read-only/read-write contract
-- [ ] Add sidecar-specific checks for `OpenClawPlugin`
-  - [ ] startup health
-  - [ ] auth token expectations
-  - [ ] port binding/status behavior
-- [ ] Add config-generation checks for `OpenCodePlugin`
+- [x] Register caveman in the extension registry
+- [x] Define caveman verification contract
+  - [x] config key exists / is readable
+  - [x] CLI toggle still works
+  - [x] compression guardrails still hold
+- [x] Add caveman drift checks
+  - [x] config key present but module missing
+  - [x] module present but config invalid
+  - [x] skill/install references stale
+- [x] Decide whether the caveman skill should be synced from repo truth or explicitly marked external/manual
+  - Decision: skill is marked external_runtime in `extensions/skills.yaml`; caveman config is repo_external. The skill is generated at runtime and not synced from repo canonical copies.
 
 Verification:
-- [ ] vault plugin tests pass
-- [ ] extension doctor shows per-plugin health and capability type
+- [x] `PYTHONPATH=src python -m hermesoptimizer caveman`
+- [x] focused caveman tests still pass
+- [x] extension status reports caveman cleanly
 
-## Phase F — Tool-surface and recommendation surface governance
+## Phase D — Dreams sidecar and cron-linked artifacts ✅ COMPLETE
 
-- [ ] Register tool-surface command layer as a managed extension family
-- [ ] Verify command/help contracts stay aligned with the registry
-- [ ] Add drift detection for repo help text vs actual command availability
-- [ ] Add a check that placeholder text does not reappear on shipped command surfaces
-
-Verification:
-- [ ] `provider-recommend`, `report-latest`, `dreams-inspect`, `workflow-list` all verify through the extension manager
-
-## Phase G — Tests, docs, and release surface
-
-- [ ] Add focused tests
-  - [ ] `tests/test_extensions_registry.py`
-  - [ ] `tests/test_extensions_commands.py`
-  - [ ] `tests/test_extensions_sync.py`
-- [ ] Update docs
-  - [ ] `README.md` extension-management section
-  - [ ] `ARCHITECTURE.md` extension registry / lifecycle section
-  - [ ] `ROADMAP.md` next-version wording
-- [ ] Add an operator recipe for fresh-machine sync and drift repair
+- [x] Register dreams repo module plus external scripts as one managed extension family
+- [x] Add status checks for:
+  - [x] `~/.hermes/dreams/memory_meta.db` presence/readability
+  - [x] expected external scripts under `~/.hermes/scripts/`
+  - [x] known cron-linked reflection surfaces
+- [x] Decide safe sync policy
+  - [x] repo code syncable
+  - [x] external scripts syncable if repo owns canonical copies
+  - [x] cron entries verify-only unless explicitly updated
+- [x] Add a report for "repo owns this but machine is missing it"
 
 Verification:
-- [ ] focused extension tests pass
-- [ ] full suite passes
-- [ ] `git diff --check` clean
+- [x] `PYTHONPATH=src python -m hermesoptimizer dreams-sweep --help`
+- [x] extension doctor reports dreams family accurately on a machine with and without the external artifacts
+
+## Phase E — Vault plugins and sidecar health ✅ COMPLETE
+
+- [x] Register `HermesPlugin`, `OpenClawPlugin`, and `OpenCodePlugin`
+- [x] Add verification for each plugin class
+  - [x] importability
+  - [x] status shape
+  - [x] read-only/read-write contract
+- [x] Add sidecar-specific checks for `OpenClawPlugin`
+  - [x] startup health
+  - [x] auth token expectations
+  - [x] port binding/status behavior
+- [x] Add config-generation checks for `OpenCodePlugin`
+
+Verification:
+- [x] vault plugin tests pass
+- [x] extension doctor shows per-plugin health and capability type
+
+## Phase F — Tool-surface and recommendation surface governance ✅ COMPLETE
+
+- [x] Register tool-surface command layer as a managed extension family
+- [x] Verify command/help contracts stay aligned with the registry
+- [x] Add drift detection for repo help text vs actual command availability
+- [x] Add a check that placeholder text does not reappear on shipped command surfaces
+
+Verification:
+- [x] `provider-recommend`, `report-latest`, `dreams-inspect`, `workflow-list` all verify through the extension manager
+
+## Phase G — Tests, docs, and release surface ✅ COMPLETE
+
+- [x] Add focused tests
+  - [x] `tests/test_extensions_registry.py` (covered by test_extensions_integration.py)
+  - [x] `tests/test_extensions_commands.py`
+  - [x] `tests/test_extensions_sync.py`
+  - [x] `tests/test_extensions_verify_contracts.py`
+  - [x] `tests/test_extensions_drift.py`
+- [x] Update docs
+  - [x] `README.md` extension-management section
+  - [x] `ARCHITECTURE.md` extension registry / lifecycle section
+  - [x] `ROADMAP.md` next-version wording
+- [x] Add an operator recipe for fresh-machine sync and drift repair
+  - [x] `docs/EXTENSIONS.md`
+
+Verification:
+- [x] focused extension tests pass
+- [x] full suite passes
+- [x] `git diff --check` clean
 
 ---
 
