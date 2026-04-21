@@ -1,18 +1,59 @@
+# Python
 .venv/
-.pytest_cache/
 __pycache__/
 *.pyc
 *.pyo
-.DS_Store
+*.egg-info/
+.eggs/
+dist/
+build/
+wheels/
+*.whl
+
+# Testing
+.pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
+.tox/
+.nox/
+
+# Type checking / linting
 .mypy_cache/
+.dmypy.json
+dmypy.json
 .ruff_cache/
-*.log
-*.tmp
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Secrets / environment
+.env
+.env.*
+.envrc
+.secrets
+
+# Python version managers
+.python-version
+
+# Node (if any frontend tooling)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated artifacts
 catalog.db
+*.log
+!tests/fixtures/**/*.log
+*.tmp
 reports/
-src/hermesoptimizer.egg-info/
-.hermes/
 tmp/
+.hermes/
+
+# Package metadata (local installs)
+src/hermesoptimizer.egg-info/
