@@ -11,7 +11,8 @@ def main() -> int:
         print("Commands: run, todo, devdo, dodev, caveman, budget-review, budget-set,")
         print("          vault-audit, vault-writeback, export, init-db, add-record,")
         print("          add-finding, list-records, list-findings,")
-        print("          port-reserve, port-list, port-release, ip-list, ip-add, network-scan")
+        print("          port-reserve, port-list, port-release, ip-list, ip-add, network-scan,")
+        print("          token-report, token-check")
         return 1
 
     command = args[0]
@@ -84,6 +85,22 @@ def main() -> int:
         p = argparse.ArgumentParser()
         p.add_argument("--db", default="catalog.db")
         return handle_network_scan(p.parse_args(rest))
+
+    # Token usage analysis commands
+    if command == "token-report":
+        from hermesoptimizer.tokens.commands import handle_token_report
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("path", help="Path to session file or directory")
+        p.add_argument("--json-out", help="Write JSON report to file")
+        return handle_token_report(p.parse_args(rest))
+
+    if command == "token-check":
+        from hermesoptimizer.tokens.commands import handle_token_check
+        import argparse
+        p = argparse.ArgumentParser()
+        p.add_argument("path", help="Path to session file")
+        return handle_token_check(p.parse_args(rest))
 
     # Delegate unknown commands (like init-db, add-record, etc.) to run_standalone
     from hermesoptimizer.run_standalone import main as run_main
