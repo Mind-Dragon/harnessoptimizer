@@ -266,10 +266,33 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     d_sweep.set_defaults(handler=handle_dreams_sweep)
     HANDLERS["dreams-sweep"] = handle_dreams_sweep
 
-    from hermesoptimizer.extensions.commands import handle_ext_list
+    from hermesoptimizer.extensions.commands import (
+        handle_ext_list,
+        handle_ext_status,
+        handle_ext_sync,
+        handle_ext_verify,
+    )
+
     e_list = subparsers.add_parser("ext-list", help="List registered extensions")
     e_list.set_defaults(handler=handle_ext_list)
     HANDLERS["ext-list"] = handle_ext_list
+
+    e_status = subparsers.add_parser("ext-status", help="Show extension source vs target status")
+    e_status.set_defaults(handler=handle_ext_status)
+    HANDLERS["ext-status"] = handle_ext_status
+
+    e_verify = subparsers.add_parser("ext-verify", help="Run verification for one or all extensions")
+    e_verify.add_argument("id", nargs="?", default="all", help="Extension ID or 'all'")
+    e_verify.add_argument("--verbose", action="store_true", help="Show command output")
+    e_verify.set_defaults(handler=handle_ext_verify)
+    HANDLERS["ext-verify"] = handle_ext_verify
+
+    e_sync = subparsers.add_parser("ext-sync", help="Sync repo-managed artifacts to targets")
+    e_sync.add_argument("id", nargs="?", default="all", help="Extension ID or 'all'")
+    e_sync.add_argument("--dry-run", action="store_true", help="Show what would be copied without copying")
+    e_sync.add_argument("--force", action="store_true", help="Overwrite existing targets")
+    e_sync.set_defaults(handler=handle_ext_sync)
+    HANDLERS["ext-sync"] = handle_ext_sync
 
     from hermesoptimizer.extensions.doctor import run_doctor
 
@@ -279,11 +302,15 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
             print(f"extensions checked: {report['extensions_checked']}")
             print(f"healthy: {report['healthy']}")
             print(f"missing_source: {report['missing_source']}")
+            print(f"missing_target: {report.get('missing_target', 0)}")
             print(f"external: {report['external']}")
+            print(f"verify_passed: {report.get('verify_passed', 0)}")
+            print(f"verify_failed: {report.get('verify_failed', 0)}")
             if report["issues"]:
                 print("issues:")
                 for issue in report["issues"]:
-                    print(f"  - {issue['id']}: {issue['issue']} ({issue['source_path']})")
+                    src = issue.get("source_path", issue.get("command", "n/a"))
+                    print(f"  - {issue['id']}: {issue['issue']} ({src})")
             return 0
         except Exception as exc:
             print(f"ext-doctor failed: {exc}", file=sys.stderr)

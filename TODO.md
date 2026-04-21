@@ -32,47 +32,47 @@ That makes three things harder than they should be:
 
 ---
 
-## Phase A — Extension registry (swarm-structured)
+## Phase A — Extension registry (swarm-structured) ✅ COMPLETE
 
 Design principle: one file per extension, schema-first, waves not linear checklist.
 
-- [ ] Wave 1 — Foundation
-  - [ ] Define registry schema in `src/hermesoptimizer/extensions/schema.py`
-    - [ ] ExtensionEntry dataclass: id, type, source_path, target_paths, verify_command, ownership, description
-    - [ ] ExtensionType enum: config, skill, script, cron, vault_plugin, sidecar, command_surface
-    - [ ] Ownership enum: repo_only, repo_external, external_runtime
-  - [ ] Define loader in `src/hermesoptimizer/extensions/loader.py`
-    - [ ] load_extension_file(path) → ExtensionEntry
-    - [ ] load_registry(directory) → list[ExtensionEntry]
-    - [ ] validate_registry(entries) → raises on duplicate id / missing required fields
-  - [ ] Define output directory: `extensions/` (one YAML file per extension)
-  - [ ] Add validation guards:
-    - [ ] Duplicate ID guard
-    - [ ] Missing required field guard
-    - [ ] Source path existence guard (optional, warn not fail)
+- [x] Wave 1 — Foundation
+  - [x] Define registry schema in `src/hermesoptimizer/extensions/schema.py`
+    - [x] ExtensionEntry dataclass: id, type, source_path, target_paths, verify_command, ownership, description
+    - [x] ExtensionType enum: config, skill, script, cron, vault_plugin, sidecar, command_surface
+    - [x] Ownership enum: repo_only, repo_external, external_runtime
+  - [x] Define loader in `src/hermesoptimizer/extensions/loader.py`
+    - [x] load_extension_file(path) → ExtensionEntry
+    - [x] load_registry(directory) → list[ExtensionEntry]
+    - [x] validate_registry(entries) → raises on duplicate id / missing required fields
+  - [x] Define output directory: `extensions/` (one YAML file per extension)
+  - [x] Add validation guards:
+    - [x] Duplicate ID guard
+    - [x] Missing required field guard
+    - [x] Source path existence guard (optional, warn not fail)
 
-- [ ] Wave 2 — Parallel registration (one file per extension)
-  - [ ] Register caveman → `extensions/caveman.yaml`
-  - [ ] Register dreams → `extensions/dreams.yaml`
-  - [ ] Register vault plugins → `extensions/vault_plugins.yaml`
-  - [ ] Register tool-surface → `extensions/tool_surface.yaml`
-  - [ ] Register scripts → `extensions/scripts.yaml`
-  - [ ] Register external skills → `extensions/skills.yaml`
-  - [ ] Register cron surfaces → `extensions/cron.yaml`
+- [x] Wave 2 — Parallel registration (one file per extension)
+  - [x] Register caveman → `extensions/caveman.yaml`
+  - [x] Register dreams → `extensions/dreams.yaml`
+  - [x] Register vault plugins → `extensions/vault_plugins.yaml`
+  - [x] Register tool-surface → `extensions/tool_surface.yaml`
+  - [x] Register scripts → `extensions/scripts.yaml`
+  - [x] Register external skills → `extensions/skills.yaml`
+  - [x] Register cron surfaces → `extensions/cron.yaml`
 
-- [ ] Wave 3 — Integration
-  - [ ] Load all extension files into combined registry view
-  - [ ] Add `ext-list` CLI command
-  - [ ] Verify no duplicate IDs across all files
+- [x] Wave 3 — Integration
+  - [x] Load all extension files into combined registry view
+  - [x] Add `ext-list` CLI command
+  - [x] Verify no duplicate IDs across all files
 
-- [ ] Wave 4 — Dry-run and checkpoint
-  - [ ] Add `ext-doctor --dry-run` that validates registry without touching runtime
-  - [ ] Add checkpoint persistence for registry state
+- [x] Wave 4 — Dry-run and checkpoint
+  - [x] Add `ext-doctor --dry-run` that validates registry without touching runtime
+  - [x] Add checkpoint persistence for registry state
 
 Verification:
-- [ ] `PYTHONPATH=src python -m pytest tests/test_extensions_schema.py tests/test_extensions_loader.py -q`
-- [ ] `PYTHONPATH=src python -m hermesoptimizer ext-list`
-- [ ] Registry loads with all 7 current extension surfaces
+- [x] `PYTHONPATH=src python -m pytest tests/test_extensions_schema.py tests/test_extensions_loader.py -q`
+- [x] `PYTHONPATH=src python -m hermesoptimizer ext-list`
+- [x] Registry loads with all 7 current extension surfaces
 
 ## Phase B — Add extension management commands
 

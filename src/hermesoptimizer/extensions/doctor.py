@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 from hermesoptimizer.extensions import build_registry
 from hermesoptimizer.extensions.schema import ExtensionEntry, Ownership
+from hermesoptimizer.extensions.status import check_all_statuses
+from hermesoptimizer.extensions.verify import verify_all
 
 
 def _repo_root() -> Path:
@@ -31,32 +32,56 @@ def run_doctor(dry_run: bool = False) -> dict:
         "extensions_checked": len(entries),
         "healthy": 0,
         "missing_source": 0,
+        "missing_target": 0,
         "external": 0,
+        "verify_passed": 0,
+        "verify_failed": 0,
         "issues": [],
         "entries": [],
     }
 
-    for entry in entries:
-        status = "ok"
+    statuses = check_all_statuses(entries, repo_root)
+    verify_results = verify_all(entries, cwd=repo_root)
+    verify_by_id = {v.id: v for v in verify_results}
+
+    for entry, status in zip(entries, statuses):
+        verify_res = verify_by_id.get(entry.id)
+
         if entry.ownership == Ownership.EXTERNAL_RUNTIME:
-            status = "external"
             report["external"] += 1
-        elif not entry.source_exists(repo_root):
-            status = "missing_source"
+        elif not status.source_ok:
             report["missing_source"] += 1
             report["issues"].append({
                 "id": entry.id,
                 "issue": "source_path does not exist in repo",
                 "source_path": entry.source_path,
             })
+        elif status.status == "missing_target":
+            report["missing_target"] += 1
+            report["issues"].append({
+                "id": entry.id,
+                "issue": status.detail,
+                "source_path": entry.source_path,
+            })
         else:
             report["healthy"] += 1
+
+        if verify_res and verify_res.passed:
+            report["verify_passed"] += 1
+        elif verify_res:
+            report["verify_failed"] += 1
+            report["issues"].append({
+                "id": entry.id,
+                "issue": f"verify failed: {verify_res.stderr or verify_res.stdout}",
+                "command": verify_res.command,
+            })
 
         report["entries"].append({
             "id": entry.id,
             "type": entry.type.value,
             "ownership": entry.ownership.value,
-            "status": status,
+            "status": status.status,
+            "verify": "pass" if (verify_res and verify_res.passed) else ("fail" if verify_res else "n/a"),
         })
 
     if not dry_run:
