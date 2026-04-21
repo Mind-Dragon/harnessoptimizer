@@ -1,0 +1,10 @@
+id: cron
+type: cron
+description: Cron-linked reflection and sweep jobs
+source_path: ""
+target_paths:
+  - ~/.hermes/cron/
+verify_command: python -c "print('manual check required')"
+ownership: external_runtime
+metadata:
+  note: Cron jobs are runtime-managed; registry tracks them but does not sync them

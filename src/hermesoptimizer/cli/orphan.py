@@ -265,3 +265,31 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     d_sweep.add_argument("--json-out", help="Optional JSON output path")
     d_sweep.set_defaults(handler=handle_dreams_sweep)
     HANDLERS["dreams-sweep"] = handle_dreams_sweep
+
+    from hermesoptimizer.extensions.commands import handle_ext_list
+    e_list = subparsers.add_parser("ext-list", help="List registered extensions")
+    e_list.set_defaults(handler=handle_ext_list)
+    HANDLERS["ext-list"] = handle_ext_list
+
+    from hermesoptimizer.extensions.doctor import run_doctor
+
+    def handle_ext_doctor(args: argparse.Namespace) -> int:
+        try:
+            report = run_doctor(dry_run=args.dry_run)
+            print(f"extensions checked: {report['extensions_checked']}")
+            print(f"healthy: {report['healthy']}")
+            print(f"missing_source: {report['missing_source']}")
+            print(f"external: {report['external']}")
+            if report["issues"]:
+                print("issues:")
+                for issue in report["issues"]:
+                    print(f"  - {issue['id']}: {issue['issue']} ({issue['source_path']})")
+            return 0
+        except Exception as exc:
+            print(f"ext-doctor failed: {exc}", file=sys.stderr)
+            return 1
+
+    e_doctor = subparsers.add_parser("ext-doctor", help="Run extension health check")
+    e_doctor.add_argument("--dry-run", action="store_true", help="Validate without writing checkpoint")
+    e_doctor.set_defaults(handler=handle_ext_doctor)
+    HANDLERS["ext-doctor"] = handle_ext_doctor

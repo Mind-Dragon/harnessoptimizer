@@ -1,0 +1,15 @@
+id: dreams
+type: sidecar
+description: TEMM1E-inspired dreaming and memory-consolidation sidecar
+source_path: src/hermesoptimizer/dreams/
+target_paths:
+  - ~/.hermes/dreams/memory_meta.db
+  - scripts/dreaming_pre_sweep.py
+  - scripts/probe_memory_meta.py
+verify_command: python -m hermesoptimizer dreams-sweep --help
+ownership: repo_external
+metadata:
+  cron_job_id: 30b51a980bc4
+  external_scripts:
+    - ~/.hermes/scripts/dreaming_reflection_context.py
+    - ~/.hermes/scripts/supermemory_store.js

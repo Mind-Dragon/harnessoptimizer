@@ -1,0 +1,13 @@
+id: scripts
+type: script
+description: Repo-managed utility scripts
+source_path: scripts/
+target_paths: []
+verify_command: python scripts/validate_testplan.py --help
+ownership: repo_only
+metadata:
+  scripts:
+    - validate_testplan.py
+    - convert_vault.py
+    - dreaming_pre_sweep.py
+    - probe_memory_meta.py
