@@ -88,7 +88,7 @@ def apply_recommendation(
     # Write updated config
     config["turn_budget"] = budget_section
     with config_path.open("w") as f:
-        yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False)
+        yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
     return result
 
@@ -137,6 +137,6 @@ def set_profile(
     # Write updated config
     config["turn_budget"] = budget_section
     with config_path.open("w") as f:
-        yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False)
+        yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
 
     return result

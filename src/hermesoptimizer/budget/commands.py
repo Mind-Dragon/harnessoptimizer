@@ -168,8 +168,8 @@ def add_budget_set_subparser(subparsers) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--config",
-        default="~/.config/hermes/config.yaml",
-        help="Path to config file (default: ~/.config/hermes/config.yaml)",
+        default="~/.hermes/config.yaml",
+        help="Path to config file (default: ~/.hermes/config.yaml)",
     )
     parser.add_argument(
         "--role",
