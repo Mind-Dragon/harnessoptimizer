@@ -322,3 +322,77 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     e_doctor.add_argument("--dry-run", action="store_true", help="Validate without writing checkpoint")
     e_doctor.set_defaults(handler=handle_ext_doctor)
     HANDLERS["ext-doctor"] = handle_ext_doctor
+
+    # Brain plugin commands
+    def handle_brain_doctor(args: argparse.Namespace) -> int:
+        try:
+            import subprocess
+            cmd = ["python3", str(_repo_root() / "brain" / "scripts" / "brain_doctor.py")]
+            if args.dry_run:
+                cmd.append("--dry-run")
+            if args.check:
+                for check in args.check:
+                    cmd.extend(["--check", check])
+            if args.output:
+                cmd.extend(["--output", args.output])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            print(result.stdout)
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
+            return result.returncode
+        except Exception as exc:
+            print(f"brain-doctor failed: {exc}", file=sys.stderr)
+            return 1
+
+    b_doctor = subparsers.add_parser("brain-doctor", help="Run brain health checks")
+    b_doctor.add_argument("--dry-run", action="store_true", help="Run without live network calls")
+    b_doctor.add_argument("--check", action="append", choices=["rail_loader", "request_dump", "provider_probe"], help="Specific check to run")
+    b_doctor.add_argument("--output", help="JSON output path")
+    b_doctor.set_defaults(handler=handle_brain_doctor)
+    HANDLERS["brain-doctor"] = handle_brain_doctor
+
+    def handle_brain_probe(args: argparse.Namespace) -> int:
+        try:
+            import subprocess
+            cmd = ["python3", str(_repo_root() / "brain" / "scripts" / "provider_probe.py"), "--config", str(_repo_root() / "brain" / "evals" / "provider-canaries.json")]
+            if args.provider:
+                cmd.extend(["--provider", args.provider])
+            if args.dry_run:
+                cmd.append("--dry-run")
+            if args.list:
+                cmd.append("--list")
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            print(result.stdout)
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
+            return result.returncode
+        except Exception as exc:
+            print(f"brain-probe failed: {exc}", file=sys.stderr)
+            return 1
+
+    b_probe = subparsers.add_parser("brain-probe", help="Run provider health probes")
+    b_probe.add_argument("--provider", help="Specific provider to probe")
+    b_probe.add_argument("--dry-run", action="store_true", help="List providers without probing")
+    b_probe.add_argument("--list", action="store_true", help="List all providers")
+    b_probe.set_defaults(handler=handle_brain_probe)
+    HANDLERS["brain-probe"] = handle_brain_probe
+
+    def handle_brain_audit(args: argparse.Namespace) -> int:
+        try:
+            import subprocess
+            cmd = ["python3", str(_repo_root() / "brain" / "scripts" / "resolver_audit.py")]
+            if args.output:
+                cmd.extend(["--output", args.output])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            print(result.stdout)
+            if result.stderr:
+                print(result.stderr, file=sys.stderr)
+            return result.returncode
+        except Exception as exc:
+            print(f"brain-audit failed: {exc}", file=sys.stderr)
+            return 1
+
+    b_audit = subparsers.add_parser("brain-audit", help="Audit resolver routing coverage")
+    b_audit.add_argument("--output", help="JSON output path")
+    b_audit.set_defaults(handler=handle_brain_audit)
+    HANDLERS["brain-audit"] = handle_brain_audit

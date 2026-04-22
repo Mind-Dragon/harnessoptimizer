@@ -70,9 +70,12 @@ def sync_extension(
                 if target.exists():
                     shutil.rmtree(target)
                 shutil.copytree(source, target)
-            else:
+            elif source.is_file():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
+            else:
+                errors.append(f"source is neither file nor directory: {source}")
+                continue
             actions.append(f"copied {source} -> {target}")
         except Exception as exc:
             errors.append(f"copy failed for {target}: {exc}")
