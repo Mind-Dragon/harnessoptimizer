@@ -273,10 +273,12 @@ class TestDoctor:
         from hermesoptimizer.extensions.doctor import run_doctor
         from hermesoptimizer.extensions import build_registry
 
-        # Patch _repo_root to use our temp path
-        import hermesoptimizer.extensions.doctor as doctor_mod
-        original_repo_root = doctor_mod._repo_root
-        doctor_mod._repo_root = lambda: repo_root
+        # Patch resolver module for test isolation
+        import hermesoptimizer.extensions.resolver as resolver_mod
+        original_repo_root = resolver_mod._repo_root
+        original_registry_dir = resolver_mod.registry_dir
+        resolver_mod._repo_root = lambda: repo_root
+        resolver_mod.registry_dir = lambda: repo_root / "extensions"
 
         # Create a minimal extension
         ext_dir = repo_root / "extensions"
@@ -294,15 +296,19 @@ class TestDoctor:
             assert report["extensions_checked"] == 1
             assert report["healthy"] == 1
         finally:
-            doctor_mod._repo_root = original_repo_root
+            resolver_mod._repo_root = original_repo_root
+            resolver_mod.registry_dir = original_registry_dir
 
     def test_doctor_dry_run_no_checkpoint(self, repo_root: Path) -> None:
         from hermesoptimizer.extensions.doctor import run_doctor, _checkpoint_path
         import hermesoptimizer.extensions.doctor as doctor_mod
+        import hermesoptimizer.extensions.resolver as resolver_mod
 
-        original_repo_root = doctor_mod._repo_root
+        original_repo_root = resolver_mod._repo_root
+        original_registry_dir = resolver_mod.registry_dir
         original_checkpoint = doctor_mod._checkpoint_path
-        doctor_mod._repo_root = lambda: repo_root
+        resolver_mod._repo_root = lambda: repo_root
+        resolver_mod.registry_dir = lambda: repo_root / "extensions"
         checkpoint = repo_root / "checkpoint.json"
         doctor_mod._checkpoint_path = lambda: checkpoint
 
@@ -317,5 +323,6 @@ class TestDoctor:
             run_doctor(dry_run=True)
             assert not checkpoint.exists()
         finally:
-            doctor_mod._repo_root = original_repo_root
+            resolver_mod._repo_root = original_repo_root
+            resolver_mod.registry_dir = original_registry_dir
             doctor_mod._checkpoint_path = original_checkpoint

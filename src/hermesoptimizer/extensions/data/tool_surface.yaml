@@ -1,0 +1,14 @@
+id: tool_surface
+type: command_surface
+description: Tool-surface command layer for Hermes-first workflows
+source_path: src/hermesoptimizer/tool_surface/
+target_paths: []
+verify_command: python -m hermesoptimizer.extensions.verify_contracts tool_surface
+ownership: repo_only
+metadata:
+  commands:
+    - provider list
+    - provider recommend
+    - workflow list
+    - dreams inspect
+    - report latest

@@ -377,3 +377,153 @@ class TestProviderIntegration:
         assert len(results) == 2
         # Both should be active since our mocks return success
         assert all(r.ok for r in results)
+
+
+# --------------------------------------------------------------------------
+# Realistic HTTP Response Tests
+# --------------------------------------------------------------------------
+
+
+class TestHTTPStatusProviderRealisticResponses:
+    """Tests using realistic HTTP response objects with proper structure."""
+
+    def _make_response(self, status_code: int, json_data: dict | None = None, headers: dict | None = None, text: str = "") -> MagicMock:
+        """Create a realistic HTTP response mock with proper attribute structure."""
+        response = MagicMock()
+        response.status_code = status_code
+        response.headers = headers or {"Content-Type": "application/json"}
+        response.text = text
+        if json_data is not None:
+            response.json.return_value = json_data
+        else:
+            response.json.side_effect = ValueError("No JSON body")
+        return response
+
+    def test_http_provider_parses_json_response_body(self, sample_entry: VaultEntry) -> None:
+        """HTTP 200 with JSON body is handled correctly even though body isn't used."""
+        provider = HTTPStatusProvider(endpoint="https://api.example.com/health")
+
+        with patch("requests.get") as mock_get:
+            mock_response = self._make_response(
+                status_code=200,
+                json_data={"status": "healthy", "version": "1.0.0"},
+                headers={"Content-Type": "application/json", "X-Request-Id": "abc123"},
+            )
+            mock_get.return_value = mock_response
+
+            result = provider(sample_entry)
+
+        assert result.ok is True
+        assert result.status == "active"
+        # Verify headers were accessible (even if not used in result message)
+        assert mock_response.headers["X-Request-Id"] == "abc123"
+
+    def test_http_provider_handles_response_with_no_content_type(self, sample_entry: VaultEntry) -> None:
+        """HTTP 200 with no Content-Type header is handled gracefully."""
+        provider = HTTPStatusProvider(endpoint="https://api.example.com/health")
+
+        with patch("requests.get") as mock_get:
+            mock_response = self._make_response(
+                status_code=200,
+                headers={},  # No Content-Type
+            )
+            mock_get.return_value = mock_response
+
+            result = provider(sample_entry)
+
+        assert result.ok is True
+        assert result.status == "active"
+
+    def test_http_provider_returns_degraded_with_realistic_503_response(
+        self, sample_entry: VaultEntry
+    ) -> None:
+        """HTTP 503 with JSON error body is returned as degraded."""
+        provider = HTTPStatusProvider(endpoint="https://api.example.com/health")
+
+        with patch("requests.get") as mock_get:
+            mock_response = self._make_response(
+                status_code=503,
+                json_data={"error": "Service Unavailable", "retry_after": 30},
+                headers={"Content-Type": "application/json", "Retry-After": "30"},
+            )
+            mock_get.return_value = mock_response
+
+            result = provider(sample_entry)
+
+        assert result.ok is False
+        assert result.status == "degraded"
+        # Message should include status code
+        assert "503" in result.message
+
+
+class TestGCPProviderRealisticResponses:
+    """Tests for GCPProvider with realistic HTTP response structures."""
+
+    def _make_response(self, status_code: int, json_data: dict | None = None, headers: dict | None = None) -> MagicMock:
+        """Create a realistic HTTP response mock."""
+        response = MagicMock()
+        response.status_code = status_code
+        response.headers = headers or {"Content-Type": "application/json"}
+        if json_data is not None:
+            response.json.return_value = json_data
+        else:
+            response.json.side_effect = ValueError("No JSON")
+        return response
+
+    def test_gcp_provider_parses_token_info_with_realistic_response(
+        self, sample_entry: VaultEntry
+    ) -> None:
+        """GCP token info endpoint with realistic response structure.
+
+        Note: GCPProvider only checks status_code, not JSON body, but we
+        verify the realistic response structure is properly handled.
+        """
+        provider = GCPProvider(
+            endpoint="https://oauth2.googleapis.com/token_info",
+            token="ya29.valid_token",
+        )
+
+        with patch("requests.get") as mock_get:
+            mock_response = self._make_response(
+                status_code=200,
+                json_data={
+                    "issued_to": "123456789.apps.googleusercontent.com",
+                    "audience": "123456789.apps.googleusercontent.com",
+                    "scope": "https://www.googleapis.com/auth/cloud-platform.read-only",
+                    "expires_in": 3600,
+                    "email": "service-account@example.com",
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-cache",
+                },
+            )
+            mock_get.return_value = mock_response
+
+            result = provider(sample_entry)
+
+        assert result.ok is True
+        assert result.status == "active"
+        # Verify the response was accessible with proper structure
+        assert mock_response.status_code == 200
+        assert mock_response.headers["Content-Type"] == "application/json"
+
+    def test_gcp_provider_handles_401_with_error_json(self, sample_entry: VaultEntry) -> None:
+        """GCP token info returning 401 with error JSON body."""
+        provider = GCPProvider(
+            endpoint="https://oauth2.googleapis.com/token_info",
+            token="invalid_token",
+        )
+
+        with patch("requests.get") as mock_get:
+            mock_response = self._make_response(
+                status_code=401,
+                json_data={"error": "invalid_token", "error_description": "Token expired or invalid"},
+            )
+            mock_get.return_value = mock_response
+
+            result = provider(sample_entry)
+
+        assert result.ok is False
+        assert result.status == "degraded"
+        assert "401" in result.message

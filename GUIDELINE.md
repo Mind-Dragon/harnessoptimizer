@@ -1,151 +1,114 @@
-# Hermes Optimizer Success Guidelines
+# GUIDELINE.md
 
-This file defines how Hermes Optimizer capability gates are judged on the current `0.9.1` line.
+## Mission
 
-These are release gates, not a package-version claim. Capability labels below may lag or lead the installed package version, so the source of truth is always the live CLI, tests, and runtime evidence.
+Build a local-first compiled brain for Hermes-style project work in this repository.
 
-## The measurement idea
+The system should improve by converting failures into durable structure:
+- scripts
+- provider notes
+- incidents
+- active-work snapshots
+- skills
+- evals and canaries
 
-Success is not "it ran once."
-Success is:
-- it found the right files and runtime surfaces
-- it recognized real problems
-- it separated noise from signal
-- it ranked fixes sensibly
-- it grounded provider and runtime recommendations in live truth
-- it produced reports that a human can act on
+Not by growing prompt size or relying on lossy session summaries. [R1][R2]
 
-## What good looks like
+## Non-negotiables
 
-A good run should answer these questions clearly:
-- What files did we inspect?
-- What health surfaces did we check?
-- What failed or looks suspicious?
-- Is the issue local config, session drift, provider mismatch, gateway health, or CLI health?
-- What should be fixed first?
-- What is a reasonable next action?
+### 1. Deterministic before latent
 
-## Success metrics for v0.9.0
+If code can do the work, do not ask the model to improvise it.
 
-### Discovery
-- 100% of known Hermes config, session, log, and database locations are represented in the path inventory
-- any new location found in the wild can be added without restructuring the core
-- path discovery is reproducible on a second run
+Examples:
+- provider probes
+- request-dump aggregation
+- rail loading checks
+- resolver audits
+- active-work snapshots
 
-### Parsing
-- known Hermes failure cases are detected from config, session, and log files
-- repeated signals are deduplicated into grouped findings
-- raw evidence is preserved in samples or snippets
-- false positives are low enough that the report stays readable
+### 2. Retrieval before summarization
 
-### Prioritization
-- every finding receives one of the priority buckets:
-  - critical
-  - important
-  - good ideas
-  - nice to have
-  - whatever
-- critical items are reserved for things that break the harness or create bad output
-- the ranking should be explainable by the text in the report
+Use structured artifacts and deterministic retrieval before any compressed narrative summary. The observed summary failures make this mandatory. [R2][R3]
 
-### Provider and runtime truth
-- the optimizer prefers live runtime truth over local cached text when they disagree
-- it can detect when the key is valid but the endpoint or alias is wrong
-- it can detect when the model name is stale even if the provider account is fine
-- it can detect when the gateway is healthy but the CLI state is not, and vice versa
-- if live health and local config disagree, the report should show that mismatch instead of hiding it
+### 3. No durable learning without a structure change
 
-### Reporting
-- JSON output is machine-readable and stable
-- Markdown output is readable and useful to a human
-- reports show enough context to make a repair decision without opening the raw logs first
-- reports show the inspected inputs and the exact health evidence used to make the call
+A recurring failure is only considered learned when at least one of these changes:
+- a script exists
+- a provider note is updated
+- an incident exists
+- a skill is created or patched
+- an eval or canary exists
+- a filing rule is clarified
 
-### Tests
-- unit tests cover the discovery, parsing, ranking, verification, and export layers
-- tests do not depend on fragile live network access unless they are explicitly integration tests
-- shared behavior remains stable across Hermes and later harnesses
-- focused CLI coverage exists for parser construction, dispatch routing, run-pipeline behavior, and subprocess integration
+### 4. Provider-specific truth only
 
-### Current closeout expectations for the `0.9.1` line
-- the CLI is unified under `hermesoptimizer --help`
-- `verify-endpoints`, `dreams-sweep`, `provider-recommend`, and `report-latest` are real command surfaces, not placeholders
-- `report-latest` reads from the runtime reports directory, not a repo-local ad hoc path
-- src-layout verification is documented and works with `PYTHONPATH=src python -m hermesoptimizer --help`
+Do not treat providers as interchangeable abstractions. Every lane used by this repo must have:
+- a provider note
+- a canary definition or explicit reason not to probe
+- a fallback or quarantine policy
 
-## Operational rule
+### 5. One canonical home per durable fact
 
-If a result cannot be explained in plain language, it is not ready to be trusted.
+- user preferences → memory
+- repo/provider/system/project truth → `brain/`
+- procedures → skills
+- temporary ongoing state → `brain/active-work/`
+- raw evidence → logs, sessions, reports
 
-## Version gates
+### 6. Reports are generated artifacts
 
-### v0.9.0 gate
-- Hermes adapter works end to end
-- real source locations are discovered
-- findings are grouped and prioritized
-- reports are useful
+Generated reports are useful evidence but not the final source of truth. Promote enduring conclusions out of reports into provider notes, incidents, or docs.
 
-### next release gate
-- Hermes gateway and CLI health are validated explicitly
-- duplicate providers and blank providers are removed from the session path
-- invalid new-session data is detected and surfaced clearly
-- canonical providers resolve `base_url` and `api_key` from environment variables automatically
-- stale `model.base_url` and `model.api_key` fields are stripped before reuse
-- canonical providers do not stay duplicated in a user-defined `providers:` block
-- provider-specific env overrides that conflict with canonical routing are cleared or ignored for the canonical path
-- removed credential sources do not silently re-seed themselves
-- repair recommendations are specific and safe
+### 7. No synthetic success
 
-### Later gates
-- other harnesses can be added without changing the Hermes rules above
-- multi-harness reports stay coherent
+Do not mark a provider, script, or workflow as healthy without a real check, a dry-run with explicit limits, or a concrete artifact proving the behavior.
 
-## Anti-goals
+### 8. Keep the brain small and queryable
 
-- Do not measure success by line count.
-- Do not count every warning as a finding.
-- Do not trust cloned docs over live runtime evidence.
-- Do not silently mutate config as part of measurement.
-- Do not call the system healthy if the gateway or CLI is broken.
-- Do not call a session clean if blank or duplicate providers still show up in new-session data.
+Do not turn `brain/` into a prose landfill. Prefer short, typed, narrow files over giant narrative notes.
 
-## /todo and /devdo workflow
+## Build priorities
 
-The optimizer now supports a two-command workflow for plan-then-execute development:
+1. provider health and fallback discipline
+2. request-dump and session-failure digestion
+3. active-work continuity
+4. resolver coverage
+5. incident-to-skill promotion
 
-### /todo — Planning mode
-- Creates and updates workflow plans
-- Never executes work
-- Validates plan quality before freezing
-- Generates default task chains from an objective
+## Review rules
 
-### /devdo — Execution mode
-- Consumes frozen plans
-- Builds task DAGs and schedules parallel batches
-- Dispatches subagents by role (research, implement, test, review, verify)
-- Runs two-stage review on implementation tasks
-- Checkpoints after each batch
-- Resumes from last clean checkpoint on interruption
-- Hard-blocks on invalid state, auto-repairs safe drift
+Before landing changes, check:
+- does the change reduce recurrence or only describe it?
+- did the canonical file get updated?
+- is there a clear place to resume work later?
+- if a provider is involved, was health or failure mode recorded?
+- if a workflow repeats, should it become a skill or script?
 
-### Command alias
-- /dodev is aliased to /devdo for backward compatibility
+## Anti-patterns
 
-### State on disk
-- .hermes/workflows/<workflow_id>/plan.yaml — frozen plan
-- .hermes/workflows/<workflow_id>/run.yaml — live execution state
-- .hermes/workflows/<workflow_id>/tasks/ — per-task files
-- .hermes/workflows/<workflow_id>/checkpoints/ — append-only history
-- .hermes/workflows/<workflow_id>/artifacts/ — task output refs
+Do not do these:
+- store procedures in memory
+- rely on one-shot summaries for continuity
+- use a blocked provider for required compaction
+- leave repeated failures only in logs
+- create overlapping artifacts without naming one canonical file
+- commit caches, local DB/WAL files, or generated Python bytecode
 
-### Guard rules
-- /devdo refuses to start if the plan is missing, not frozen, or invalid
-- Boundary checks run before writes, completions, phase transitions, and fan-outs
-- Safe drift (version mismatch, stale guard state) is auto-repaired
-- Unsafe drift (blocked guard, failed run) hard-blocks and requires human intervention
+## Minimum definition of done for a new brain feature
 
-### Scheduler behavior
-- Tasks are organized into a DAG with dependency depth levels
-- Independent tasks at the same depth fan out in parallel batches
-- Role pools limit parallelism per role (e.g., max 4 implementers, max 2 reviewers)
-- The scheduler can scale to 10+ concurrent subagents for sufficiently wide task graphs
+A new feature should usually have:
+- doc update
+- deterministic helper or explicit rationale for not having one
+- eval/canary or follow-up note
+- filing decision
+- verification step
+
+## References
+
+- [R1] User-provided Garry Tan article in this conversation
+- [R2] `/home/agent/hermesagent/brain.md`
+- [R3] `/home/agent/hermesagent/brain/reports/request-dump-summary.json`
+- [R4] https://github.com/NousResearch/hermes-agent
+- [R5] https://github.com/stephenschoettler/hermes-lcm
+- [R6] https://github.com/plastic-labs/honcho

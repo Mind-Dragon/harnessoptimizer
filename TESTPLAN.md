@@ -1,8 +1,8 @@
-# Hermes Optimizer Test Plan — v0.9.0
+# Hermes Optimizer Test Plan — v0.9.1
 
 ## Status
 
-Active. Canonical test strategy. Updated for v0.9.0 budget-tuning module.
+Active. Canonical test strategy. Updated for v0.9.1 budget-tuning module.
 
 ## Baseline (updated 2026-04-19)
 

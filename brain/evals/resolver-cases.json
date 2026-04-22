@@ -1,0 +1,50 @@
+[
+  {
+    "intent": "provider keeps returning 404 on coding requests",
+    "expected_first_path": "brain/scripts/provider_probe.py",
+    "expected_artifact": "brain/providers/kimi-coding.md",
+    "notes": "Provider health first, not freeform reasoning. Script is brain/scripts/provider_probe.py."
+  },
+  {
+    "intent": "summarization keeps failing with html challenge page",
+    "expected_first_path": "brain/scripts/request_dump_digest.py",
+    "expected_artifact": "brain/providers/chatgpt-codex-summary-lane.md",
+    "notes": "Use deterministic aggregation first (request_dump_digest.py), then check provider note for the specific lane."
+  },
+  {
+    "intent": "what were we doing on this task",
+    "expected_first_path": "brain/active-work/current.md",
+    "expected_artifact": "brain/active-work/current.md",
+    "notes": "Snapshot before sessions when present. Use concrete current.md, not generic directory."
+  },
+  {
+    "intent": "same failure happened again, make sure it stops recurring",
+    "expected_first_path": "brain/incidents/2026-04-04-minimax-max-retries-exhausted.md",
+    "expected_artifact": "brain/incidents/2026-04-04-minimax-max-retries-exhausted.md",
+    "notes": "Promote repeat pain into a concrete incident artifact first, then derive resolver/skill work from there."
+  },
+  {
+    "intent": "where should this knowledge go, filing decision",
+    "expected_first_path": "brain/filing-rules.md",
+    "expected_artifact": "brain/filing-rules.md",
+    "notes": "Use filing-rules.md to determine target directory. Never dump procedures into memory."
+  },
+  {
+    "intent": "should this skill fire, wrong skill loaded, routing evaluation",
+    "expected_first_path": "brain/evals/resolver-cases.json",
+    "expected_artifact": "brain/evals/resolver-cases.json",
+    "notes": "Eval fixture review for routing decisions. Add explicit exclusions on overlapping skills."
+  },
+  {
+    "intent": "rail loader SOUL prefill mismatch detected",
+    "expected_first_path": "brain/scripts/rail_loader_check.py",
+    "expected_artifact": "brain/incidents/2026-04-22-soul-prefill-loader-mismatch.md",
+    "notes": "Rail loader check with known prefill error signature from incident."
+  },
+  {
+    "intent": "minimax provider max retries exhausted",
+    "expected_first_path": "brain/incidents/2026-04-04-minimax-max-retries-exhausted.md",
+    "expected_artifact": "brain/incidents/2026-04-04-minimax-max-retries-exhausted.md",
+    "notes": "Known incident with documented root cause and verification steps."
+  }
+]

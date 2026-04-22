@@ -11,6 +11,7 @@ from pathlib import Path
 
 import yaml
 
+from hermesoptimizer.extensions.resolver import _repo_root
 from hermesoptimizer.extensions.schema import ExtensionEntry
 
 
@@ -22,10 +23,6 @@ class DriftFinding:
     check: str
     severity: str  # error | warning | info
     detail: str
-
-
-def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[3]
 
 
 def _config_path() -> Path:

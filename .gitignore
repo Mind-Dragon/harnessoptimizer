@@ -54,6 +54,7 @@ catalog.db
 reports/
 tmp/
 .hermes/
+.hoptimizer/
 
 # Package metadata (local installs)
 src/hermesoptimizer.egg-info/

@@ -1,0 +1,30 @@
+{
+  "check_name": "rail-loader-prefill-mismatch",
+  "description": "Detects SOUL/HEARTBEAT prefill format mismatch risk from file inspection and log analysis",
+  "script": "brain/scripts/rail_loader_check.py",
+  "evals_file": "brain/scripts/test_rail_loader_check.py",
+  "rails": [
+    {
+      "name": "SOUL",
+      "path": "/home/agent/clawd/SOUL.md",
+      "loader_expects": "json",
+      "known_issue": "File is markdown/plaintext but loader expects JSON — causes prefill parse failure"
+    },
+    {
+      "name": "HEARTBEAT",
+      "path": "/home/agent/clawd/HEARTBEAT.md",
+      "loader_expects": "json",
+      "known_issue": "File is markdown/plaintext but loader expects JSON — may cause prefill parse failure"
+    }
+  ],
+  "error_signature": "Failed to load prefill messages from /home/agent/clawd/SOUL.md: Expecting value: line 1 column 1 (char 0)",
+  "statuses": [
+    "pass",
+    "fail",
+    "mismatch_risk",
+    "missing",
+    "dry_run"
+  ],
+  "dry_run_command": "python3 brain/scripts/rail_loader_check.py --dry-run",
+  "full_check_command": "python3 brain/scripts/rail_loader_check.py"
+}

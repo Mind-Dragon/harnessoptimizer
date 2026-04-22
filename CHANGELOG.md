@@ -2,6 +2,49 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.2 -- Extension Lifecycle Management
+
+### Added
+
+- `extensions/` package: managed extension registry with schema, loader, validation
+  - `extensions/schema.py`: ExtensionEntry, ExtensionType, Ownership dataclasses
+  - `extensions/loader.py`: YAML-based registry loader with duplicate-ID and missing-field guards
+  - `extensions/commands.py`: CLI handlers for ext-list, ext-status, ext-verify, ext-sync
+  - `extensions/status.py`: repo-source vs runtime-target comparison (ok, missing, drifted, external, blocked)
+  - `extensions/sync.py`: repo-to-runtime artifact sync with dry-run and fail-closed for external targets
+  - `extensions/verify.py`: per-extension verification contract runner
+  - `extensions/doctor.py`: combined registry validation, status check, verify, and drift report
+  - `extensions/drift.py`: family-specific drift detection (config vs module, missing DB/scripts, vault file, command metadata)
+  - `extensions/verify_contracts.py`: per-family verification contracts for caveman, dreams, vault_plugins, tool_surface
+  - `extensions/resolver.py`: registry directory resolver (works in both editable installs and wheels)
+  - `extensions/data/`: packaged extension YAML definitions (7 extensions)
+- Extension CLI commands: `ext-list`, `ext-status`, `ext-verify <id|all>`, `ext-sync <id|all>`, `ext-doctor`
+- 7 registered extensions: caveman, cron, dreams, scripts, skills, tool_surface, vault_plugins
+- `pyproject.toml` package-data directive for extension YAML inclusion in wheels
+- `docs/EXTENSIONS.md`: operator recipe for fresh-machine sync and drift repair
+- Focused test files:
+  - `tests/test_extensions_schema.py`
+  - `tests/test_extensions_loader.py`
+  - `tests/test_extensions_commands.py`
+  - `tests/test_extensions_integration.py`
+  - `tests/test_extensions_sync.py`
+  - `tests/test_extensions_verify_contracts.py`
+  - `tests/test_extensions_drift.py`
+
+### Changed
+
+- Unified CLI dispatch through `cli/orphan.py` with ext-* subcommands
+- `dreams.yaml` target_paths now use actual runtime paths (`~/.hermes/scripts/`) instead of repo-internal paths
+- `_repo_root()` consolidated into `extensions/resolver.py` — shared across commands, doctor, drift, verify_contracts
+- Extension YAML files copied into `src/hermesoptimizer/extensions/data/` for wheel packaging
+- ARCHITECTURE.md updated with extension registry and lifecycle section
+- ROADMAP.md updated with v0.9.2 milestone
+- TODO.md updated with all phases A-G marked complete
+
+### Tests
+
+- 1,680 tests passing (54 new extension tests), 5 skipped
+
 ## v0.9.1 -- Performance Intelligence Suite
 
 ### Added

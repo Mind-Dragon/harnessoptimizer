@@ -43,3 +43,12 @@ def test_dispatch_unknown_command_returns_error_code(capsys, monkeypatch) -> Non
     captured = capsys.readouterr()
     assert rc == 2
     assert "Unknown command: not-real" in captured.out
+
+
+def test_dispatch_handler_returns_zero_on_success(capsys, monkeypatch) -> None:
+    """Verify dispatch returns 0 when handler completes successfully."""
+    monkeypatch.setattr(cli, "HANDLERS", {"run": lambda _args: 0})
+
+    rc = cli.dispatch(argparse.Namespace(command="run"))
+
+    assert rc == 0

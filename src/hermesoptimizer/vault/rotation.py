@@ -4,12 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
-
 from .inventory import VaultEntry
-
-if TYPE_CHECKING:
-    pass
 
 
 # --- RotationEvent with timestamp ---

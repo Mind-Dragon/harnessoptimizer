@@ -6,14 +6,11 @@ import json
 from pathlib import Path
 
 from hermesoptimizer.extensions import build_registry
+from hermesoptimizer.extensions import resolver
 from hermesoptimizer.extensions.drift import check_all_drift
 from hermesoptimizer.extensions.schema import ExtensionEntry, Ownership
 from hermesoptimizer.extensions.status import check_all_statuses
 from hermesoptimizer.extensions.verify import verify_all
-
-
-def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[3]
 
 
 def _checkpoint_path() -> Path:
@@ -25,9 +22,8 @@ def run_doctor(dry_run: bool = False) -> dict:
 
     If dry_run is True, only validates registry without touching runtime.
     """
-    registry_dir = _repo_root() / "extensions"
-    entries = build_registry(registry_dir)
-    repo_root = _repo_root()
+    entries = build_registry(resolver.registry_dir())
+    repo_root = resolver._repo_root()
 
     report = {
         "extensions_checked": len(entries),

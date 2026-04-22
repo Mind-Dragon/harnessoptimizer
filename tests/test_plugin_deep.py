@@ -96,9 +96,8 @@ class TestHermesPluginEdgeCases:
         hp = HermesPlugin(vault_path=str(vault_dir), passphrase=passphrase)
         with hp:
             hp.set("k", "v")
-        # After exit, operations may fail but shouldn't crash the process
-        # (implementation-dependent — just verify exit was clean)
-        assert True
+        # After exit, operations may fail but should not crash the process
+        assert hp.get("k") is None, "Context manager should wipe secrets from memory on exit"
 
     def test_wrong_passphrase_same_vault(self, vault_dir: Path, monkeypatch) -> None:
         """Using a different passphrase on the same vault should fail to decrypt."""

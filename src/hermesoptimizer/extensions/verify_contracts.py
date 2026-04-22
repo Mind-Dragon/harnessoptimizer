@@ -14,10 +14,7 @@ import re
 import sys
 from pathlib import Path
 
-
-def _repo_root() -> Path:
-    """Resolve repo root from this file's location."""
-    return Path(__file__).resolve().parents[3]
+from hermesoptimizer.extensions.resolver import _repo_root
 
 
 def _config_path() -> Path:

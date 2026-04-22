@@ -282,7 +282,10 @@ class TestBuildParser:
         # Parse known subcommands
         for cmd in ["init-db", "add-record", "add-finding", "export", "list-records", "list-findings", "vault-audit", "vault-writeback"]:
             # Just verify parsing doesn't blow up for the minimal case
-            pass
+
+            subparsers = next((a for a in p._actions if hasattr(a, "choices") and a.choices), None)
+            assert subparsers is not None, "Parser should have subparsers"
+            assert cmd in subparsers.choices, f"Subcommand {cmd} should be registered"
 
     def test_init_db_parses(self) -> None:
         p = build_parser()

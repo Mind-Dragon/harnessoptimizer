@@ -814,3 +814,159 @@ def test_run_full_pipeline_returns_results(
         assert isinstance(result, ModelRefreshResult)
         assert result.provider_slug is not None
         assert result.status is not None
+
+
+# --------------------------------------------------------------------------
+# Realistic HTTP Response Tests for Refresh Pipeline
+# --------------------------------------------------------------------------
+
+
+class TestProviderModelRefreshPipelineRealisticHTTP:
+    """Tests for ProviderModelRefreshPipeline with realistic HTTP response structures."""
+
+    def _make_response(self, status_code: int, json_data: dict | None = None, headers: dict | None = None, text: str = "") -> MagicMock:
+        """Create a realistic HTTP response mock with proper attribute structure."""
+        response = MagicMock()
+        response.status_code = status_code
+        response.headers = headers or {"Content-Type": "application/json"}
+        response.text = text
+        if json_data is not None:
+            response.json.return_value = json_data
+        else:
+            response.json.side_effect = ValueError("No JSON body")
+        return response
+
+    def test_pipeline_fetches_live_models_with_realistic_openai_response(
+        self, provider_models_fixture: Path, provider_endpoints_fixture: Path
+    ) -> None:
+        """Pipeline fetches and parses realistic OpenAI-style /models response."""
+        pipeline = ProviderModelRefreshPipeline(
+            model_catalog_path=provider_models_fixture,
+            endpoint_catalog_path=provider_endpoints_fixture,
+        )
+
+        # Realistic OpenAI-style API response
+        mock_response = {
+            "object": "list",
+            "data": [
+                {
+                    "id": "gpt-4o-2024-05-13",
+                    "object": "model",
+                    "created": 1715129600,
+                    "owned_by": "system",
+                    "capabilities": ["text", "vision", "reasoning"],
+                    "context_window": 128000,
+                    "max_tokens": 4096,
+                },
+                {
+                    "id": "gpt-4o-mini",
+                    "object": "model",
+                    "created": 1720000000,
+                    "owned_by": "system",
+                    "capabilities": ["text", "vision"],
+                    "context_window": 128000,
+                },
+            ],
+            "usage": {"prompt_tokens": 100, "completion_tokens": 200},
+        }
+
+        with patch.dict(os.environ, {"TEST_API_KEY": "sk-test-realistic"}):
+            with patch("requests.get") as mock_get:
+                mock_get.return_value = self._make_response(
+                    status_code=200,
+                    json_data=mock_response,
+                    headers={
+                        "Content-Type": "application/json",
+                        "OpenAI-Version": "2024-05-13",
+                    },
+                )
+                result = pipeline.refresh_provider("testprovider")
+
+        assert result.provider_slug == "testprovider"
+        assert result.status == RefreshStatus.LIVE_API
+        assert len(result.models) >= 2
+
+        # Check model parsing worked correctly
+        model_names = [m.get("model_name") for m in result.models]
+        assert "gpt-4o-2024-05-13" in model_names
+        assert "gpt-4o-mini" in model_names
+
+        # Verify context_window was parsed
+        gpt4o = next(m for m in result.models if m.get("model_name") == "gpt-4o-2024-05-13")
+        assert gpt4o.get("context_window") == 128000
+
+    def test_pipeline_handles_401_with_www_authenticate_header(
+        self, provider_models_fixture: Path, provider_endpoints_fixture: Path
+    ) -> None:
+        """Pipeline handles 401 response with WWW-Authenticate header correctly."""
+        pipeline = ProviderModelRefreshPipeline(
+            model_catalog_path=provider_models_fixture,
+            endpoint_catalog_path=provider_endpoints_fixture,
+        )
+
+        with patch.dict(os.environ, {"TEST_API_KEY": "sk-expired-key"}):
+            with patch("requests.get") as mock_get:
+                mock_get.return_value = self._make_response(
+                    status_code=401,
+                    json_data={"error": {"code": "invalid_api_key", "message": "Invalid API key"}},
+                    headers={
+                        "Content-Type": "application/json",
+                        "WWW-Authenticate": "Bearer error=\"invalid_api_key\"",
+                    },
+                )
+                result = pipeline.refresh_provider("testprovider")
+
+        assert result.provider_slug == "testprovider"
+        assert result.status == RefreshStatus.BLOCKED_API
+        assert len(result.blocked_sources) == 1
+        assert result.blocked_sources[0].reason == BlockedSourceReason.API_KEY_INVALID
+
+    def test_pipeline_handles_rate_limit_429_with_retry_after(
+        self, provider_models_fixture: Path, provider_endpoints_fixture: Path
+    ) -> None:
+        """Pipeline handles 429 rate limit response correctly."""
+        pipeline = ProviderModelRefreshPipeline(
+            model_catalog_path=provider_models_fixture,
+            endpoint_catalog_path=provider_endpoints_fixture,
+        )
+
+        with patch.dict(os.environ, {"TEST_API_KEY": "sk-rate-limited"}):
+            with patch("requests.get") as mock_get:
+                mock_get.return_value = self._make_response(
+                    status_code=429,
+                    json_data={"error": {"code": "rate_limit_exceeded", "retry_after": 60}},
+                    headers={
+                        "Content-Type": "application/json",
+                        "Retry-After": "60",
+                        "X-RateLimit-Limit": "100",
+                    },
+                )
+                result = pipeline.refresh_provider("testprovider")
+
+        assert result.provider_slug == "testprovider"
+        assert result.status == RefreshStatus.BLOCKED_API
+        assert len(result.blocked_sources) == 1
+        assert result.blocked_sources[0].reason == BlockedSourceReason.RATE_LIMITED
+
+    def test_pipeline_handles_server_error_500_with_error_body(
+        self, provider_models_fixture: Path, provider_endpoints_fixture: Path
+    ) -> None:
+        """Pipeline handles 500 internal server error response correctly."""
+        pipeline = ProviderModelRefreshPipeline(
+            model_catalog_path=provider_models_fixture,
+            endpoint_catalog_path=provider_endpoints_fixture,
+        )
+
+        with patch.dict(os.environ, {"TEST_API_KEY": "sk-server-error"}):
+            with patch("requests.get") as mock_get:
+                mock_get.return_value = self._make_response(
+                    status_code=500,
+                    json_data={"error": "Internal server error", "trace_id": "abc123"},
+                    headers={"Content-Type": "application/json"},
+                )
+                result = pipeline.refresh_provider("testprovider")
+
+        assert result.provider_slug == "testprovider"
+        assert result.status == RefreshStatus.BLOCKED_API
+        assert len(result.blocked_sources) == 1
+        assert result.blocked_sources[0].reason == BlockedSourceReason.NETWORK_ERROR

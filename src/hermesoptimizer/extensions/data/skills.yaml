@@ -1,0 +1,10 @@
+id: skills
+type: skill
+description: Hermes skills generated or managed by this repo
+source_path: src/hermesoptimizer/
+target_paths:
+  - ~/.hermes/skills/software-development/caveman/
+verify_command: python -c "import os; print('ok') if os.path.exists(os.path.expanduser('~/.hermes/skills/software-development/caveman/SKILL.md')) else print('missing')"
+ownership: external_runtime
+metadata:
+  note: Skills are generated at runtime; repo does not own canonical YAML source

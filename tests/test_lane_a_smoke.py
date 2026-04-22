@@ -37,11 +37,6 @@ from hermesoptimizer.sources.hermes_discover import load_inventory, discover_liv
 
 REAL_HERMES_HOME = Path.home() / ".hermes"
 
-# Skip the entire module if no real HERMES_HOME exists
-pytestmark = pytest.mark.skipif(
-    not REAL_HERMES_HOME.exists(),
-    reason="Lane A requires a real ~/.hermes installation",
-)
 
 
 def _redact_auth(auth_path: Path) -> None:
