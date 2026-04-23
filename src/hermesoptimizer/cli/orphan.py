@@ -291,6 +291,7 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     e_sync.add_argument("id", nargs="?", default="all", help="Extension ID or 'all'")
     e_sync.add_argument("--dry-run", action="store_true", help="Show what would be copied without copying")
     e_sync.add_argument("--force", action="store_true", help="Overwrite existing targets")
+    e_sync.add_argument("--fresh-root", help="Remap ~/ targets under an alternate root for install simulation")
     e_sync.set_defaults(handler=handle_ext_sync)
     HANDLERS["ext-sync"] = handle_ext_sync
 

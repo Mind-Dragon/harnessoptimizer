@@ -159,7 +159,7 @@ class TestCheckReleaseDocDrift:
 class TestRunReadiness:
     def test_full_report_structure(self) -> None:
         report = run_readiness()
-        assert report["version"] == "0.9.2"
+        assert report["version"] == "0.9.3"
         assert "gate_passed" in report
         assert "checks" in report
         assert len(report["checks"]) >= 7
@@ -195,7 +195,7 @@ class TestFormatReadiness:
     def test_format_produces_output(self) -> None:
         report = run_readiness()
         text = format_readiness(report)
-        assert "0.9.2" in text
+        assert "0.9.3" in text
         assert "GATE:" in text
 
     def test_format_shows_pass(self) -> None:
@@ -206,7 +206,7 @@ class TestFormatReadiness:
 
     def test_format_shows_fail(self) -> None:
         report = {
-            "version": "0.9.2",
+            "version": "0.9.3",
             "gate_passed": False,
             "dry_run": False,
             "critical_failures": 1,

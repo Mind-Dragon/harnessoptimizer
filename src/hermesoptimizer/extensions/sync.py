@@ -45,6 +45,7 @@ def sync_extension(
     repo_root: Path,
     dry_run: bool = False,
     force: bool = False,
+    fresh_root: Path | None = None,
 ) -> SyncResult:
     """Sync one extension from repo source to target paths.
 
@@ -52,6 +53,14 @@ def sync_extension(
     """
     actions: list[str] = []
     errors: list[str] = []
+
+    if not entry.selected:
+        return SyncResult(
+            id=entry.id,
+            synced=False,
+            skipped=True,
+            actions=["skipped: not selected"],
+        )
 
     if entry.ownership == Ownership.EXTERNAL_RUNTIME:
         return SyncResult(
@@ -81,13 +90,18 @@ def sync_extension(
     # Expand target paths and check for existing targets (if not force)
     expanded_targets: list[Path] = []
     for tp in entry.target_paths:
-        target = Path(tp).expanduser()
+        target = _expand_target(tp, fresh_root=fresh_root)
         if target.exists() and not force:
-            errors.append(f"target exists (use --force to overwrite): {target}")
-            continue
-        expanded_targets.append(target)
+            if dry_run:
+                actions.append(f"target exists: {target}")
+                expanded_targets.append(target)
+            else:
+                errors.append(f"target exists (use --force to overwrite): {target}")
+                continue
+        else:
+            expanded_targets.append(target)
 
-    if errors and not force:
+    if errors and not force and not dry_run:
         return SyncResult(
             id=entry.id,
             synced=False,
@@ -167,6 +181,14 @@ def sync_all(
     repo_root: Path,
     dry_run: bool = False,
     force: bool = False,
+    fresh_root: Path | None = None,
 ) -> list[SyncResult]:
     """Sync all extensions."""
-    return [sync_extension(e, repo_root, dry_run, force) for e in entries]
+    return [sync_extension(e, repo_root, dry_run, force, fresh_root) for e in entries]
+
+
+def _expand_target(path: str, *, fresh_root: Path | None = None) -> Path:
+    """Expand an extension target, optionally remapping ~/ under a fresh root."""
+    if fresh_root is not None and path.startswith("~/"):
+        return fresh_root / path[2:]
+    return Path(path).expanduser()

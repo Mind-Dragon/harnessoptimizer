@@ -2,11 +2,11 @@ id: vault_plugins
 type: vault_plugin
 description: Vault plugin system with Hermes, OpenClaw, and OpenCode adapters
 source_path: src/hermesoptimizer/vault/plugins/
-target_paths:
-  - ~/.vault/vault.enc.json
 verify_command: python -m hermesoptimizer.extensions.verify_contracts vault_plugins
 ownership: repo_external
 metadata:
+  external_runtime_data:
+    - ~/.vault/vault.enc.json
   plugins:
     - HermesPlugin
     - OpenClawPlugin

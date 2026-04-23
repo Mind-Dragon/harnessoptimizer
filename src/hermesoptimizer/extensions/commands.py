@@ -75,10 +75,24 @@ def handle_ext_sync(args: argparse.Namespace) -> int:
             print(f"Extension not found: {target_id}", file=sys.stderr)
             return 1
 
-    results = sync_all(entries, resolver._repo_root(), dry_run=args.dry_run, force=args.force)
+    fresh_root = Path(args.fresh_root) if getattr(args, "fresh_root", None) else None
+    results = sync_all(
+        entries,
+        resolver._repo_root(),
+        dry_run=args.dry_run,
+        force=args.force,
+        fresh_root=fresh_root,
+    )
     any_errors = False
     for res in results:
-        status = "SYNCED" if res.synced else ("SKIPPED" if res.skipped else "ERROR")
+        if res.synced:
+            status = "SYNCED"
+        elif res.skipped:
+            status = "SKIPPED"
+        elif not res.errors and res.actions:
+            status = "DRY-RUN"
+        else:
+            status = "ERROR"
         print(f"{res.id:20} {status:8}")
         for action in res.actions:
             print(f"  + {action}")

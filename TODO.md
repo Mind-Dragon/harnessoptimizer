@@ -29,7 +29,7 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 - 2026-04-24 live canaries: Kilocode Ling 2.6 Flash Free returned 200 OK; Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`; OpenRouter archived key returned 401 user-not-found; OpenAI OAuth canary for `gpt-5.4-mini` returned 429 insufficient_quota.
 - `seed_from_config(~/.hermes/config.yaml)` remains a separate live-config source (`kilocode`, `nacrof`, `xai`) until merge policy work lands.
 - `ext-doctor` now reports `missing_target: 0` and `not_selected: 1` because dreams is an optional runtime feature currently not selected.
-- `ext-sync --dry-run` errors on existing dreams DB and vault file; this remains a Wave 2 idempotency item.
+- `ext-sync --dry-run` now exits 0 on existing runtime; dreams is skipped as `not selected`, and vault secret data is classified as external runtime data.
 - Built wheel does not include provider JSON catalogs or scripts.
 - `dodev --help` exits 2.
 - Live cron has 2 active jobs: `brain-doctor-hourly`, `copilot-pr-watch`.
@@ -44,8 +44,8 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [ ] Keep `/home/agent/hermes-agent` dirty state explicit in the release proof.
 [ ] Decide whether v0.9.3 will modify Hermes core or only validate against it.
 [ ] Update ROADMAP.md with a v0.9.3 milestone.
-[ ] Bump package version only after first green implementation wave.
-[ ] Update hardcoded release-readiness test version assertions when bumping from 0.9.2 to 0.9.3.
+[x] Bump package version only after first green implementation wave.
+[x] Update hardcoded release-readiness test version assertions when bumping from 0.9.2 to 0.9.3.
 [ ] Archive or explicitly exempt older root VERSION docs so release doc drift remains intentional.
 
 ### Wave 1 — provider registry
@@ -73,9 +73,9 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [ ] Fix dreams/scripts ownership so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when dreams is selected.
 [ ] Add runtime target checks to `verify_contracts dreams` for selected installs.
 [ ] Add caveman selected/unselected install contract for skill/config behavior.
-[ ] Reclassify `~/.vault/vault.enc.json` as external runtime data, not a sync overwrite target.
-[ ] Make `ext-sync --dry-run` idempotent on existing runtime.
-[ ] Add fresh-root install simulation for base, base+caveman, base+dreams, base+caveman+dreams.
+[x] Reclassify `~/.vault/vault.enc.json` as external runtime data, not a sync overwrite target.
+[x] Make `ext-sync --dry-run` idempotent on existing runtime.
+[x] Add fresh-root install simulation for base, base+caveman, base+dreams, base+caveman+dreams.
 [ ] Add generated-runtime-artifact classification.
 [ ] Add extension release gate: selected features have 0 missing targets and 0 sync errors; unselected optional features report `not selected`.
 
@@ -109,7 +109,7 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 
 ### Wave 5 — caveman contract
 
-[ ] Normalize `extensions/caveman.yaml` and packaged `extensions/data/caveman.yaml` source paths.
+[x] Normalize `extensions/caveman.yaml` and packaged `extensions/data/caveman.yaml` source paths.
 [ ] Implement caveman as an optional runtime install selection.
 [ ] If unselected: doctor/status reports `not selected`, not missing/broken.
 [ ] If selected: install/verify skill and config behavior against local Hermes runtime.
@@ -143,9 +143,9 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [x] `brain-doctor --dry-run` green.
 [ ] non-dry brain canary recorded.
 [x] `ext-doctor` has 0 missing targets.
-[ ] `ext-sync --dry-run` exits 0.
-[ ] fresh-root install simulation exits 0.
-[ ] isolated wheel install smoke exits 0.
+[x] `ext-sync --dry-run` exits 0.
+[x] fresh-root install simulation exits 0.
+[x] isolated wheel install smoke exits 0.
 [x] `provider-list` non-empty.
 [x] `gpt-5.5` present in provider registry.
 [ ] provider registry hot reload proven without Hermes restart/update.

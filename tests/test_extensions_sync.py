@@ -25,7 +25,7 @@ class TestSyncExtension:
         assert res.synced is False
         assert any("would copy" in a for a in res.actions)
 
-    def sync_external_skipped(self, tmp_path: Path) -> None:
+    def test_sync_external_skipped(self, tmp_path: Path) -> None:
         entry = ExtensionEntry(
             id="ext",
             type=ExtensionType.CRON,
@@ -36,6 +36,72 @@ class TestSyncExtension:
         )
         res = sync_extension(entry, tmp_path)
         assert res.skipped is True
+
+    def test_sync_skips_not_selected(self, tmp_path: Path) -> None:
+        entry = ExtensionEntry(
+            id="not-selected",
+            type=ExtensionType.SCRIPT,
+            description="not selected",
+            source_path="src.txt",
+            target_paths=[str(tmp_path / "target.txt")],
+            ownership=Ownership.REPO_ONLY,
+            selected=False,
+        )
+        (tmp_path / "src.txt").write_text("hello")
+        res = sync_extension(entry, tmp_path, dry_run=True)
+        assert res.synced is False
+        assert res.skipped is True
+        assert any("not selected" in a for a in res.actions)
+
+    def test_sync_dry_run_idempotent_on_existing_target(self, tmp_path: Path) -> None:
+        target = tmp_path / "target.txt"
+        target.write_text("existing")
+        entry = ExtensionEntry(
+            id="idempotent",
+            type=ExtensionType.SCRIPT,
+            description="idempotent dry run",
+            source_path="src.txt",
+            target_paths=[str(target)],
+            ownership=Ownership.REPO_ONLY,
+        )
+        (tmp_path / "src.txt").write_text("new")
+        res = sync_extension(entry, tmp_path, dry_run=True)
+        assert res.synced is False
+        assert res.skipped is False
+        assert res.errors == []
+        assert any("target exists" in a for a in res.actions)
+        assert any("would copy" in a for a in res.actions)
+
+    def test_fresh_root_remaps_tilde_targets(self, tmp_path: Path) -> None:
+        fresh_root = tmp_path / "fresh"
+        entry = ExtensionEntry(
+            id="fresh",
+            type=ExtensionType.SCRIPT,
+            description="fresh root",
+            source_path="src.txt",
+            target_paths=["~/.hermes/test.txt"],
+            ownership=Ownership.REPO_ONLY,
+        )
+        (tmp_path / "src.txt").write_text("hello")
+        res = sync_extension(entry, tmp_path, dry_run=True, fresh_root=fresh_root)
+        expected = fresh_root / ".hermes" / "test.txt"
+        assert res.errors == []
+        assert any(str(expected) in a for a in res.actions)
+
+    def test_fresh_root_leaves_non_tilde_targets_unchanged(self, tmp_path: Path) -> None:
+        fresh_root = tmp_path / "fresh"
+        target = tmp_path / "target.txt"
+        entry = ExtensionEntry(
+            id="absolute",
+            type=ExtensionType.SCRIPT,
+            description="absolute path",
+            source_path="src.txt",
+            target_paths=[str(target)],
+            ownership=Ownership.REPO_ONLY,
+        )
+        (tmp_path / "src.txt").write_text("hello")
+        res = sync_extension(entry, tmp_path, dry_run=True, fresh_root=fresh_root)
+        assert any(str(target) in a for a in res.actions)
 
     def test_sync_actual_copy(self, tmp_path: Path) -> None:
         target = tmp_path / "target.txt"

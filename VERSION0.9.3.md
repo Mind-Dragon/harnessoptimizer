@@ -64,6 +64,16 @@ Wave 2 feature-selection update — 2026-04-24:
 - `ext-doctor` now reports `not_selected: 1`, `missing_target: 0`, `verify_failed: 0`.
 - Verified with `pytest -q tests/test_extensions_loader.py tests/test_extensions_status.py tests/test_extensions_verify_contracts.py tests/test_release_readiness.py`, full `pytest -q`, `release-readiness --dry-run`, `brain-doctor --dry-run`, `provider-list`, and `ext-doctor`.
 
+Wave 2/3 sync + packaging update — 2026-04-24:
+
+- `ext-sync --dry-run` is now idempotent on existing runtime targets and skips not-selected optional features.
+- `ext-sync --dry-run --fresh-root <path>` remaps `~/` targets under an alternate root for clean-install simulation.
+- `~/.vault/vault.enc.json` is no longer an extension sync target; it is recorded as external runtime data in vault plugin metadata.
+- Root and packaged caveman extension YAML now agree on `src/hermesoptimizer/caveman/__init__.py` as the source path.
+- Package version and release-readiness assertions are bumped to `0.9.3`.
+- Wheel smoke built and installed `/tmp/hopt-wheelhouse/hermesoptimizer-0.9.3-py3-none-any.whl`; installed `provider-list` and `ext-list` executed successfully, with provider registry data present.
+- Verified with full `pytest -q`, `release-readiness --dry-run`, `brain-doctor --dry-run`, `ext-doctor`, `ext-sync --dry-run`, and `ext-sync --dry-run --fresh-root /tmp/hermesoptimizer-fresh-root`.
+
 
 ## Goal
 
