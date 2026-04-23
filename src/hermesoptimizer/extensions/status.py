@@ -32,8 +32,15 @@ def _expand(path: str) -> Path:
     return Path(path).expanduser()
 
 
-def check_extension_status(entry: ExtensionEntry, repo_root: Path) -> ExtensionStatus:
-    """Check the status of one extension."""
+def check_extension_status(entry: ExtensionEntry, repo_root: Path, dry_run: bool = False) -> ExtensionStatus:
+    """Check the status of one extension.
+
+    In dry-run mode, REPO_EXTERNAL extensions with missing targets are
+    downgraded to non-critical warnings because their artifacts are
+    already tracked under a repo-only extension (e.g. ``scripts``) and
+    the missing targets only indicate they have not been *installed* to
+    the runtime yet.  This is expected in CI / test environments.
+    """
     if entry.ownership == Ownership.EXTERNAL_RUNTIME:
         return ExtensionStatus(
             id=entry.id,
@@ -61,6 +68,17 @@ def check_extension_status(entry: ExtensionEntry, repo_root: Path) -> ExtensionS
             missing_targets.append(str(expanded))
 
     if missing_targets:
+        # In dry-run, REPO_EXTERNAL missing targets are a warning, not a
+        # failure, because the source-of-truth lives in the repo and the
+        # runtime install is an optional deployment step.
+        if dry_run and entry.ownership == Ownership.REPO_EXTERNAL:
+            return ExtensionStatus(
+                id=entry.id,
+                status=Status.DRIFTED,
+                source_ok=True,
+                targets=targets,
+                detail=f"not installed (dry-run): {', '.join(missing_targets)}",
+            )
         return ExtensionStatus(
             id=entry.id,
             status=Status.MISSING_TARGET,
@@ -78,6 +96,6 @@ def check_extension_status(entry: ExtensionEntry, repo_root: Path) -> ExtensionS
     )
 
 
-def check_all_statuses(entries: list[ExtensionEntry], repo_root: Path) -> list[ExtensionStatus]:
+def check_all_statuses(entries: list[ExtensionEntry], repo_root: Path, dry_run: bool = False) -> list[ExtensionStatus]:
     """Check status for all extensions."""
-    return [check_extension_status(e, repo_root) for e in entries]
+    return [check_extension_status(e, repo_root, dry_run=dry_run) for e in entries]

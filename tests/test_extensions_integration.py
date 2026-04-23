@@ -26,7 +26,7 @@ def test_loads_all_repo_extensions() -> None:
     # Verify specific entry shapes
     caveman = next(e for e in entries if e.id == "caveman")
     assert caveman.type == ExtensionType.CONFIG
-    assert caveman.ownership == Ownership.REPO_EXTERNAL
+    assert caveman.ownership == Ownership.EXTERNAL_RUNTIME
     assert "caveman_mode" in caveman.metadata.get("config_key", "")
 
     dreams = next(e for e in entries if e.id == "dreams")

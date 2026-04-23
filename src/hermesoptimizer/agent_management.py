@@ -55,6 +55,12 @@ class AgentProfile:
         Empty list means no fallback is defined.
     region_notes :
         Free-form notes about regional availability or constraints.
+    is_user_model :
+        True if this is the user's explicitly configured model (preserved, not overwritten).
+        User models take precedence over harness defaults.
+    is_harness_default :
+        True if this is the harness's internal default model.
+        Harness defaults are used only when no user model is specified.
     """
 
     role: str
@@ -63,6 +69,8 @@ class AgentProfile:
     capabilities: list[str] = field(default_factory=list)
     fallback_chain: list[tuple[str, str]] = field(default_factory=list)
     region_notes: str | None = None
+    is_user_model: bool = False
+    is_harness_default: bool = False
 
     def primary(self) -> tuple[str, str]:
         """Return (provider, model) for the primary assignment."""
@@ -72,6 +80,10 @@ class AgentProfile:
         """Yield all (provider, model) pairs in priority order (primary first)."""
         yield self.provider, self.model
         yield from self.fallback_chain
+
+    def is_explicitly_configured(self) -> bool:
+        """Return True if this profile was explicitly configured by the user."""
+        return self.is_user_model
 
 
 # ---------------------------------------------------------------------------

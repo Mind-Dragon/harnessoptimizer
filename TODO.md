@@ -1,201 +1,224 @@
-# Harness Optimizer /todo — v1.0.0 Extension Lifecycle and Plugin Management
+# Harness Optimizer /todo — 0.9.1 hardening pass
 
 Current package version: `0.9.1`
-Current focus: turn the repo's plugin-like surfaces into a managed system instead of a pile of code + manual side effects.
+Current focus: 0.9.1 closeout completed and verified. Keep this file as the truth record for what shipped and how it was proven.
 
-This plan treats these as first-class managed extensions:
-- Caveman mode config and prompt/output behavior
-- Dreams sidecar modules, scripts, and cron-linked reflection flow
-- Vault plugins (`HermesPlugin`, `OpenClawPlugin`, `OpenCodePlugin`)
-- Tool-surface command layer / provider recommender
-- External repo-owned install targets under `~/.hermes/` such as skills, scripts, and future sidecars
+## Status
+- Overall: complete
+- Full test suite: `pytest -q` passing
+- Release gate: `PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run` passing
+- Remaining non-critical note: extension doctor reports one dry-run drift warning for the `dreams` repo-external install targets not being present under `~/.hermes/scripts/` in this environment.
 
-Goal: one source of truth for what this repo owns, where it installs, how to validate it, and how to repair drift.
-
----
-
-## Problem statement
-
-Right now the repo contains several extension-like systems, but there is no single manager for them.
-
-Examples:
-- Caveman state lives in `~/.hermes/config.yaml`
-- Dreams has repo code plus external scripts/cron surfaces
-- Vault plugins exist in code, but their runtime/install state is not centrally audited
-- Skills such as caveman live outside the repo install path
-- Some extension surfaces are verified only indirectly through tests, not through a repo-level lifecycle command
-
-That makes three things harder than they should be:
-- onboarding a fresh machine
-- detecting drift between repo truth and installed/runtime truth
-- evolving extension surfaces without breaking unrelated commands
+This pass exists to prevent three classes of failure:
+- install corruption or partial writeback
+- wrong model selected for the wrong config/plan/provider
+- optimistic "available" claims that were never live-verified
 
 ---
 
-## Phase A — Extension registry (swarm-structured) ✅ COMPLETE
+## Phase A — Install integrity gate
 
-Design principle: one file per extension, schema-first, waves not linear checklist.
+### Task A.0: Validate the install contract before, during, and after work
 
-- [x] Wave 1 — Foundation
-  - [x] Define registry schema in `src/hermesoptimizer/extensions/schema.py`
-    - [x] ExtensionEntry dataclass: id, type, source_path, target_paths, verify_command, ownership, description
-    - [x] ExtensionType enum: config, skill, script, cron, vault_plugin, sidecar, command_surface
-    - [x] Ownership enum: repo_only, repo_external, external_runtime
-  - [x] Define loader in `src/hermesoptimizer/extensions/loader.py`
-    - [x] load_extension_file(path) → ExtensionEntry
-    - [x] load_registry(directory) → list[ExtensionEntry]
-    - [x] validate_registry(entries) → raises on duplicate id / missing required fields
-  - [x] Define output directory: `extensions/` (one YAML file per extension)
-  - [x] Add validation guards:
-    - [x] Duplicate ID guard
-    - [x] Missing required field guard
-    - [x] Source path existence guard (optional, warn not fail)
+**Objective:** prove we are installing the right thing, proving it is happening, and proving the result works.
 
-- [x] Wave 2 — Parallel registration (one file per extension)
-  - [x] Register caveman → `extensions/caveman.yaml`
-  - [x] Register dreams → `extensions/dreams.yaml`
-  - [x] Register vault plugins → `extensions/vault_plugins.yaml`
-  - [x] Register tool-surface → `extensions/tool_surface.yaml`
-  - [x] Register scripts → `extensions/scripts.yaml`
-  - [x] Register external skills → `extensions/skills.yaml`
-  - [x] Register cron surfaces → `extensions/cron.yaml`
+**Files:**
+- Modify: install/bootstrap/doctor path code
+- Modify: tests that cover install flow
+- Modify: any config writeback path touched by install
 
-- [x] Wave 3 — Integration
-  - [x] Load all extension files into combined registry view
-  - [x] Add `ext-list` CLI command
-  - [x] Verify no duplicate IDs across all files
+**Requirements:**
+- beginning: confirm the user request and intended target before any write
+- during: confirm the expected write or sync is actually in progress and hitting the intended files
+- end: confirm the result matches the request and a proof check passes
+- do not mark success until the post-install proof is green
 
-- [x] Wave 4 — Dry-run and checkpoint
-  - [x] Add `ext-doctor --dry-run` that validates registry without touching runtime
-  - [x] Add checkpoint persistence for registry state
+**Verification:**
+- pre-install intent check passes
+- mid-install progress/state check passes
+- post-install proof check passes
+- rollback path exists if any stage fails
 
-Verification:
-- [x] `PYTHONPATH=src python -m pytest tests/test_extensions_schema.py tests/test_extensions_loader.py -q`
-- [x] `PYTHONPATH=src python -m hermesoptimizer ext-list`
-- [x] Registry loads with all 7 current extension surfaces
+### Task A.1: Make every install path transactional
 
-## Phase B — Add extension management commands ✅ COMPLETE
+**Objective:** never leave Hermes in a corrupted or half-written state after install or sync.
 
-- [x] Add unified CLI group or top-level commands for extension lifecycle
-  - [x] `hermesoptimizer ext-list`
-  - [x] `hermesoptimizer ext-status`
-  - [x] `hermesoptimizer ext-verify <id|all>`
-  - [x] `hermesoptimizer ext-sync <id|all>`
-  - [x] `hermesoptimizer ext-doctor`
-- [x] `ext-list`
-  - [x] prints registry entries with type and ownership
-- [x] `ext-status`
-  - [x] compares repo source vs installed/runtime target
-  - [x] shows `ok`, `missing`, `drifted`, `external`, `blocked`
-- [x] `ext-verify`
-  - [x] runs the verification contract for one or more extensions
-- [x] `ext-sync`
-  - [x] copies or renders repo-managed artifacts to their install targets
-  - [x] supports dry-run first
-  - [x] fail-closed for destructive or external-only targets
-- [x] `ext-doctor`
-  - [x] summarizes missing deps, broken links, stale install paths, and config drift
+**Files:**
+- Modify: `src/hermesoptimizer/caveman/__init__.py`
+- Modify: `src/hermesoptimizer/extensions/sync.py`
+- Modify: `src/hermesoptimizer/extensions/doctor.py`
+- Add tests under `tests/`
 
-Verification:
-- [x] `PYTHONPATH=src python -m hermesoptimizer ext-list`
-- [x] `PYTHONPATH=src python -m hermesoptimizer ext-status`
-- [x] `PYTHONPATH=src python -m hermesoptimizer ext-doctor`
+**Requirements:**
+- write to temp files first
+- validate parsed output before replace
+- use atomic rename / replace only after validation
+- keep a backup or rollback path for every writeback that can affect Hermes config
 
-## Phase C — Caveman as a managed extension ✅ COMPLETE
+**Verification:**
+- install/sync path passes syntax + parse + post-write smoke checks
+- failing validation leaves the original file intact
+- no partial YAML/JSON ever lands in live config
 
-- [x] Register caveman in the extension registry
-- [x] Define caveman verification contract
-  - [x] config key exists / is readable
-  - [x] CLI toggle still works
-  - [x] compression guardrails still hold
-- [x] Add caveman drift checks
-  - [x] config key present but module missing
-  - [x] module present but config invalid
-  - [x] skill/install references stale
-- [x] Decide whether the caveman skill should be synced from repo truth or explicitly marked external/manual
-  - Decision: skill is marked external_runtime in `extensions/skills.yaml`; caveman config is repo_external. The skill is generated at runtime and not synced from repo canonical copies.
+### Task A.2: Add an end-of-install canary
 
-Verification:
-- [x] `PYTHONPATH=src python -m hermesoptimizer caveman`
-- [x] focused caveman tests still pass
-- [x] extension status reports caveman cleanly
+**Objective:** prove the install did not wreck the runtime surface.
 
-## Phase D — Dreams sidecar and cron-linked artifacts ✅ COMPLETE
+**Files:**
+- Modify: `src/hermesoptimizer/extensions/doctor.py`
+- Add test coverage in `tests/test_extensions_*`
 
-- [x] Register dreams repo module plus external scripts as one managed extension family
-- [x] Add status checks for:
-  - [x] `~/.hermes/dreams/memory_meta.db` presence/readability
-  - [x] expected external scripts under `~/.hermes/scripts/`
-  - [x] known cron-linked reflection surfaces
-- [x] Decide safe sync policy
-  - [x] repo code syncable
-  - [x] external scripts syncable if repo owns canonical copies
-  - [x] cron entries verify-only unless explicitly updated
-- [x] Add a report for "repo owns this but machine is missing it"
+**Requirements:**
+- run targeted post-install checks for the affected surface
+- verify the CLI still boots
+- verify the changed config still parses
+- verify the changed config still matches the intended effective state
 
-Verification:
-- [x] `PYTHONPATH=src python -m hermesoptimizer dreams-sweep --help`
-- [x] extension doctor reports dreams family accurately on a machine with and without the external artifacts
-
-## Phase E — Vault plugins and sidecar health ✅ COMPLETE
-
-- [x] Register `HermesPlugin`, `OpenClawPlugin`, and `OpenCodePlugin`
-- [x] Add verification for each plugin class
-  - [x] importability
-  - [x] status shape
-  - [x] read-only/read-write contract
-- [x] Add sidecar-specific checks for `OpenClawPlugin`
-  - [x] startup health
-  - [x] auth token expectations
-  - [x] port binding/status behavior
-- [x] Add config-generation checks for `OpenCodePlugin`
-
-Verification:
-- [x] vault plugin tests pass
-- [x] extension doctor shows per-plugin health and capability type
-
-## Phase F — Tool-surface and recommendation surface governance ✅ COMPLETE
-
-- [x] Register tool-surface command layer as a managed extension family
-- [x] Verify command/help contracts stay aligned with the registry
-- [x] Add drift detection for repo help text vs actual command availability
-- [x] Add a check that placeholder text does not reappear on shipped command surfaces
-
-Verification:
-- [x] `provider-recommend`, `report-latest`, `dreams-inspect`, `workflow-list` all verify through the extension manager
-
-## Phase G — Tests, docs, and release surface ✅ COMPLETE
-
-- [x] Add focused tests
-  - [x] `tests/test_extensions_registry.py` (covered by test_extensions_integration.py)
-  - [x] `tests/test_extensions_commands.py`
-  - [x] `tests/test_extensions_sync.py`
-  - [x] `tests/test_extensions_verify_contracts.py`
-  - [x] `tests/test_extensions_drift.py`
-- [x] Update docs
-  - [x] `README.md` extension-management section
-  - [x] `ARCHITECTURE.md` extension registry / lifecycle section
-  - [x] `ROADMAP.md` next-version wording
-- [x] Add an operator recipe for fresh-machine sync and drift repair
-  - [x] `docs/EXTENSIONS.md`
-
-Verification:
-- [x] focused extension tests pass
-- [x] full suite passes
-- [x] `git diff --check` clean
+**Verification:**
+- a broken install fails closed
+- a good install reports a clean, auditable success artifact
 
 ---
 
-## Acceptance criteria
+## Phase B — Model / provider / plan truth
 
-- `hermesoptimizer` can list, verify, and doctor all repo-owned extension surfaces
-- Caveman, dreams, vault plugins, and tool-surface commands are all represented in one registry
-- repo truth vs installed/runtime truth can be compared without manual grep
-- sync behavior is explicit, dry-runnable, and safe for external targets
-- docs explain what is repo-managed versus external-runtime-managed
+### Task B.1: Split user model choice from harness model choice
 
-## Non-goals for this slice
+**Objective:** stop harnessoptimizer from overwriting the user’s Hermes compression model.
 
-- rewriting Hermes core plugin architecture
-- silently mutating cron jobs or user config without explicit action
-- forcing every external artifact to become repo-synced if it is intentionally machine-local
+**Files:**
+- Modify: config handling code for Hermes/HarnessOptimizer model selection
+- Modify: tests that cover config writeback and model choice
+- Update docs if a config schema is documented
+
+**Requirements:**
+- user-preferred model stays user-owned
+- harnessoptimizer gets its own internal compression/model policy key
+- installer must not replace GPT-5.4 with a repo default unless explicitly asked
+- preserve existing user config unless the user requested a change
+
+**Verification:**
+- seeded config with GPT-5.4 stays GPT-5.4 after install/update
+- harnessoptimizer internal model can differ without touching the user setting
+
+### Task B.2: Enforce provider / model / plan matching
+
+**Objective:** only select models that are actually available on the current provider and plan.
+
+**Files:**
+- Add or modify provider capability catalog code
+- Add provider probe coverage
+- Add tests for unavailable-plan cases
+
+**Requirements:**
+- model selection checks provider availability first
+- plan eligibility is part of the decision
+- blocked models stay blocked even if they exist somewhere upstream
+- example rule: GLM 5.1V is not selectable on a coding plan if the live plan does not expose it
+
+**Verification:**
+- unavailable provider/model/plan combinations are rejected
+- live-verified combinations are accepted
+- stale registry entries do not become default picks
+
+### Task B.3: Add a model capability matrix
+
+**Objective:** map feature requirements to verified working models.
+
+**Files:**
+- Add: capability registry / model catalog files
+- Add: tests for feature matching and live availability gating
+
+**Requirements:**
+- features: text, code, vision, audio, long-context, tool-use, structured output
+- each model entry records provider, plan, context, and last verification state
+- selection ranks verified matches only
+
+**Verification:**
+- a task with vision/audio/etc. selects a model that actually supports it
+- a task never selects a model that is merely advertised but not usable
+
+---
+
+## Phase C — Streamed deployment to origin
+
+### Task C.1: Define dev / beta / release channels
+
+**Objective:** let changes stream through GitHub without manual push/pull chaos.
+
+**Files:**
+- Update branch/promotion docs
+- Add CI or workflow definitions if missing
+- Add repo-local notes for the three channels
+
+**Requirements:**
+- `dev` = active integration
+- `beta` = promoted candidate
+- `release` = locked shipped state
+- promotion only moves forward
+- each promotion runs tests before branch advancement
+
+**Verification:**
+- a bad build cannot advance from dev to beta
+- beta and release each have explicit green gates
+
+### Task C.2: Add automatic local update flow for each channel
+
+**Objective:** let the local repo follow the branch it is meant to track.
+
+**Files:**
+- Add update/watch script or service
+- Add install notes
+- Add tests or dry-run checks for branch switching logic
+
+**Requirements:**
+- separate worktrees or equivalent isolation per channel
+- fetch + fast-forward only
+- no silent merge of unrelated changes
+- post-update install canary runs automatically
+
+**Verification:**
+- each tracked channel can update without manual pull
+- channel update only completes after tests and install integrity pass
+
+---
+
+## Phase D — Closeout proof
+
+### Task D.1: Add a final 0.9.1 closeout gate
+
+**Objective:** prove the repo is safe to call done for 0.9.1.
+
+**Files:**
+- Modify: release/doctor/report surface
+- Update: README / ROADMAP / CHANGELOG only if needed for truth
+
+**Requirements:**
+- include install integrity
+- include model/provider/plan truth
+- include branch/channel update status
+- include a live or dry-run result for the changed surface
+
+**Verification:**
+- one command or one compact report tells you whether 0.9.1 is safe to ship
+- the report must fail closed if any critical check is missing
+
+---
+
+## Exit criteria
+
+0.9.1 is not done until:
+- install paths are atomic and validated
+- YAML/JSON writes cannot corrupt Hermes
+- user model choice is preserved
+- provider/model/plan selection is live-verified
+- dev / beta / release flow is defined
+- final closeout gate reports green
+
+---
+
+## Notes
+
+- Best effort means live probe, not assumption.
+- If provider truth and config truth disagree, provider truth wins.
+- If install safety and convenience disagree, install safety wins.

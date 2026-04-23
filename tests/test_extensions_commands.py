@@ -79,6 +79,36 @@ class TestStatus:
         assert st.status == "missing_target"
         assert "missing targets" in st.detail
 
+    def test_dry_run_repo_external_drift_warning(self, repo_root: Path) -> None:
+        """In dry-run, REPO_EXTERNAL missing targets become drift warnings."""
+        entry = ExtensionEntry(
+            id="dreams_like",
+            type=ExtensionType.SIDECAR,
+            description="dreams-like",
+            source_path="src.txt",
+            target_paths=[str(repo_root / "nonexistent" / "target.py")],
+            ownership=Ownership.REPO_EXTERNAL,
+        )
+        (repo_root / "src.txt").write_text("x")
+        st = check_extension_status(entry, repo_root, dry_run=True)
+        assert st.status == "drifted"
+        assert "not installed (dry-run)" in st.detail
+
+    def test_dry_run_repo_external_real_missing_target(self, repo_root: Path) -> None:
+        """Without dry-run, REPO_EXTERNAL missing targets remain failures."""
+        entry = ExtensionEntry(
+            id="dreams_like",
+            type=ExtensionType.SIDECAR,
+            description="dreams-like",
+            source_path="src.txt",
+            target_paths=[str(repo_root / "nonexistent" / "target.py")],
+            ownership=Ownership.REPO_EXTERNAL,
+        )
+        (repo_root / "src.txt").write_text("x")
+        st = check_extension_status(entry, repo_root, dry_run=False)
+        assert st.status == "missing_target"
+        assert "missing targets" in st.detail
+
     def test_external(self, repo_root: Path, external_entry: ExtensionEntry) -> None:
         st = check_extension_status(external_entry, repo_root)
         assert st.status == "external"

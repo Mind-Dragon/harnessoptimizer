@@ -396,3 +396,28 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     b_audit.add_argument("--output", help="JSON output path")
     b_audit.set_defaults(handler=handle_brain_audit)
     HANDLERS["brain-audit"] = handle_brain_audit
+
+    # Release readiness / closeout gate
+    def handle_release_readiness(args: argparse.Namespace) -> int:
+        try:
+            from hermesoptimizer.release.readiness import run_readiness, format_readiness
+
+            report = run_readiness(dry_run=getattr(args, "dry_run", False))
+            print(format_readiness(report))
+
+            if getattr(args, "json_out", None):
+                _dump_json_if_requested(report, args.json_out)
+
+            return 0 if report["gate_passed"] else 1
+        except Exception as exc:
+            print(f"release-readiness failed: {exc}", file=sys.stderr)
+            return 1
+
+    r_ready = subparsers.add_parser(
+        "release-readiness",
+        help="Run 0.9.1 closeout gate: install integrity, model truth, channel status",
+    )
+    r_ready.add_argument("--dry-run", action="store_true", help="Skip live network checks")
+    r_ready.add_argument("--json-out", help="Write JSON report to file")
+    r_ready.set_defaults(handler=handle_release_readiness)
+    HANDLERS["release-readiness"] = handle_release_readiness

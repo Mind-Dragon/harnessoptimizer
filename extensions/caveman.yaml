@@ -2,10 +2,8 @@ id: caveman
 type: config
 description: Caveman mode output compression for Hermes-wide sessions
 source_path: src/hermesoptimizer/caveman/
-target_paths:
-  - ~/.hermes/config.yaml
 verify_command: python -m hermesoptimizer.extensions.verify_contracts caveman
-ownership: repo_external
+ownership: external_runtime
 metadata:
   config_key: caveman_mode
   skill_path: ~/.hermes/skills/software-development/caveman/

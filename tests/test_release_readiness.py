@@ -99,6 +99,7 @@ class TestCheckExtensionDoctor:
             "missing_source": 0,
             "missing_target": 0,
             "drift_errors": 0,
+            "drift_warnings": 0,
             "canary": {"overall_passed": True},
         }
         with patch("hermesoptimizer.extensions.doctor.run_doctor", return_value=report):
@@ -107,6 +108,26 @@ class TestCheckExtensionDoctor:
         assert result.passed is False
         assert result.critical is True
         assert "doctor found" in result.detail
+
+    def test_doctor_dry_run_drift_warning_is_non_critical(self) -> None:
+        """Dry-run drift warnings from REPO_EXTERNAL must not fail the gate."""
+        report = {
+            "extensions_checked": 1,
+            "issues": [{"id": "dreams", "issue": "not installed (dry-run): /a/b.py"}],
+            "verify_failed": 0,
+            "missing_source": 0,
+            "missing_target": 0,
+            "drift_errors": 0,
+            "drift_warnings": 1,
+            "canary": {"overall_passed": True},
+        }
+        with patch("hermesoptimizer.extensions.doctor.run_doctor", return_value=report):
+            result = check_extension_doctor()
+
+        assert result.passed is True
+        assert "dry-run drift warnings" in result.detail
+        assert result.evidence["drift_warnings"] == 1
+        assert result.evidence["issues"] == 0
 
     def test_doctor_missing_is_non_critical(self, monkeypatch) -> None:
         import builtins

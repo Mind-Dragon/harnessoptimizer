@@ -16,6 +16,11 @@ from typing import Callable
 
 import yaml
 
+from hermesoptimizer.extensions.install_integrity import (
+    atomic_yaml_write,
+    validate_yaml_file,
+)
+
 # Config key for caveman mode
 _CAVEMAN_CONFIG_KEY = "caveman_mode"
 
@@ -78,13 +83,16 @@ def _read_config() -> dict:
 
 
 def _write_config(data: dict) -> None:
-    """Write data to the config file, preserving other keys."""
+    """Write data to the config file, preserving other keys.
+
+    Uses atomic_yaml_write for transactional semantics with validation and rollback.
+    """
     config_path = _get_config_path()
     _ensure_hermes_dir()
-    # Preserve existing data
     existing = _read_config()
     existing.update(data)
-    config_path.write_text(yaml.dump(existing), encoding="utf-8")
+
+    atomic_yaml_write(config_path, existing)
 
 
 def _load_caveman_state() -> bool:

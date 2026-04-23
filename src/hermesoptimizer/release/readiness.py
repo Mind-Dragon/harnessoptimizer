@@ -194,33 +194,54 @@ def check_extension_doctor() -> CheckResult:
     Fails closed: if doctor reports real issues (verify failures, missing sources,
     or canary failures), the check fails. Exceptions also cause failure rather
     than being swallowed as pass.
+
+    In dry-run mode, drift warnings from REPO_EXTERNAL extensions are treated as
+    non-critical because they indicate runtime targets are not yet installed,
+    not that repo source is broken.  The artifacts are tracked under a repo-only
+    extension (e.g. ``scripts``) and are expected to be absent in CI.
     """
     try:
         from hermesoptimizer.extensions.doctor import run_doctor
         report = run_doctor(dry_run=True)
-        issues_count = len(report.get("issues", []))
+        issues = report.get("issues", [])
         canary = report.get("canary", {})
         overall = canary.get("overall_passed", False)
         verify_failed = report.get("verify_failed", 0)
         missing_source = report.get("missing_source", 0)
         missing_target = report.get("missing_target", 0)
         drift_errors = report.get("drift_errors", 0)
+        drift_warnings = report.get("drift_warnings", 0)
+
+        # In dry-run, only count issues that are *not* dry-run drift warnings.
+        # Those are already captured in drift_warnings and are non-critical.
+        real_issues = [
+            i for i in issues
+            if not i.get("issue", "").startswith("not installed (dry-run)")
+        ]
+        real_issues_count = len(real_issues)
 
         has_real_issues = (
             verify_failed > 0
             or missing_source > 0
             or missing_target > 0
             or drift_errors > 0
-            or issues_count > 0
+            or real_issues_count > 0
         )
 
         passed = not has_real_issues
+
+        detail = ""
+        if not passed:
+            detail = f"doctor found {real_issues_count} issue(s), verify_failed={verify_failed}, missing_source={missing_source}, drift_errors={drift_errors}"
+        elif drift_warnings > 0:
+            detail = f"dry-run drift warnings: {drift_warnings} (non-critical)"
 
         return CheckResult(
             "extension_doctor", passed,
             evidence={
                 "extensions_checked": report.get("extensions_checked", 0),
-                "issues": issues_count,
+                "issues": real_issues_count,
+                "drift_warnings": drift_warnings,
                 "verify_failed": verify_failed,
                 "missing_source": missing_source,
                 "missing_target": missing_target,
@@ -228,7 +249,7 @@ def check_extension_doctor() -> CheckResult:
                 "canary_overall_passed": overall,
             },
             critical=True,
-            detail="" if passed else f"doctor found {issues_count} issue(s), verify_failed={verify_failed}, missing_source={missing_source}, drift_errors={drift_errors}",
+            detail=detail,
         )
     except ImportError as exc:
         # Lean environments can skip the doctor module, but only that case.

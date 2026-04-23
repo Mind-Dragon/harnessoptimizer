@@ -48,21 +48,42 @@ Do not treat providers as interchangeable abstractions. Every lane used by this 
 - a canary definition or explicit reason not to probe
 - a fallback or quarantine policy
 
-### 5. One canonical home per durable fact
+### 5. Install integrity is sacred
 
-- user preferences → memory
-- repo/provider/system/project truth → `brain/`
-- procedures → skills
-- temporary ongoing state → `brain/active-work/`
-- raw evidence → logs, sessions, reports
+Do not corrupt an install. Ever.
 
-### 6. Reports are generated artifacts
+Any writeback that can affect Hermes, HermesOptimizer, or a live config surface must:
+- stage first
+- validate before replace
+- swap atomically
+- leave the original intact on failure
+- run a post-install smoke or canary before calling the work done
 
-Generated reports are useful evidence but not the final source of truth. Promote enduring conclusions out of reports into provider notes, incidents, or docs.
+If a change cannot prove it preserves install integrity, it does not ship.
 
-### 7. No synthetic success
+### 6. Model selection must be truthful
 
-Do not mark a provider, script, or workflow as healthy without a real check, a dry-run with explicit limits, or a concrete artifact proving the behavior.
+Best effort means live-verified best effort.
+
+When selecting a model for compression or other work, the system must verify:
+- the model exists in the configured provider surface
+- the provider itself is healthy enough to use
+- the model is allowed on the active plan
+- the model matches the requested capability set
+
+A model advertised somewhere upstream is not enough. If GLM 5.1V is present in a provider catalog but not available on the current coding plan, it must not be selected for that plan.
+
+### 7. Keep provider / model / plan in sync
+
+A model choice is only valid when provider, model, and plan all agree.
+
+If any one of these is wrong:
+- provider unavailable
+- model missing
+- plan mismatch
+- capability mismatch
+
+then the selection is invalid and must be rejected or rerouted before install or execution proceeds.
 
 ### 8. Keep the brain small and queryable
 
