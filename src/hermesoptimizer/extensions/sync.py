@@ -71,6 +71,53 @@ def sync_extension(
         )
 
     source = repo_root / entry.source_path
+    sync_files = entry.metadata.get("sync_files") if isinstance(entry.metadata, dict) else None
+    if sync_files:
+        if not isinstance(sync_files, dict):
+            return SyncResult(
+                id=entry.id,
+                synced=False,
+                skipped=False,
+                errors=["metadata.sync_files must map source paths to target paths"],
+            )
+        expanded_pairs: list[tuple[Path, Path]] = []
+        for rel_source, target_path in sync_files.items():
+            src = repo_root / str(rel_source)
+            if not src.exists():
+                errors.append(f"source_path does not exist: {src}")
+                continue
+            target = _expand_target(str(target_path), fresh_root=fresh_root)
+            if target.exists() and not force:
+                if dry_run:
+                    actions.append(f"target exists: {target}")
+                    expanded_pairs.append((src, target))
+                else:
+                    errors.append(f"target exists (use --force to overwrite): {target}")
+            else:
+                expanded_pairs.append((src, target))
+        if errors and not force and not dry_run:
+            return SyncResult(id=entry.id, synced=False, skipped=False, actions=actions, errors=errors)
+        if errors:
+            return SyncResult(id=entry.id, synced=False, skipped=False, actions=actions, errors=errors)
+        if dry_run:
+            for src, target in expanded_pairs:
+                actions.append(f"would copy {src} -> {target}")
+            return SyncResult(id=entry.id, synced=False, skipped=False, actions=actions, errors=[])
+        try:
+            for src, target in expanded_pairs:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, target)
+                actions.append(f"copied {src} -> {target}")
+            return SyncResult(id=entry.id, synced=True, skipped=False, actions=actions, errors=[])
+        except Exception as exc:
+            return SyncResult(
+                id=entry.id,
+                synced=False,
+                skipped=False,
+                actions=actions,
+                errors=[f"unexpected error during sync: {exc}"],
+            )
+
     if not source.exists():
         return SyncResult(
             id=entry.id,

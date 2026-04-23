@@ -15,10 +15,24 @@ import sys
 from pathlib import Path
 
 from hermesoptimizer.extensions.resolver import _repo_root
+from hermesoptimizer.extensions import build_registry
+from hermesoptimizer.extensions import resolver
 
 
 def _config_path() -> Path:
     return Path("~/.hermes/config.yaml").expanduser()
+
+
+def _extension_selected(extension_id: str) -> bool:
+    """Return selected state from the active extension registry."""
+    try:
+        entries = build_registry(resolver.registry_dir())
+    except Exception:
+        return True
+    for entry in entries:
+        if entry.id == extension_id:
+            return entry.selected
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +110,10 @@ def verify_caveman() -> int:
 
 def verify_dreams() -> int:
     """Verify dreams sidecar: DB, external scripts, cron-linked surfaces."""
+    if not _extension_selected("dreams"):
+        print("SKIP: dreams not selected")
+        return 0
+
     errors: list[str] = []
     warnings: list[str] = []
 

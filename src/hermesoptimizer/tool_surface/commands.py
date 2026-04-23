@@ -104,6 +104,7 @@ def _handle_provider_list(_args: Optional[list[str]] = None) -> CommandResult:
 def _handle_provider_recommend(_args: Optional[list[str]] = None) -> CommandResult:
     """Handle 'provider recommend' command with real recommendation output."""
     try:
+        from hermesoptimizer.resources import read_provider_endpoints, read_provider_models
         from hermesoptimizer.schemas.provider_endpoint import ProviderEndpointCatalog
         from hermesoptimizer.schemas.provider_model import ProviderModelCatalog
         from hermesoptimizer.sources.provider_truth import ProviderTruthStore, seed_from_config
@@ -113,9 +114,12 @@ def _handle_provider_recommend(_args: Optional[list[str]] = None) -> CommandResu
             SafetyLane,
         )
 
-        repo_root = Path(__file__).resolve().parents[3]
-        endpoint_catalog = ProviderEndpointCatalog.from_file(repo_root / "data" / "provider_endpoints.json")
-        model_catalog = ProviderModelCatalog.from_file(repo_root / "data" / "provider_models.json")
+        endpoint_data = read_provider_endpoints()
+        model_data = read_provider_models()
+        if endpoint_data is None or model_data is None:
+            raise FileNotFoundError("packaged provider endpoint/model catalogs are missing")
+        endpoint_catalog = ProviderEndpointCatalog.from_data(endpoint_data)
+        model_catalog = ProviderModelCatalog.from_data(model_data)
         config_path = Path.home() / ".hermes" / "config.yaml"
         truth_store = seed_from_config(config_path) if config_path.exists() else ProviderTruthStore()
 

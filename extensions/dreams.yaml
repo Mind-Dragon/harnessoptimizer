@@ -10,6 +10,11 @@ verify_command: python -m hermesoptimizer.extensions.verify_contracts dreams
 ownership: repo_external
 selected: false
 metadata:
+  generated_runtime_artifacts:
+    - ~/.hermes/dreams/memory_meta.db
+  sync_files:
+    scripts/dreaming_pre_sweep.py: ~/.hermes/scripts/dreaming_pre_sweep.py
+    scripts/probe_memory_meta.py: ~/.hermes/scripts/probe_memory_meta.py
   cron_job_id: 30b51a980bc4
   external_scripts:
     - ~/.hermes/scripts/dreaming_reflection_context.py

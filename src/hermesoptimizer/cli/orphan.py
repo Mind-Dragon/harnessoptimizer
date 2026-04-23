@@ -66,13 +66,17 @@ def _dump_json_if_requested(payload: dict, json_out: str | None) -> None:
 
 
 def _build_recommender():
+    from hermesoptimizer.resources import read_provider_endpoints, read_provider_models
     from hermesoptimizer.schemas.provider_endpoint import ProviderEndpointCatalog
     from hermesoptimizer.schemas.provider_model import ProviderModelCatalog
     from hermesoptimizer.tool_surface.provider_recommend import ProviderRecommender
 
-    repo_root = _repo_root()
-    endpoint_catalog = ProviderEndpointCatalog.from_file(repo_root / "data" / "provider_endpoints.json")
-    model_catalog = ProviderModelCatalog.from_file(repo_root / "data" / "provider_models.json")
+    endpoint_data = read_provider_endpoints()
+    model_data = read_provider_models()
+    if endpoint_data is None or model_data is None:
+        raise FileNotFoundError("packaged provider endpoint/model catalogs are missing")
+    endpoint_catalog = ProviderEndpointCatalog.from_data(endpoint_data)
+    model_catalog = ProviderModelCatalog.from_data(model_data)
     truth_store = seed_from_config(_default_config_path()) if _default_config_path().exists() else ProviderTruthStore()
     return ProviderRecommender(
         truth_store=truth_store,
@@ -329,7 +333,11 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
     def handle_brain_doctor(args: argparse.Namespace) -> int:
         try:
             import subprocess
-            cmd = ["python3", str(_repo_root() / "brain" / "scripts" / "brain_doctor.py")]
+            script = _repo_root() / "brain" / "scripts" / "brain_doctor.py"
+            if script.exists():
+                cmd = ["python3", str(script)]
+            else:
+                cmd = [sys.executable, "-m", "hermesoptimizer.brain_doctor"]
             if args.dry_run:
                 cmd.append("--dry-run")
             if args.check:

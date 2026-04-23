@@ -50,7 +50,7 @@ Third pass update:
 
 Fourth pass update — 2026-04-24:
 
-- Live provider canaries were run with available local credentials: Kilocode Ling 2.6 Flash Free returned 200 OK, Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`, OpenRouter archived auth returned 401 `User not found`, and OpenAI OAuth for `gpt-5.4-mini` returned 429 `insufficient_quota`.
+- Live provider canaries were run with available local credentials: Kilocode Ling 2.6 Flash Free returned 200 OK, Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`, OpenRouter current auth returned 200 OK, and OpenAI OAuth for `gpt-5.4-mini` returned 429 `insufficient_quota`.
 - Registry seed now includes `openai-codex/gpt-5.4-mini` as configured-but-quota-blocked evidence, and the Nous endpoint is corrected to `https://inference-api.nousresearch.com/v1`.
 - Provider quarantine behavior now exists at provider-family level: repeated failures in `ProviderHealthStore` trigger `ProviderQuarantine`, success releases quarantine, aliases normalize through `canonical_provider_name()`, and `ProviderRegistry` can hide/show quarantined providers without losing model metadata.
 - Alias-map tests now compare selected optimizer aliases against the local Hermes agent alias table and encode intentional divergences such as Kimi and Alibaba/Qwen canonical direction.
@@ -73,6 +73,16 @@ Wave 2/3 sync + packaging update — 2026-04-24:
 - Package version and release-readiness assertions are bumped to `0.9.3`.
 - Wheel smoke built and installed `/tmp/hopt-wheelhouse/hermesoptimizer-0.9.3-py3-none-any.whl`; installed `provider-list` and `ext-list` executed successfully, with provider registry data present.
 - Verified with full `pytest -q`, `release-readiness --dry-run`, `brain-doctor --dry-run`, `ext-doctor`, `ext-sync --dry-run`, and `ext-sync --dry-run --fresh-root /tmp/hermesoptimizer-fresh-root`.
+
+Wave 2/3 autonomous completion update — 2026-04-24:
+
+- Re-probed current local credentials: Kilocode Ling 2.6 Flash Free returned 200 OK; OpenRouter Ling 2.6 Flash Free returned 200 OK; Nous Kimi K2.6 returned 200 OK when using the minted `agent_key` on `https://inference-api.nousresearch.com/v1`; the raw Nous OAuth access token returned 401 and is not the inference credential; OpenAI `gpt-5.4-mini` still returned 429 `insufficient_quota`.
+- `dreams` now records generated runtime artifacts separately and uses `metadata.sync_files` so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when the dreams feature is selected. Unselected dreams verifies as a clean skip.
+- Selected external-runtime entries with target paths now participate in target-status checks; unselected optional features still report `not_selected`.
+- Provider endpoint/model catalogs moved into packaged `hermesoptimizer.data` resources. `provider-recommend` and CLI recommender construction no longer require repo-root `data/` lookups.
+- Added packaged `hermesoptimizer.brain_doctor` fallback for wheel installs when repo-local `brain/scripts/brain_doctor.py` is absent.
+- Release readiness now includes `wheel_install_smoke`: build wheel, inspect required package data, install into an isolated venv, and run `provider-list`, `provider-recommend`, `ext-list`, `ext-doctor --dry-run`, `brain-doctor --dry-run`, and `caveman --help`.
+- Verified with full `PYTHONPATH=src python -m pytest -q` and `PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run`; both passed.
 
 
 ## Goal

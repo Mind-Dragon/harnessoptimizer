@@ -50,7 +50,7 @@ def check_extension_status(entry: ExtensionEntry, repo_root: Path, dry_run: bool
             detail="not selected: optional runtime feature disabled",
         )
 
-    if entry.ownership == Ownership.EXTERNAL_RUNTIME:
+    if entry.ownership == Ownership.EXTERNAL_RUNTIME and not entry.target_paths:
         return ExtensionStatus(
             id=entry.id,
             status=Status.EXTERNAL,
@@ -58,7 +58,7 @@ def check_extension_status(entry: ExtensionEntry, repo_root: Path, dry_run: bool
             detail="external_runtime: not managed by repo",
         )
 
-    source_ok = entry.source_exists(repo_root)
+    source_ok = True if entry.ownership == Ownership.EXTERNAL_RUNTIME else entry.source_exists(repo_root)
     if not source_ok:
         return ExtensionStatus(
             id=entry.id,

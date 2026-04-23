@@ -44,3 +44,13 @@ def read_provider_registry() -> dict[str, Any] | None:
 def read_schema() -> dict[str, Any] | None:
     """Load bundled provider registry schema."""
     return read_package_json("hermesoptimizer.data", "provider_registry.schema.json")
+
+
+def read_provider_endpoints() -> dict[str, Any] | None:
+    """Load bundled provider endpoint catalog data."""
+    return read_package_json("hermesoptimizer.data", "provider_endpoints.json")
+
+
+def read_provider_models() -> dict[str, Any] | None:
+    """Load bundled provider model catalog data."""
+    return read_package_json("hermesoptimizer.data", "provider_models.json")

@@ -14,6 +14,8 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -322,7 +324,91 @@ def check_version() -> CheckResult:
         return CheckResult("version", False, detail=str(exc))
 
 
-# -- Check 9: Release doc drift -----------------------------------------------
+# -- Check 9: Wheel install smoke ---------------------------------------------
+
+def check_wheel_install_smoke() -> CheckResult:
+    """Build a wheel, inspect package data, and smoke CLI commands in an isolated venv."""
+    repo_root = _repo_root()
+    required_members = {
+        "hermesoptimizer/data/provider_registry.seed.json",
+        "hermesoptimizer/data/provider_endpoints.json",
+        "hermesoptimizer/data/provider_models.json",
+        "hermesoptimizer/extensions/data/dreams.yaml",
+        "hermesoptimizer/extensions/data/caveman.yaml",
+    }
+    commands = [
+        ["provider-list"],
+        ["provider-recommend", "--limit", "1"],
+        ["ext-list"],
+        ["ext-doctor", "--dry-run"],
+        ["brain-doctor", "--dry-run"],
+        ["caveman", "--help"],
+    ]
+    with tempfile.TemporaryDirectory(prefix="hopt-wheel-smoke-") as td:
+        tmp = Path(td)
+        wheelhouse = tmp / "wheelhouse"
+        wheelhouse.mkdir()
+        build = subprocess.run(
+            [sys.executable, "-m", "pip", "wheel", ".", "-w", str(wheelhouse), "--no-deps"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if build.returncode != 0:
+            return CheckResult("wheel_install_smoke", False, detail=build.stderr[-500:])
+        wheels = sorted(wheelhouse.glob("hermesoptimizer-*.whl"))
+        if not wheels:
+            return CheckResult("wheel_install_smoke", False, detail="wheel build produced no hermesoptimizer wheel")
+        wheel = wheels[-1]
+        with zipfile.ZipFile(wheel) as zf:
+            names = set(zf.namelist())
+        missing = sorted(required_members - names)
+        if missing:
+            return CheckResult(
+                "wheel_install_smoke",
+                False,
+                detail=f"wheel missing package data: {missing}",
+                evidence={"wheel": str(wheel), "missing_members": missing},
+            )
+
+        venv = tmp / "venv"
+        subprocess.run([sys.executable, "-m", "venv", "--system-site-packages", str(venv)], check=True, timeout=120)
+        py = venv / "bin" / "python"
+        install = subprocess.run(
+            [str(py), "-m", "pip", "install", "--no-deps", str(wheel)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        if install.returncode != 0:
+            return CheckResult("wheel_install_smoke", False, detail=install.stderr[-500:])
+
+        command_results: dict[str, int] = {}
+        for cmd in commands:
+            proc = subprocess.run(
+                [str(py), "-m", "hermesoptimizer", *cmd],
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+            key = " ".join(cmd)
+            command_results[key] = proc.returncode
+            if proc.returncode != 0:
+                return CheckResult(
+                    "wheel_install_smoke",
+                    False,
+                    detail=f"wheel command failed: {key}: {proc.stderr[-300:] or proc.stdout[-300:]}",
+                    evidence={"wheel": str(wheel), "commands": command_results},
+                )
+    return CheckResult(
+        "wheel_install_smoke",
+        True,
+        evidence={"package_members_checked": sorted(required_members), "commands": command_results},
+    )
+
+
+# -- Check 10: Release doc drift -----------------------------------------------
 
 def check_release_doc_drift() -> CheckResult:
     """Fail if active release docs/scripts contain known stale release markers."""
@@ -374,6 +460,7 @@ CHECKS = [
     check_channel_status,
     check_test_collection,
     check_extension_doctor,
+    check_wheel_install_smoke,
     check_release_doc_drift,
 ]
 

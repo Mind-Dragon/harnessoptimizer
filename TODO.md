@@ -1,6 +1,6 @@
 # Hermes Optimizer /todo — v0.9.3 clean install + provider registry
 
-Current package version: 0.9.2
+Current package version: 0.9.3
 Target package version: 0.9.3
 Base release proof: VERSION0.9.2.md
 Current release contract: VERSION0.9.3.md
@@ -26,7 +26,7 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 - Hermes core does not reference `caveman` or `caveman_mode`.
 - `provider-list` now reads the packaged/cache provider registry and returns `kilocode`, `nous`, `openai-codex`, `openrouter` with model IDs.
 - Provider DB refresh inserted `openai-codex/gpt-5.5`, `kilocode/inclusionai/ling-2.6-flash:free`, `openrouter/inclusionai/ling-2.6-flash:free`, and `nous/moonshotai/kimi-k2.6` into `~/.hermes/provider-db/provider_model.sqlite`.
-- 2026-04-24 live canaries: Kilocode Ling 2.6 Flash Free returned 200 OK; Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`; OpenRouter archived key returned 401 user-not-found; OpenAI OAuth canary for `gpt-5.4-mini` returned 429 insufficient_quota.
+- 2026-04-24 live canaries: Kilocode Ling 2.6 Flash Free returned 200 OK; Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`; OpenRouter Ling 2.6 Flash Free returned 200 OK; OpenAI OAuth canary for `gpt-5.4-mini` returned 429 insufficient_quota.
 - `seed_from_config(~/.hermes/config.yaml)` remains a separate live-config source (`kilocode`, `nacrof`, `xai`) until merge policy work lands.
 - `ext-doctor` now reports `missing_target: 0` and `not_selected: 1` because dreams is an optional runtime feature currently not selected.
 - `ext-sync --dry-run` now exits 0 on existing runtime; dreams is skipped as `not selected`, and vault secret data is classified as external runtime data.
@@ -70,22 +70,22 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 ### Wave 2 — extension/install cleanup
 
 [x] Add installer feature-selection state for optional runtime features.
-[ ] Fix dreams/scripts ownership so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when dreams is selected.
-[ ] Add runtime target checks to `verify_contracts dreams` for selected installs.
-[ ] Add caveman selected/unselected install contract for skill/config behavior.
+[x] Fix dreams/scripts ownership so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when dreams is selected.
+[x] Add runtime target checks to `verify_contracts dreams` for selected installs.
+[x] Add caveman selected/unselected install contract for skill/config behavior.
 [x] Reclassify `~/.vault/vault.enc.json` as external runtime data, not a sync overwrite target.
 [x] Make `ext-sync --dry-run` idempotent on existing runtime.
 [x] Add fresh-root install simulation for base, base+caveman, base+dreams, base+caveman+dreams.
-[ ] Add generated-runtime-artifact classification.
-[ ] Add extension release gate: selected features have 0 missing targets and 0 sync errors; unselected optional features report `not selected`.
+[x] Add generated-runtime-artifact classification.
+[x] Add extension release gate: selected features have 0 missing targets and 0 sync errors; unselected optional features report `not selected`.
 
 ### Wave 3 — packaging/wheel install
 
-[ ] Add isolated wheel build inspection to tests/release readiness.
-[ ] Add isolated venv wheel install smoke.
-[ ] Prove `provider-list`, `provider-recommend`, `ext-list`, `ext-doctor`, `brain-doctor --dry-run`, and `caveman` from wheel install.
-[ ] Replace repo-root `parents[3] / data` lookups with packaged resource resolver.
-[ ] Package required installer scripts or install them through explicit extension sync.
+[x] Add isolated wheel build inspection to tests/release readiness.
+[x] Add isolated venv wheel install smoke.
+[x] Prove `provider-list`, `provider-recommend`, `ext-list`, `ext-doctor`, `brain-doctor --dry-run`, and `caveman` from wheel install.
+[x] Replace repo-root `parents[3] / data` lookups with packaged resource resolver.
+[x] Package required installer scripts or install them through explicit extension sync.
 
 ### Wave 4 — CLI truthfulness
 
