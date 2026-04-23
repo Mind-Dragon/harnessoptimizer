@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 from hermesoptimizer.paths import get_data_dir
 from hermesoptimizer.resources import read_provider_registry
@@ -24,6 +27,7 @@ DEFAULT_REGISTRY_URL = (
     "Liminal-Registry/main/provider_registry.json"
 )
 CACHE_FILENAME = "provider_registry.cache.json"
+LOCAL_OVERRIDE_FILENAME = "provider_registry.local.json"
 
 
 class RegistryIntegrityError(ValueError):
@@ -108,6 +112,104 @@ class ProviderRegistry:
         if path.exists():
             return cls.from_file(path)
         return cls.from_seed()
+
+    @classmethod
+    def from_hermes_db(cls, hermes_home: str | Path) -> "ProviderRegistry":
+        db_path = Path(hermes_home) / "provider-db" / "provider_model.sqlite"
+        if not db_path.exists():
+            return cls.empty()
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            rows = conn.execute(
+                """
+                SELECT p.name, p.status, COALESCE(e.endpoint_url, ''), m.name, m.status
+                FROM providers p
+                LEFT JOIN provider_endpoints e ON e.provider_id = p.id AND e.is_primary = 1
+                LEFT JOIN models m ON m.provider_id = p.id
+                ORDER BY p.name, m.name
+                """
+            ).fetchall()
+        finally:
+            conn.close()
+        grouped: dict[str, dict[str, Any]] = {}
+        for provider_id, provider_status, endpoint, model_id, model_status in rows:
+            item = grouped.setdefault(
+                provider_id,
+                {
+                    "id": provider_id,
+                    "name": provider_id,
+                    "endpoint": endpoint or "",
+                    "api_style": "openai-compatible",
+                    "status": provider_status or "active",
+                    "models": [],
+                },
+            )
+            if endpoint and not item["endpoint"]:
+                item["endpoint"] = endpoint
+            if model_id:
+                item["models"].append({"id": model_id, "status": model_status or "active"})
+        return cls.from_data({"providers": list(grouped.values())}, source=str(db_path))
+
+    @classmethod
+    def from_hermes_config(cls, config_path: str | Path) -> "ProviderRegistry":
+        path = Path(config_path)
+        if not path.exists():
+            return cls.empty()
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        except Exception:
+            return cls.empty()
+        providers: list[dict[str, Any]] = []
+        raw_providers = data.get("providers", {})
+        if isinstance(raw_providers, dict):
+            for provider_id, provider_data in raw_providers.items():
+                if not isinstance(provider_data, dict):
+                    continue
+                model = provider_data.get("default_model") or provider_data.get("model") or ""
+                providers.append(
+                    {
+                        "id": str(provider_id),
+                        "name": str(provider_data.get("name") or provider_id),
+                        "endpoint": str(provider_data.get("api") or provider_data.get("base_url") or ""),
+                        "api_style": "openai-compatible",
+                        "status": "active",
+                        "models": [{"id": str(model), "status": "active"}] if model else [],
+                    }
+                )
+        return cls.from_data({"providers": providers}, source=str(path))
+
+    @classmethod
+    def from_merged_sources(
+        cls,
+        *,
+        local_override_path: str | Path | None = None,
+        cache_path: str | Path | None = None,
+        hermes_home: str | Path | None = None,
+        hermes_config_path: str | Path | None = None,
+    ) -> "ProviderRegistry":
+        """Load registry sources in declared precedence order.
+
+        Lower-priority sources are loaded first and then overwritten by higher
+        priority providers with the same ID:
+        Hermes config < Hermes provider DB < packaged fallback < public cache < local override.
+        """
+        merged: dict[str, RegistryProvider] = {}
+        local_path = Path(local_override_path) if local_override_path is not None else get_data_dir() / LOCAL_OVERRIDE_FILENAME
+        cache = Path(cache_path) if cache_path is not None else get_data_dir() / CACHE_FILENAME
+        home = Path(hermes_home) if hermes_home is not None else Path.home() / ".hermes"
+        config = Path(hermes_config_path) if hermes_config_path is not None else home / "config.yaml"
+
+        def overlay(registry: "ProviderRegistry") -> None:
+            merged.update(registry.providers_by_id)
+
+        overlay(cls.from_hermes_config(config))
+        overlay(cls.from_hermes_db(home))
+        overlay(cls.from_seed())
+        if cache.exists():
+            overlay(cls.from_file(cache))
+        if local_path.exists():
+            overlay(cls.from_file(local_path))
+        return cls(providers_by_id=merged, source="merged")
 
     def providers(self) -> list[str]:
         return sorted(self.providers_by_id)

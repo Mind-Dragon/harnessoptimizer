@@ -58,7 +58,7 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [x] Add explicit remote registry fetcher/cache path for `Mind-Dragon/Liminal-Registry`.
 [x] Add hash/signature/provenance validation for remote registry fetches.
 [x] Add merge policy foundation: remote cache > packaged fallback for `ProviderRegistry.from_cache_or_seed()`.
-[ ] Add full merge policy: local override > public registry cache > packaged fallback > Hermes provider DB > Hermes config.
+[x] Add full merge policy: local override > public registry cache > packaged fallback > Hermes provider DB > Hermes config.
 [x] Add Hermes provider DB adapter for `~/.hermes/provider-db/provider_model.sqlite`.
 [ ] Add registry quarantine behavior for repeated provider failures.
 [x] Add provider notes for active lanes: openai-codex, kilocode, openrouter, nous.

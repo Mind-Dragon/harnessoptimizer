@@ -34,7 +34,6 @@ python3 -m py_compile /home/agent/hermes-agent/cli.py
 
 Remaining for this wave:
 
-- Implement full merge policy across local override, cache, package seed, Hermes DB, and Hermes config.
 - Add quarantine/health-state behavior for repeated provider failures.
 - Add a real CLI command for hot-reload proof if desired; current slice provides the helper and direct Python proof.
 
@@ -43,6 +42,12 @@ Second pass update:
 - Remote registry fetch now validates detached SHA-256, detached `sha256:<digest>` signature, and required registry provenance before cache write.
 - Failed hash/signature/provenance checks raise `RegistryIntegrityError` and leave cache files untouched.
 - Tests cover success, wrong hash, wrong signature, and missing provenance.
+
+Third pass update:
+
+- `ProviderRegistry.from_merged_sources()` implements the declared priority order: Hermes config < Hermes provider DB < packaged fallback < public cache < local override.
+- Provider rows with the same ID are replaced by the higher-priority source; unique providers from lower-priority sources remain available.
+- `provider-list` now uses the merged source view, so live DB/config-only providers such as `nacrof` appear alongside packaged/cache registry entries.
 
 
 ## Goal

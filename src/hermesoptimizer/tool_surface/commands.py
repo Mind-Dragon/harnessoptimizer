@@ -77,7 +77,7 @@ def _handle_provider_list(_args: Optional[list[str]] = None) -> CommandResult:
     try:
         from hermesoptimizer.sources.provider_registry import ProviderRegistry
 
-        registry = ProviderRegistry.from_cache_or_seed()
+        registry = ProviderRegistry.from_merged_sources()
         providers = registry.providers()
 
         if providers:

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
+import yaml
 
 from hermesoptimizer.sources.provider_registry import (
     ProviderRegistry,
@@ -35,6 +37,23 @@ def _payload_bytes(*, provenance: bool = True) -> bytes:
     return json.dumps(data, sort_keys=True).encode("utf-8")
 
 
+def _registry_doc(provider_id: str, endpoint: str, model_id: str) -> dict:
+    return {
+        "version": "test",
+        "registry": {"name": "test", "owner": "unit", "repo": "unit", "source": "test"},
+        "providers": [
+            {
+                "id": provider_id,
+                "name": provider_id.title(),
+                "endpoint": endpoint,
+                "api_style": "openai-compatible",
+                "status": "active",
+                "models": [{"id": model_id, "status": "active"}],
+            }
+        ],
+    }
+
+
 def _patch_urlopen(monkeypatch, payload: bytes):
     class Response:
         def __enter__(self):
@@ -52,6 +71,50 @@ def _patch_urlopen(monkeypatch, payload: bytes):
         return Response()
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+
+def _make_provider_db(home: Path, providers: dict[str, tuple[str, list[str]]]) -> None:
+    db = home / "provider-db" / "provider_model.sqlite"
+    db.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db)
+    conn.executescript(
+        """
+        CREATE TABLE providers (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active'
+        );
+        CREATE TABLE models (
+            id INTEGER PRIMARY KEY,
+            provider_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            UNIQUE(provider_id, name)
+        );
+        CREATE TABLE provider_endpoints (
+            id INTEGER PRIMARY KEY,
+            provider_id INTEGER NOT NULL,
+            endpoint_url TEXT NOT NULL,
+            source TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            is_primary INTEGER NOT NULL DEFAULT 0,
+            UNIQUE(provider_id, endpoint_url)
+        );
+        """
+    )
+    for name, (endpoint, models) in providers.items():
+        conn.execute("INSERT INTO providers (name, source) VALUES (?, 'unit-db')", (name,))
+        provider_id = conn.execute("SELECT id FROM providers WHERE name=?", (name,)).fetchone()[0]
+        conn.execute(
+            "INSERT INTO provider_endpoints (provider_id, endpoint_url, source, is_primary) VALUES (?, ?, 'unit-db', 1)",
+            (provider_id, endpoint),
+        )
+        for model in models:
+            conn.execute("INSERT INTO models (provider_id, name, source) VALUES (?, ?, 'unit-db')", (provider_id, model))
+    conn.commit()
+    conn.close()
 
 
 class TestProviderRegistry:
@@ -83,6 +146,57 @@ class TestProviderRegistry:
         registry = ProviderRegistry.from_cache_or_seed(cache)
         assert registry.providers() == ["remote"]
         assert registry.model_ids("remote") == ["remote-model"]
+
+    def test_full_merge_policy_applies_declared_priority_order(self, tmp_path: Path) -> None:
+        local = tmp_path / "local.json"
+        cache = tmp_path / "cache.json"
+        config = tmp_path / "config.yaml"
+        home = tmp_path / "home"
+
+        local.write_text(json.dumps(_registry_doc("shared", "https://local.invalid/v1", "local-model")), encoding="utf-8")
+        cache_data = _registry_doc("shared", "https://cache.invalid/v1", "cache-model")
+        cache_data["providers"].append(_registry_doc("cacheonly", "https://cache-only.invalid/v1", "cache-only-model")["providers"][0])
+        cache.write_text(json.dumps(cache_data), encoding="utf-8")
+        _make_provider_db(home, {
+            "shared": ("https://db.invalid/v1", ["db-model"]),
+            "dbonly": ("https://db-only.invalid/v1", ["db-only-model"]),
+        })
+        config.write_text(
+            yaml.safe_dump(
+                {
+                    "providers": {
+                        "shared": {"api": "https://config.invalid/v1", "default_model": "config-model"},
+                        "configonly": {"api": "https://config-only.invalid/v1", "default_model": "config-only-model"},
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        registry = ProviderRegistry.from_merged_sources(
+            local_override_path=local,
+            cache_path=cache,
+            hermes_home=home,
+            hermes_config_path=config,
+        )
+
+        assert registry.source == "merged"
+        assert registry.providers_by_id["shared"].endpoint == "https://local.invalid/v1"
+        assert registry.model_ids("shared") == ["local-model"]
+        assert registry.model_ids("cacheonly") == ["cache-only-model"]
+        assert registry.model_ids("dbonly") == ["db-only-model"]
+        assert registry.model_ids("configonly") == ["config-only-model"]
+        assert registry.model_ids("openai-codex") == ["gpt-5.5"]
+
+    def test_merged_registry_ignores_missing_optional_sources(self, tmp_path: Path) -> None:
+        registry = ProviderRegistry.from_merged_sources(
+            local_override_path=tmp_path / "missing-local.json",
+            cache_path=tmp_path / "missing-cache.json",
+            hermes_home=tmp_path / "missing-home",
+            hermes_config_path=tmp_path / "missing-config.yaml",
+        )
+        assert registry.source == "merged"
+        assert registry.model_ids("openai-codex") == ["gpt-5.5"]
 
     def test_fetch_remote_registry_caches_payload_with_hash_and_provenance(self, monkeypatch, tmp_path: Path) -> None:
         payload = _payload_bytes()
