@@ -40,9 +40,15 @@ def get_report_dir() -> Path:
     return _base() / "reports"
 
 
+def get_data_dir() -> Path:
+    """Return path to the data directory (for packaged resources)."""
+    return _base() / "data"
+
+
 def ensure_dirs() -> None:
     """Create all hoptimizer runtime directories if they don't exist."""
     base = _base()
     (base / "db").mkdir(parents=True, exist_ok=True)
     (base / "logs").mkdir(parents=True, exist_ok=True)
     (base / "reports").mkdir(parents=True, exist_ok=True)
+    (base / "data").mkdir(parents=True, exist_ok=True)

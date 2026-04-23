@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Post-update patch: extend /reload to also hot-reload config.yaml.
+Post-update patch: extend /reload to hot-reload config.yaml and the provider registry.
 
 Reapplies after `hermes update` overwrites cli.py.
 
@@ -21,6 +21,16 @@ from pathlib import Path
 
 CLI_PY = Path("/home/agent/hermes-agent/cli.py")
 BACKUP_SUFFIX = ".hermesoptimizer-reload.bak"
+
+PROVIDER_PRINT_OLD = '                print(f"  Reloaded .env ({env_count} var(s)) + config.yaml")'
+PROVIDER_REFRESH_BLOCK = '''\
+                try:
+                    from hermesoptimizer.verify.hot_reload import refresh_provider_db
+                    _provider_refresh = refresh_provider_db()
+                    _provider_msg = f" + provider registry ({_provider_refresh.provider_count} provider(s), {_provider_refresh.model_count} model(s))"
+                except Exception as _provider_exc:
+                    _provider_msg = f"; provider registry reload failed: {_provider_exc}"
+                print(f"  Reloaded .env ({env_count} var(s)) + config.yaml{_provider_msg}")'''
 
 OLD_BLOCK = """\
         elif canonical == "reload":
@@ -63,7 +73,14 @@ NEW_BLOCK = """\
                 _comp = _fresh.get("compression", {})
                 if _comp:
                     self.config["compression"] = _comp
-                print(f"  Reloaded .env ({env_count} var(s)) + config.yaml")
+
+                try:
+                    from hermesoptimizer.verify.hot_reload import refresh_provider_db
+                    _provider_refresh = refresh_provider_db()
+                    _provider_msg = f" + provider registry ({_provider_refresh.provider_count} provider(s), {_provider_refresh.model_count} model(s))"
+                except Exception as _provider_exc:
+                    _provider_msg = f"; provider registry reload failed: {_provider_exc}"
+                print(f"  Reloaded .env ({env_count} var(s)) + config.yaml{_provider_msg}")
             except Exception as e:
                 print(f"  Reloaded .env ({env_count} var(s)). Config reload failed: {e}")
             # --- END HOT-RELOAD PATCH ---\
@@ -77,7 +94,8 @@ def _read_cli() -> str:
 
 
 def is_applied() -> bool:
-    return "HOT-RELOAD PATCH (hermesoptimizer)" in _read_cli()
+    text = _read_cli()
+    return "HOT-RELOAD PATCH (hermesoptimizer)" in text and "refresh_provider_db" in text
 
 
 def _validate_python(text: str) -> None:
@@ -113,7 +131,15 @@ def _atomic_replace(text: str) -> None:
 def apply() -> None:
     text = _read_cli()
     if "HOT-RELOAD PATCH (hermesoptimizer)" in text:
-        print("Patch already applied.")
+        if "refresh_provider_db" in text:
+            print("Patch already applied.")
+            return
+        if PROVIDER_PRINT_OLD not in text:
+            print("ERROR: Existing hot-reload patch found, but provider-refresh insertion point was not found.")
+            sys.exit(1)
+        patched = text.replace(PROVIDER_PRINT_OLD, PROVIDER_REFRESH_BLOCK, 1)
+        _atomic_replace(patched)
+        print(f"Upgraded {CLI_PY} — /reload now hot-reloads config.yaml and provider registry")
         return
 
     if OLD_BLOCK not in text:

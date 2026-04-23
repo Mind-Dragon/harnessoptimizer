@@ -1,0 +1,96 @@
+{
+  "version": "0.9.3-seed.1",
+  "registry": {
+    "name": "Liminal-Registry",
+    "owner": "Mind-Dragon",
+    "repo": "Liminal-Registry",
+    "source": "https://raw.githubusercontent.com/Mind-Dragon/Liminal-Registry/main/provider_registry.json"
+  },
+  "providers": [
+    {
+      "id": "openai-codex",
+      "name": "OpenAI Codex plan",
+      "endpoint": "https://api.openai.com/v1",
+      "api_style": "openai-compatible",
+      "status": "active",
+      "models": [
+        {
+          "id": "gpt-5.5",
+          "aliases": [],
+          "capabilities": ["chat", "coding", "reasoning"],
+          "context_window": 0,
+          "max_output_tokens": 0,
+          "status": "active",
+          "probe": {
+            "last_status": "reported-released",
+            "last_checked": "2026-04-23",
+            "evidence": "User reported OpenAI announced/released GPT-5.5; local Hermes had gpt-5.5 on OpenAI Codex plan in prior probe."
+          }
+        }
+      ]
+    },
+    {
+      "id": "kilocode",
+      "name": "Kilocode gateway",
+      "endpoint": "https://api.kilo.ai/api/gateway/",
+      "api_style": "openai-compatible",
+      "status": "active",
+      "models": [
+        {
+          "id": "inclusionai/ling-2.6-flash:free",
+          "capabilities": ["chat", "coding"],
+          "context_window": 0,
+          "max_output_tokens": 0,
+          "status": "active",
+          "probe": {
+            "last_status": "200 OK",
+            "last_checked": "2026-04-23",
+            "evidence": "Hermes lane canary returned 200 OK."
+          }
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "endpoint": "https://openrouter.ai/api/v1",
+      "api_style": "openai-compatible",
+      "status": "active",
+      "models": [
+        {
+          "id": "inclusionai/ling-2.6-flash:free",
+          "capabilities": ["chat", "coding"],
+          "context_window": 0,
+          "max_output_tokens": 0,
+          "status": "active",
+          "probe": {
+            "last_status": "200 OK",
+            "last_checked": "2026-04-23",
+            "evidence": "Hermes lane canary returned 200 OK."
+          }
+        }
+      ]
+    },
+    {
+      "id": "nous",
+      "name": "Nous Portal",
+      "endpoint": "https://portal.nousresearch.com/v1",
+      "api_style": "openai-compatible",
+      "status": "active",
+      "models": [
+        {
+          "id": "moonshotai/kimi-k2.6",
+          "capabilities": ["chat", "coding", "reasoning"],
+          "context_window": 0,
+          "max_output_tokens": 0,
+          "status": "active",
+          "probe": {
+            "last_status": "200 OK",
+            "last_checked": "2026-04-23",
+            "evidence": "Nous Portal listed model and canary returned 200 OK; use max_tokens >=512 to avoid reasoning-only empty content."
+          }
+        }
+      ]
+    }
+  ]
+}

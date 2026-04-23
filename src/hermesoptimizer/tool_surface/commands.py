@@ -71,21 +71,24 @@ class CommandResult:
 def _handle_provider_list(_args: Optional[list[str]] = None) -> CommandResult:
     """Handle 'provider list' command.
 
-    Lists available providers from the provider truth source.
-    This is a read-only operation.
+    Lists providers from the cached/public provider registry, falling back to
+    bundled seed data. This is read-only and does not perform network I/O.
     """
     try:
-        # Import the provider truth module to get provider information
-        from hermesoptimizer.sources.provider_truth import ProviderTruthStore
+        from hermesoptimizer.sources.provider_registry import ProviderRegistry
 
-        store = ProviderTruthStore()
-        providers = store.providers()
+        registry = ProviderRegistry.from_cache_or_seed()
+        providers = registry.providers()
 
         if providers:
-            output_lines = [f"Provider: {p}" for p in providers]
+            output_lines = []
+            for provider_id in providers:
+                models = registry.model_ids(provider_id)
+                suffix = f" (models: {', '.join(models)})" if models else ""
+                output_lines.append(f"Provider: {provider_id}{suffix}")
             stdout = "\n".join(output_lines)
         else:
-            stdout = "No providers found in truth store"
+            stdout = "No providers found in provider registry"
 
         return CommandResult(success=True, read_only=True, stdout=stdout, exit_code=0)
     except Exception as e:

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Mind-Dragon/Liminal-Registry/raw/main/provider_registry.schema.json",
+  "title": "Liminal Provider Registry Schema",
+  "description": "Provider/model registry shared by Hermes and HermesOptimizer.",
+  "type": "object",
+  "required": ["version", "registry", "providers"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {"type": "string"},
+    "registry": {
+      "type": "object",
+      "required": ["name", "owner", "repo", "source"],
+      "additionalProperties": true,
+      "properties": {
+        "name": {"type": "string"},
+        "owner": {"type": "string"},
+        "repo": {"type": "string"},
+        "source": {"type": "string"}
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "endpoint", "api_style", "models", "status"],
+        "additionalProperties": true,
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "endpoint": {"type": "string"},
+          "api_style": {"type": "string"},
+          "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown"]},
+          "notes": {"type": "string"},
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "status"],
+              "additionalProperties": true,
+              "properties": {
+                "id": {"type": "string"},
+                "aliases": {"type": "array", "items": {"type": "string"}},
+                "capabilities": {"type": "array", "items": {"type": "string"}},
+                "context_window": {"type": "integer", "minimum": 0},
+                "max_output_tokens": {"type": "integer", "minimum": 0},
+                "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown"]},
+                "probe": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "last_status": {"type": "string"},
+                    "last_checked": {"type": "string"},
+                    "evidence": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

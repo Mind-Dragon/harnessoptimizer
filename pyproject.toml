@@ -22,7 +22,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-hermesoptimizer = ["extensions/data/*.yaml"]
+hermesoptimizer = ["extensions/data/*.yaml", "data/*.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
