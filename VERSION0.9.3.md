@@ -34,10 +34,15 @@ python3 -m py_compile /home/agent/hermes-agent/cli.py
 
 Remaining for this wave:
 
-- Add hash/signature validation for fetched public registry data.
 - Implement full merge policy across local override, cache, package seed, Hermes DB, and Hermes config.
 - Add quarantine/health-state behavior for repeated provider failures.
 - Add a real CLI command for hot-reload proof if desired; current slice provides the helper and direct Python proof.
+
+Second pass update:
+
+- Remote registry fetch now validates detached SHA-256, detached `sha256:<digest>` signature, and required registry provenance before cache write.
+- Failed hash/signature/provenance checks raise `RegistryIntegrityError` and leave cache files untouched.
+- Tests cover success, wrong hash, wrong signature, and missing provenance.
 
 
 ## Goal
