@@ -78,6 +78,22 @@ A model advertised somewhere upstream is not enough. If GLM 5.1V is present in a
 A model choice is only valid when provider, model, and plan all agree.
 
 If any one of these is wrong:
+
+### 8. Config is user-owned
+
+Any key present in the user's config is user-owned. Never silently overwrite it. Deep-merge: dicts merge recursively, scalars user-wins, lists replace. On conflict, user value wins and the action is logged.
+
+### 9. Updates must be non-interactive capable
+
+All interactive prompts during update must have a documented default answer. In non-interactive mode, pick the default. Any prompt not covered by a default must fail closed, not guess.
+
+### 10. Auxiliary routing must be evaluated, not hardcoded
+
+The auxiliary model routing table is derived from the model evaluator against the live catalog and user's primary model. Compression context window must be >= the primary model's context window. No hardcoded model names or providers.
+
+### 11. Destructive changes are blocked by default
+
+YOLO mode maximizes autonomy while blocking destructive commands via substring blocklist and regex patterns. All auto-approved commands are audited. Credential mutations are blocked in safe mode.
 - provider unavailable
 - model missing
 - plan mismatch

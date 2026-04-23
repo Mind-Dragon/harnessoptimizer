@@ -18,13 +18,13 @@
 
 ---
 
-Current release: **v0.9.1**
+Current release: **v0.9.2**
 
 Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
 
 ## What it does
 
-**Performance Intelligence Suite (v0.9.1):**
+**Performance Intelligence Suite:**
 - `token-report` / `token-check` — track token usage, detect waste (bloat, retries, tool loops, overflow), optimize provider/model selection
 - `perf-report` / `perf-check` — monitor AI API response times, error rates, retry rates, detect provider outages
 - `tool-report` / `tool-check` — detect manual workarounds, encourage proper tool usage via MCP/gateway/inline tools
@@ -99,6 +99,12 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer report-latest` | Print the newest report from the runtime report directory |
 | `hermesoptimizer verify-endpoints` | Verify a provider endpoint/model against truth data |
 | `hermesoptimizer dreams-sweep` | Run a read-only dreams memory sweep summary |
+| `hermesoptimizer release-readiness` | Run closeout gate: install integrity, model truth, channel status |
+| `hermesoptimizer config-status` | Show current model/provider, last backup, diff since backup |
+| `hermesoptimizer auxiliary-status` | Show auxiliary role routing, constraint pass/fail, evaluator recommendations |
+| `hermesoptimizer auxiliary-recommend` | Rank optimal auxiliary model assignments from catalog |
+| `hermesoptimizer yolo-status` | Show YOLO mode state, blocklist count, auto-approve status |
+| `hermesoptimizer service start/stop/status/flush` | Config watcher daemon lifecycle and flag management |
 
 ## Architecture
 

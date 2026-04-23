@@ -71,9 +71,24 @@ Primary evidence sources:
 
 Evidence is upstream of architecture decisions. The local analysis already shows repeated summary failures, provider instability, and rail-loading mismatch. Those are design inputs, not incidental bugs. [R1][R3]
 
-### 6. Procedural memory layer
+### 6. Config governance layer
 
-The eventual procedural layer is skills, not general notes. A repeated workflow should be promoted from:
+Files:
+- `src/hermesoptimizer/config_maintainer.py` — backup dedup, deep merge, force-restore, config-status
+- `src/hermesoptimizer/auto_update.py` — non-interactive update with preflight destructive detection
+- `src/hermesoptimizer/yolo_mode.py` — safe-maximum auto-approve with destructive blocklist and audit trail
+- `src/hermesoptimizer/config_watcher.py` — polling file watcher with change classification and auto-repair
+- `src/hermesoptimizer/service.py` — config watcher daemon lifecycle (start/stop/status/flush)
+
+This layer ensures the user's config is never silently overwritten, updates can run unattended, and destructive resets are caught and repaired automatically. Major config changes trigger `[HERMES_FORCE_FIX]` via the backup chain.
+
+### 7. Model evaluation layer
+
+Files:
+- `src/hermesoptimizer/model_evaluator.py` — generic role-to-model ranking engine
+- `src/hermesoptimizer/auxiliary_optimizer.py` — auxiliary routing table derived from evaluator + user config
+
+This layer replaces hardcoded model assignments with evaluated selections. The evaluator scores models against role requirements (capabilities, context windows, speed, cost preferences) and the auxiliary optimizer applies those scores to produce the routing table. Compression context window is constrained to match the primary model's context window. A repeated workflow should be promoted from:
 - session pain
 - to incident
 - to deterministic helper and/or skill

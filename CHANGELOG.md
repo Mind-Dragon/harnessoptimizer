@@ -2,7 +2,30 @@
 
 All notable changes to Hermes Optimizer.
 
-## v0.9.2 -- Extension Lifecycle Management
+## v0.9.2 -- Config Governance, Model Evaluation, and Service
+
+### Added
+- Config maintainer: backup dedup (max 10), previous symlink, diff logging, deep merge preserving user-owned keys, force-restore with `[HERMES_FORCE_FIX]` marker, `config-status` command
+- Model evaluator: generic role-to-model ranking engine with context window normalization, capability filtering, speed/cost preferences
+- Auxiliary optimizer: 9-role routing table derived from evaluator, compression scales with primary model context, user overrides preserved when valid, drift detection against provider truth store
+- Auto-update: non-interactive mode with documented defaults, preflight destructive detection (key removal, section removal, model downgrade), merge-based application
+- YOLO mode: off/safe/maximum with substring blocklist, regex block patterns, credential mutation blocking in safe mode, JSONL audit trail with 10MB rotation
+- Config watcher: polling-based file watcher with minor/major change classification, auto-repair from backup on major resets
+- Service: start/stop/status/flush lifecycle for config watcher daemon with PID management and flag queue
+- Channel update/promote scripts with full-suite gating and rollback semantics
+- Install integrity surface: transactional sync, atomic YAML writes, backup/restore, post-install canary
+
+### Changed
+- Extension doctor dry-run: REPO_EXTERNAL missing targets downgraded to non-critical drift warnings
+- Release readiness gate: `extension_doctor` now critical for real issues, non-critical for missing doctor module
+- Model evaluator normalizes 131072/262144 context windows to 128K/256K buckets
+
+### Archived
+- DREAMING.md, PRD-0.9.1-RUN-CLI.md, VERSION0.9.1.md, akta2_state_analysis.md, compactionbugfix.md moved to `.archives/md-cleanup-20260423/`
+
+---
+
+## v0.9.1 -- Extension Lifecycle Management
 
 ### Added
 
