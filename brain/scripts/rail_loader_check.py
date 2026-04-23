@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Rail loader check — detects SOUL/HEARTBEAT prefill mismatch risk.
+"""Rail loader check — verifies SOUL/HEARTBEAT rails are readable.
 
 Inspects:
-- File existence and format shape (markdown/plaintext vs JSON) for rail documents
+- File existence and format shape for rail documents
 - Recent Hermes logs for the known prefill error signature
 
-This script does NOT fix the loader contract. It only reports evidence and risk.
+SOUL/HEARTBEAT are governance rails, not JSON prefill payloads. The JSON
+contract belongs to Hermes `prefill_messages_file` only.
 
 Examples:
   python3 rail_loader_check.py --dry-run
@@ -71,8 +72,7 @@ def check_rail_file(path: Path) -> dict[str, Any]:
         "exists": path.exists(),
         "format": None,
         "valid_json": None,
-        "loader_expects": "json",  # per incident — loader expects JSON
-        "status": None,
+        "loader_expects": "markdown/plaintext",
     }
 
     if not result["exists"]:
@@ -83,10 +83,10 @@ def check_rail_file(path: Path) -> dict[str, Any]:
     result["format"] = fmt["format"]
     result["valid_json"] = fmt["valid_json"]
 
-    # Loader expects JSON per incident. If file is markdown/plaintext,
-    # we have a mismatch risk.
+    # SOUL/HEARTBEAT rails are expected to be markdown/plaintext. JSON is also
+    # accepted for compatibility with older prefill-message experiments.
     if fmt["format"] == "markdown/plaintext":
-        result["status"] = "mismatch_risk"
+        result["status"] = "ok"
     elif fmt["format"] == "json":
         result["status"] = "ok"
     else:

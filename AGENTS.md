@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This file tells future agents how to operate inside `/home/agent/hermesagent`.
+This file tells future agents how to operate inside `/home/agent/hermesoptimizer`.
 
 This repository is not a generic scratch folder. It is a local-first brain-system buildout. Work here should strengthen deterministic recall, provider discipline, incident digestion, and resumable project state.
 
@@ -103,8 +103,8 @@ Before commit:
 
 ## References
 
-- [R1] `/home/agent/hermesagent/GUIDELINE.md`
-- [R2] `/home/agent/hermesagent/ARCHITECTURE.md`
-- [R3] `/home/agent/hermesagent/docs/PLAN.md`
-- [R4] `/home/agent/hermesagent/brain.md`
+- [R1] `/home/agent/hermesoptimizer/GUIDELINE.md`
+- [R2] `/home/agent/hermesoptimizer/ARCHITECTURE.md`
+- [R3] `/home/agent/hermesoptimizer/docs/PLAN.md`
+- [R4] `/home/agent/hermesoptimizer/brain.md`
 - [R5] User-provided Garry Tan article in this conversation

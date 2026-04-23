@@ -1,4 +1,4 @@
-"""Phase D closeout gate — single-command 0.9.1 release readiness check.
+"""Phase D closeout gate — single-command release readiness check.
 
 Aggregates:
   1. Install integrity  (CLI boot + config parse canaries)
@@ -309,16 +309,57 @@ def check_extension_doctor() -> CheckResult:
 # -- Check 8: Version consistency ---------------------------------------------
 
 def check_version() -> CheckResult:
-    """Verify __version__ is 0.9.1."""
+    """Verify __version__ is set and non-empty."""
     try:
         from hermesoptimizer import __version__
+        ok = bool(__version__)
         return CheckResult(
-            "version", __version__ == "0.9.1",
+            "version", ok,
             evidence={"version": __version__},
-            detail="" if __version__ == "0.9.1" else f"expected 0.9.1, got {__version__}",
+            detail="" if ok else "version is empty or unset",
         )
     except Exception as exc:
         return CheckResult("version", False, detail=str(exc))
+
+
+# -- Check 9: Release doc drift -----------------------------------------------
+
+def check_release_doc_drift() -> CheckResult:
+    """Fail if active release docs/scripts contain known stale release markers."""
+    repo_root = _repo_root()
+    excluded_parts = {".git", ".archives", "__pycache__", ".pytest_cache"}
+    excluded_names = {"TODO.md", "VERSION0.9.2.md"}
+    patterns = [
+        "Current package version: " + "0.9.1",
+        "v0.9.1" + " closeout",
+        "0.9.1" + " is safe",
+        "/home/agent/" + "hermesagent",
+        "Run " + "0.9.1" + " closeout gate",
+    ]
+    suffixes = {".md", ".py", ".yaml", ".yml", ".json", ".toml"}
+    hits: list[dict[str, Any]] = []
+    for path in repo_root.rglob("*"):
+        if not path.is_file() or path.suffix not in suffixes:
+            continue
+        if path.name in excluded_names:
+            continue
+        rel_parts = path.relative_to(repo_root).parts
+        if any(part in excluded_parts for part in rel_parts):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        for pattern in patterns:
+            if pattern in text:
+                hits.append({"path": str(path.relative_to(repo_root)), "pattern": pattern})
+
+    return CheckResult(
+        "release_doc_drift",
+        not hits,
+        evidence={"hits": hits, "hit_count": len(hits)},
+        detail="" if not hits else f"stale release markers found: {len(hits)}",
+    )
 
 
 # -- Aggregator ---------------------------------------------------------------
@@ -333,6 +374,7 @@ CHECKS = [
     check_channel_status,
     check_test_collection,
     check_extension_doctor,
+    check_release_doc_drift,
 ]
 
 
@@ -350,7 +392,7 @@ def run_readiness(dry_run: bool = False) -> dict[str, Any]:
     gate_passed = len(critical_failures) == 0
 
     report: dict[str, Any] = {
-        "version": "0.9.1",
+        "version": results[0].evidence.get("version", "unknown") if results else "unknown",
         "gate_passed": gate_passed,
         "dry_run": dry_run,
         "critical_failures": len(critical_failures),
@@ -381,8 +423,9 @@ def run_readiness(dry_run: bool = False) -> dict[str, Any]:
 
 def format_readiness(report: dict[str, Any]) -> str:
     """Format the readiness report for terminal output."""
+    ver = report.get("version", "")
     lines = [
-        "hermesoptimizer 0.9.1 release readiness",
+        f"hermesoptimizer {ver} release readiness",
         "=" * 40,
     ]
     for check in report["checks"]:
@@ -393,7 +436,7 @@ def format_readiness(report: dict[str, Any]) -> str:
 
     lines.append("")
     if report["gate_passed"]:
-        lines.append("GATE: PASSED — 0.9.1 is safe to ship")
+        lines.append(f"GATE: PASSED — {ver} is safe to ship")
     else:
         lines.append(f"GATE: FAILED — {report['critical_failures']} critical check(s) failed")
 

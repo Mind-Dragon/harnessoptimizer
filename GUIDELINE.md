@@ -144,8 +144,8 @@ A new feature should usually have:
 ## References
 
 - [R1] User-provided Garry Tan article in this conversation
-- [R2] `/home/agent/hermesagent/brain.md`
-- [R3] `/home/agent/hermesagent/brain/reports/request-dump-summary.json`
+- [R2] `/home/agent/hermesoptimizer/brain.md`
+- [R3] `/home/agent/hermesoptimizer/brain/reports/request-dump-summary.json`
 - [R4] https://github.com/NousResearch/hermes-agent
 - [R5] https://github.com/stephenschoettler/hermes-lcm
 - [R6] https://github.com/plastic-labs/honcho

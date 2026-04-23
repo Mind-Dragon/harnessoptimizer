@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.9.1. The milestones below are release/capability labels, not the installed package version.
+> Current package version: 0.9.2. The milestones below are release/capability labels, not the installed package version.
 
 ## Product shape
 
@@ -88,9 +88,9 @@ Done. Budget tuning sidecar for Hermes main TUI agent and subagents. Five-step s
 
 Done. Added token/perf/tool/network analysis domains, catalog tables, and the unified closeout pass for the CLI surface. `run` now emits reports, analyzer commands support auto-discovery, DB lifecycle commands exist, orphan commands are real surfaces (`verify-endpoints`, `dreams-sweep`, `provider-recommend`, `report-latest`), and focused CLI tests cover parser, dispatch, run-pipeline, and subprocess integrity.
 
-### v0.9.2 -- Extension lifecycle management
+### v0.9.2 -- Extension lifecycle and config governance hardening
 
-Done. Added the extension registry (`extensions/*.yaml`), loader, schema, and CLI commands (`ext-list`, `ext-status`, `ext-verify`, `ext-sync`, `ext-doctor`). Family-specific verification contracts and drift detection for caveman, dreams, vault plugins, and tool-surface. Sync policy is explicit, dry-runnable, and safe for external targets.
+In progress toward solid release. Added the extension registry (`extensions/*.yaml`), loader, schema, and CLI commands (`ext-list`, `ext-status`, `ext-verify`, `ext-sync`, `ext-doctor`). Added config maintainer, model evaluator, auxiliary routing drift checks, service lifecycle, auto-update/yolo safeguards, and release readiness hardening. The build/test gate is green; remaining release-hardening work is tracked in `TODO.md` and summarized in `VERSION0.9.2.md`.
 
 ## Next version
 

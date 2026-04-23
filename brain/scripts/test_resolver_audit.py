@@ -64,7 +64,7 @@ class TestCheckCase:
                 "expected_artifact": "providers/",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         assert result["intent"] == "provider health check"
         assert "status" in result
@@ -79,7 +79,7 @@ class TestCheckCase:
                 "expected_artifact": "providers/kimi-coding.md",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         assert result["status"] in ("pass", "fail", "ambiguous", "weak")
 
@@ -92,7 +92,7 @@ class TestCheckCase:
                 "expected_artifact": "active-work/<thread>.md",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         # Directory-only path is ambiguous unless a specific file was verified
         assert result["status"] in ("ambiguous", "weak", "fail")
@@ -106,7 +106,7 @@ class TestCheckCase:
                 "expected_artifact": "nonexistent/file.md",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         assert result["status"] == "fail"
         assert result.get("missing_artifacts") is not None
@@ -120,7 +120,7 @@ class TestCheckCase:
                 "expected_artifact": "active-work/<thread>.md",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         assert result["status"] in ("weak", "ambiguous", "fail")
 
@@ -133,7 +133,7 @@ class TestCheckCase:
                 "expected_artifact": "skills or incident + eval",
                 "notes": "test",
             },
-            repo_root=Path("/home/agent/hermesagent"),
+            repo_root=Path("/home/agent/hermesoptimizer"),
         )
         # Directory-only path is ambiguous
         assert result["status"] in ("ambiguous", "weak", "fail")
@@ -147,7 +147,7 @@ class TestCheckCase:
 class TestBuildReport:
     def test_report_has_required_top_level_keys(self):
         cases = load_cases(Path(__file__).parent.parent / "evals" / "resolver-cases.json")
-        report = build_report(cases, repo_root=Path("/home/agent/hermesagent"))
+        report = build_report(cases, repo_root=Path("/home/agent/hermesoptimizer"))
         assert "total_cases" in report
         assert "cases" in report
         assert "missing_artifacts" in report
@@ -157,12 +157,12 @@ class TestBuildReport:
 
     def test_total_cases_matches_input(self):
         cases = load_cases(Path(__file__).parent.parent / "evals" / "resolver-cases.json")
-        report = build_report(cases, repo_root=Path("/home/agent/hermesagent"))
+        report = build_report(cases, repo_root=Path("/home/agent/hermesoptimizer"))
         assert report["total_cases"] == len(cases)
 
     def test_missing_fixture_report(self):
         cases = load_cases(Path("/nonexistent/cases.json"))
-        report = build_report(cases, repo_root=Path("/home/agent/hermesagent"))
+        report = build_report(cases, repo_root=Path("/home/agent/hermesoptimizer"))
         assert report["total_cases"] == 0
         assert report["overall_status"] == "fail"
 
@@ -175,7 +175,7 @@ class TestBuildReport:
                 "notes": "test",
             }
         ]
-        report = build_report(cases, repo_root=Path("/home/agent/hermesagent"))
+        report = build_report(cases, repo_root=Path("/home/agent/hermesoptimizer"))
         assert report["overall_status"] == "fail"
 
     def test_overall_pass_when_all_cases_pass(self):
@@ -187,7 +187,7 @@ class TestBuildReport:
                 "notes": "known provider note",
             }
         ]
-        report = build_report(cases, repo_root=Path("/home/agent/hermesagent"))
+        report = build_report(cases, repo_root=Path("/home/agent/hermesoptimizer"))
         # May still be weak due to directory-only first_path
         assert report["overall_status"] in ("pass", "fail")
 
@@ -201,7 +201,7 @@ class TestResolverAuditCLI:
     def test_runs_without_error(self):
         cp = subprocess.run(
             ["python3", "brain/scripts/resolver_audit.py"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -211,7 +211,7 @@ class TestResolverAuditCLI:
     def test_output_is_valid_json(self):
         cp = subprocess.run(
             ["python3", "brain/scripts/resolver_audit.py"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -230,7 +230,7 @@ class TestResolverAuditCLI:
     def test_help_flag(self):
         cp = subprocess.run(
             ["python3", "brain/scripts/resolver_audit.py", "--help"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -245,7 +245,7 @@ class TestResolverAuditCLI:
             f.flush()
             cp = subprocess.run(
                 ["python3", "brain/scripts/resolver_audit.py", "--cases", f.name],
-                cwd="/home/agent/hermesagent",
+                cwd="/home/agent/hermesoptimizer",
                 capture_output=True,
                 text=True,
             )

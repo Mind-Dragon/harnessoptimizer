@@ -415,7 +415,7 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
 
     r_ready = subparsers.add_parser(
         "release-readiness",
-        help="Run 0.9.1 closeout gate: install integrity, model truth, channel status",
+        help="Run release readiness gate: install integrity, model truth, channel status",
     )
     r_ready.add_argument("--dry-run", action="store_true", help="Skip live network checks")
     r_ready.add_argument("--json-out", help="Write JSON report to file")

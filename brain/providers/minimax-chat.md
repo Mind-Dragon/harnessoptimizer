@@ -12,7 +12,7 @@
 - Weaknesses: repeated retry exhaustion in live request dumps
 - Known failure modes: `max_retries_exhausted`
 - Last verified good: unknown from this scaffold bootstrap
-- Last verified bad: request dump corpus showing 229 retry-exhausted artifacts
+- Last verified bad: request dump corpus showing 229 retry-exhausted artifacts; latest 50-file doctor sample still shows 49 retry-exhausted artifacts on 2026-04-23
 
 ## Canary status
 - Config fixture: `evals/provider-canaries.json` entry `minimax-chat`
@@ -26,11 +26,11 @@
 ## Routing policy
 - Use for: general reasoning only when recent canary is green
 - Avoid for: critical chains that cannot tolerate repeated retries without alternate path
-- **Do-not-use conditions: if authenticated live probe stops passing; if canary has not passed in >24h; if request-dump shows new retry-exhausted burst**
+- **Do-not-use conditions: if authenticated live probe stops passing; if canary has not passed in >24h; if request-dump shows new retry-exhausted burst; if brain-doctor request_dump sample shows >5 retry-exhausted MiniMax failures in the latest 50 files**
 - Preferred fallback: project-specific secondary lane with recent green probe
 
 ## Evidence
-- Request dump examples: 99 `max_retries_exhausted` artifacts in `request-dump-summary.json` (digest --limit 100, 2026-04-22); brain.md references 229 total across full corpus
+- Request dump examples: 99 `max_retries_exhausted` artifacts in `request-dump-summary.json` (digest --limit 100, 2026-04-22); brain.md references 229 total across full corpus; brain-doctor 2026-04-23 latest 50-file sample reports 49 `max_retries_exhausted` for `https://api.minimax.io/v1/chat/completions` / `MiniMax-M2.7`
 - Digest date: 2026-04-22 (100-file bounded sample)
 - Consistency: 99/100 files in digest cluster show same failure pattern
 - Log references: `brain.md` (2026-04-22 analysis); `request-dump-summary.json`

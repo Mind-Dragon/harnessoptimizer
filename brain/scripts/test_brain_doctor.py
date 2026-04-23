@@ -142,7 +142,7 @@ class TestBrainDoctorCLI:
         """Dry-run with no critical failures should exit 0."""
         cp = subprocess.run(
             ["python3", "brain/scripts/brain_doctor.py", "--dry-run"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -152,7 +152,7 @@ class TestBrainDoctorCLI:
     def test_dry_run_output_is_json(self):
         cp = subprocess.run(
             ["python3", "brain/scripts/brain_doctor.py", "--dry-run"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -173,7 +173,7 @@ class TestBrainDoctorCLI:
         """Unknown --check value should be skipped gracefully."""
         cp = subprocess.run(
             ["python3", "brain/scripts/brain_doctor.py", "--dry-run", "--check", "nonexistent"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )
@@ -183,7 +183,7 @@ class TestBrainDoctorCLI:
     def test_help_flag(self):
         cp = subprocess.run(
             ["python3", "brain/scripts/brain_doctor.py", "--help"],
-            cwd="/home/agent/hermesagent",
+            cwd="/home/agent/hermesoptimizer",
             capture_output=True,
             text=True,
         )

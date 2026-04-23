@@ -9,7 +9,7 @@ This repository is a local-first workspace for building a compiled brain system 
 This repo currently has two meaningful surfaces:
 
 1. `brain/` — the operational brain scaffold, reports, eval fixtures, and deterministic helper scripts
-2. `sysdx/` plus related tests — an existing code surface for system/sensor primitives that can later become part of the deterministic substrate
+2. `src/hermesoptimizer/` plus related tests — the CLI, config governance, provider truth, release readiness, vault, workflow, and analysis code surface
 
 The brain system is the primary source of truth for future buildout in this folder.
 
@@ -99,7 +99,7 @@ This follows the “failure becomes structure” model rather than the “agent 
 ## Directory architecture
 
 ```text
-/home/agent/hermesagent/
+/home/agent/hermesoptimizer/
 ├── AGENTS.md
 ├── ARCHITECTURE.md
 ├── GUIDELINE.md
@@ -117,7 +117,8 @@ This follows the “failure becomes structure” model rather than the “agent 
 │   └── scripts/
 ├── docs/
 │   └── PLAN.md
-└── sysdx/
+├── src/hermesoptimizer/
+└── tests/
 ```
 
 ## Data flow
@@ -206,8 +207,8 @@ Any architectural change should be verified with one or more of:
 ## References
 
 - [R1] User-provided Garry Tan article in this conversation: “How to really stop your agents from making the same mistakes”
-- [R2] `/home/agent/hermesagent/brain.md`
-- [R3] `/home/agent/hermesagent/brain/reports/request-dump-summary.json`
+- [R2] `/home/agent/hermesoptimizer/brain.md`
+- [R3] `/home/agent/hermesoptimizer/brain/reports/request-dump-summary.json`
 - [R4] https://github.com/NousResearch/hermes-agent
 - [R5] https://github.com/stephenschoettler/hermes-lcm
 - [R6] https://github.com/plastic-labs/honcho

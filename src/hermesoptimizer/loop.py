@@ -127,9 +127,19 @@ def _extract_configured_providers(config_path: Path) -> list[dict[str, Any]]:
     # Also check top-level model config
     top_model = data.get("model")
     if isinstance(top_model, dict) and top_model.get("provider"):
+        prov_name = top_model.get("provider", "unknown")
+        base_url = top_model.get("base_url", "")
+        # Resolve from env vars if no explicit base_url in config
+        if not base_url:
+            from hermesoptimizer.sources.hermes_config import _PROVIDER_ENV_VARS
+            from hermesoptimizer.sources.provider_truth import canonical_provider_name
+            env_pair = _PROVIDER_ENV_VARS.get(canonical_provider_name(prov_name))
+            if env_pair:
+                import os
+                base_url = os.environ.get(env_pair[0], "")
         configured.append({
-            "provider": top_model.get("provider", "unknown"),
-            "base_url": top_model.get("base_url", ""),
+            "provider": prov_name,
+            "base_url": base_url,
             "model": top_model.get("default"),
             "auth_type": None,
             "auth_key_env": None,

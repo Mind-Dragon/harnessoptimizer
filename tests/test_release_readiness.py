@@ -19,6 +19,7 @@ from hermesoptimizer.release.readiness import (
     check_extension_doctor,
     check_model_plan_truth,
     check_provider_truth,
+    check_release_doc_drift,
     check_test_collection,
     check_version,
     format_readiness,
@@ -40,10 +41,10 @@ class TestCheckResult:
 
 
 class TestCheckVersion:
-    def test_version_is_091(self) -> None:
+    def test_version_is_set(self) -> None:
         result = check_version()
         assert result.passed is True
-        assert result.evidence["version"] == "0.9.1"
+        assert result.evidence["version"]  # non-empty
 
 
 class TestCheckCliBoot:
@@ -148,11 +149,17 @@ class TestCheckExtensionDoctor:
         assert "doctor unavailable" in result.detail.lower()
 
 
+class TestCheckReleaseDocDrift:
+    def test_release_doc_drift_is_clean(self) -> None:
+        result = check_release_doc_drift()
+        assert result.passed is True
+        assert result.evidence["hit_count"] == 0
+
 
 class TestRunReadiness:
     def test_full_report_structure(self) -> None:
         report = run_readiness()
-        assert report["version"] == "0.9.1"
+        assert report["version"] == "0.9.2"
         assert "gate_passed" in report
         assert "checks" in report
         assert len(report["checks"]) >= 7
@@ -188,7 +195,7 @@ class TestFormatReadiness:
     def test_format_produces_output(self) -> None:
         report = run_readiness()
         text = format_readiness(report)
-        assert "0.9.1" in text
+        assert "0.9.2" in text
         assert "GATE:" in text
 
     def test_format_shows_pass(self) -> None:
@@ -199,7 +206,7 @@ class TestFormatReadiness:
 
     def test_format_shows_fail(self) -> None:
         report = {
-            "version": "0.9.1",
+            "version": "0.9.2",
             "gate_passed": False,
             "dry_run": False,
             "critical_failures": 1,

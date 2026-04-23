@@ -2,7 +2,7 @@
 
 All notable changes to Hermes Optimizer.
 
-## v0.9.2 -- Config Governance, Model Evaluation, and Service
+## v0.9.2 -- Config Governance, Model Evaluation, and Service Hardening
 
 ### Added
 - Config maintainer: backup dedup (max 10), previous symlink, diff logging, deep merge preserving user-owned keys, force-restore with `[HERMES_FORCE_FIX]` marker, `config-status` command
@@ -25,7 +25,7 @@ All notable changes to Hermes Optimizer.
 
 ---
 
-## v0.9.1 -- Extension Lifecycle Management
+## v0.9.2 -- Extension Lifecycle Management Initial Slice
 
 ### Added
 

@@ -1,6 +1,6 @@
 # Brain System Build Plan
 
-> For Hermes: this plan is the active build sequence for turning `/home/agent/hermesagent` into a working compiled-brain workspace.
+> For Hermes: this plan is the active build sequence for turning `/home/agent/hermesoptimizer` into a working compiled-brain workspace.
 
 **Goal:** build a local-first, deterministic-first brain system that can absorb repeated runtime failures and turn them into durable project structure.
 
@@ -47,7 +47,7 @@ Missing or still partial:
 
 **Verification:**
 Run:
-`git -C /home/agent/hermesagent status --short`
+`git -C /home/agent/hermesoptimizer status --short`
 
 Expected:
 - cache/db/report noise disappears from untracked set
@@ -62,7 +62,7 @@ Expected:
 
 **Verification:**
 Run:
-`git -C /home/agent/hermesagent log --oneline -1`
+`git -C /home/agent/hermesoptimizer log --oneline -1`
 
 Expected:
 - one local bootstrap commit exists
@@ -326,9 +326,9 @@ Expected:
 ## References
 
 - [R1] User-provided Garry Tan article in this conversation
-- [R2] `/home/agent/hermesagent/brain.md`
-- [R3] `/home/agent/hermesagent/brain/README.md`
-- [R4] `/home/agent/hermesagent/brain/reports/request-dump-summary.json`
+- [R2] `/home/agent/hermesoptimizer/brain.md`
+- [R3] `/home/agent/hermesoptimizer/brain/README.md`
+- [R4] `/home/agent/hermesoptimizer/brain/reports/request-dump-summary.json`
 - [R5] https://github.com/NousResearch/hermes-agent
 - [R6] https://github.com/stephenschoettler/hermes-lcm
 - [R7] https://github.com/plastic-labs/honcho

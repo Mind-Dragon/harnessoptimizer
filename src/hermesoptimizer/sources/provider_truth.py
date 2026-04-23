@@ -313,7 +313,13 @@ def seed_from_config(config_path: str | Path) -> ProviderTruthStore:
 
     Reads providers.X.api, providers.X.default_model, providers.X.key_env
     and creates truth records so verify_endpoint works without an external YAML.
+    Also seeds providers referenced in auxiliary roles but absent from the
+    providers: section by resolving their env-var base_url.
     """
+    import os
+
+    from hermesoptimizer.sources.hermes_config import _PROVIDER_ENV_VARS
+
     p = Path(config_path)
     if not p.exists():
         return ProviderTruthStore()
@@ -349,6 +355,54 @@ def seed_from_config(config_path: str | Path) -> ProviderTruthStore:
             transport="https",
             endpoint_candidates=[],
         ), replace=False)
+
+    # Seed providers referenced via auxiliary roles but absent from the
+    # providers: section.  Resolve endpoint from env vars or known defaults.
+    auxiliary = data.get("auxiliary", {})
+    if isinstance(auxiliary, dict):
+        # Well-known default endpoints for providers commonly used in auxiliary.
+        _KNOWN_ENDPOINTS: dict[str, str] = {
+            "xai": "https://api.x.ai/v1",
+            "openai": "https://api.openai.com/v1",
+            "anthropic": "https://api.anthropic.com/v1",
+            "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "kimi": "https://api.moonshot.cn/v1",
+            "minimax": "https://api.minimax.chat/v1",
+            "zai": "https://open.bigmodel.cn/api/paas/v4",
+            "openrouter": "https://openrouter.ai/api/v1",
+        }
+        for _role, role_cfg in auxiliary.items():
+            if not isinstance(role_cfg, dict):
+                continue
+            prov_name = canonical_provider_name(role_cfg.get("provider", ""))
+            if not prov_name:
+                continue
+            if store.get(prov_name) is not None:
+                continue  # already seeded from providers: section
+            env_pair = _PROVIDER_ENV_VARS.get(prov_name)
+            base_url = ""
+            if env_pair:
+                base_url = os.environ.get(env_pair[0], "")
+            if not base_url:
+                base_url = _KNOWN_ENDPOINTS.get(prov_name, "")
+            model = role_cfg.get("model", "")
+            if base_url:
+                store.add(ProviderTruthRecord(
+                    provider=prov_name,
+                    canonical_endpoint=base_url,
+                    known_models=[model] if model else [],
+                    deprecated_models=[],
+                    stale_aliases={},
+                    model_endpoints={},
+                    capabilities=["text"],
+                    context_window=0,
+                    source_url=None,
+                    confidence="medium",
+                    auth_type="bearer",
+                    regions=["global"],
+                    transport="https",
+                    endpoint_candidates=[],
+                ), replace=False)
 
     return store
 

@@ -301,7 +301,16 @@ class TestLaneARealConfig:
         )
         for p in providers:
             assert p.get("provider"), "Provider missing name"
-            assert p.get("base_url"), f"Provider {p['provider']} missing base_url (or api)"
+            # Providers can be env-resolved (no base_url in config); only
+            # flag as a failure if the provider section has no api/base_url
+            # *and* no env var pair is registered for it.
+            if not p.get("base_url"):
+                from hermesoptimizer.sources.hermes_config import _PROVIDER_ENV_VARS
+                from hermesoptimizer.sources.provider_truth import canonical_provider_name
+                env_pair = _PROVIDER_ENV_VARS.get(canonical_provider_name(p["provider"]))
+                assert env_pair, (
+                    f"Provider {p['provider']} missing base_url (or api) and no env var pair registered"
+                )
 
     def test_provider_fields_normalized(self, sandbox_hermes: Path) -> None:
         """Real config api/default_model fields should normalize to base_url/model."""

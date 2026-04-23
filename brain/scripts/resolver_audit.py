@@ -258,8 +258,8 @@ def main() -> int:
     parser.add_argument(
         "--repo-root",
         type=Path,
-        default=Path("/home/agent/hermesagent"),
-        help="Repository root (default: /home/agent/hermesagent)",
+        default=Path("/home/agent/hermesoptimizer"),
+        help="Repository root (default: /home/agent/hermesoptimizer)",
     )
     parser.add_argument(
         "--output",

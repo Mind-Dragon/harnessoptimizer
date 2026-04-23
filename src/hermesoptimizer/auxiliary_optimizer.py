@@ -244,8 +244,15 @@ def load_auxiliary_entries(config_path: str | Path | None = None) -> list[Auxili
     return entries
 
 
-def check_auxiliary_drift(auxiliary_entries: Iterable[AuxiliaryEntry]) -> list[AuxiliaryDrift]:
-    truth_store = ProviderTruthStore()
+def check_auxiliary_drift(
+    auxiliary_entries: Iterable[AuxiliaryEntry],
+    *,
+    config_path: str | Path | None = None,
+) -> list[AuxiliaryDrift]:
+    if config_path is not None:
+        truth_store = seed_from_config(config_path)
+    else:
+        truth_store = ProviderTruthStore()
     drifts: list[AuxiliaryDrift] = []
     for entry in auxiliary_entries:
         provider = str(entry.provider or "").strip()

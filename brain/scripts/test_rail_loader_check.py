@@ -65,9 +65,8 @@ class TestCheckRailFile:
         result = check_rail_file(p)
         assert result["exists"] is True
         assert result["format"] == "markdown/plaintext"
-        # Loader expects JSON per incident — this is the mismatch risk
-        assert result["loader_expects"] == "json"
-        assert result["status"] == "mismatch_risk"
+        assert result["loader_expects"] == "markdown/plaintext"
+        assert result["status"] == "ok"
 
     def test_json_file_with_valid_structure(self, tmp_path):
         p = tmp_path / "messages.json"
@@ -75,7 +74,7 @@ class TestCheckRailFile:
         result = check_rail_file(p)
         assert result["exists"] is True
         assert result["format"] == "json"
-        assert result["loader_expects"] == "json"
+        assert result["loader_expects"] == "markdown/plaintext"
         assert result["status"] == "ok"
 
 
@@ -136,7 +135,7 @@ class TestBuildReport:
         assert report["overall_status"] == "fail"
         assert report["mismatch_detected"] is True
         assert any(
-            r["rail"] == "SOUL" and r["status"] == "mismatch_risk"
+            r["rail"] == "SOUL" and r["status"] == "ok"
             for r in report["rails"]
         )
 
@@ -148,6 +147,7 @@ class TestBuildReport:
             log_paths=[],
             dry_run=True,
         )
-        # In dry-run with no logs, we still flag the format risk
-        assert any(r["status"] == "mismatch_risk" for r in report["rails"])
+        # In dry-run with no logs, readable markdown rails are OK.
+        assert any(r["status"] == "ok" for r in report["rails"])
+        assert report["overall_status"] == "pass"
         assert report["log_errors_found"] == 0

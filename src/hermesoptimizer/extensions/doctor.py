@@ -134,7 +134,11 @@ def run_doctor(dry_run: bool = False) -> dict:
     for finding in drift_findings:
         drift_by_id.setdefault(finding.id, []).append(finding)
 
-    auxiliary_drifts = check_auxiliary_drift(load_auxiliary_entries(_hermes_config_path()))
+    _cfg_path = _hermes_config_path()
+    auxiliary_drifts = check_auxiliary_drift(
+        load_auxiliary_entries(_cfg_path),
+        config_path=_cfg_path,
+    )
     report["auxiliary_drifts"] = [
         {
             "role": drift.role,
@@ -176,12 +180,22 @@ def run_doctor(dry_run: bool = False) -> dict:
                 "source_path": entry.source_path,
             })
         elif status.status == "missing_target":
-            report["missing_target"] += 1
-            report["issues"].append({
-                "id": entry.id,
-                "issue": status.detail,
-                "source_path": entry.source_path,
-            })
+            # REPO_EXTERNAL missing targets in dry-run are expected
+            # (runtime not installed); treat as drift warning, not blocker.
+            if dry_run and entry.ownership == Ownership.REPO_EXTERNAL:
+                report["drift_warnings"] += 1
+                report["issues"].append({
+                    "id": entry.id,
+                    "issue": f"not installed (dry-run): {status.detail}",
+                    "source_path": entry.source_path,
+                })
+            else:
+                report["missing_target"] += 1
+                report["issues"].append({
+                    "id": entry.id,
+                    "issue": status.detail,
+                    "source_path": entry.source_path,
+                })
         elif status.status == "drifted":
             # Dry-run only: REPO_EXTERNAL with missing targets is a warning,
             # not a blocking issue.  Count it as healthy for the gate.

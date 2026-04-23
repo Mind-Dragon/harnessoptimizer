@@ -748,16 +748,16 @@ That is the difference between an agent that sometimes remembers and a system th
 
 If I were implementing this next, I would create these first:
 
-- `/home/agent/hermesagent/brain/README.md`
-- `/home/agent/hermesagent/brain/filing-rules.md`
-- `/home/agent/hermesagent/brain/resolver.md`
-- `/home/agent/hermesagent/brain/providers/`
-- `/home/agent/hermesagent/brain/incidents/`
-- `/home/agent/hermesagent/brain/active-work/`
-- `/home/agent/hermesagent/brain/scripts/provider_probe.py`
-- `/home/agent/hermesagent/brain/scripts/request_dump_digest.py`
-- `/home/agent/hermesagent/brain/evals/resolver-cases.json`
-- `/home/agent/hermesagent/brain/evals/provider-canaries.json`
+- `/home/agent/hermesoptimizer/brain/README.md`
+- `/home/agent/hermesoptimizer/brain/filing-rules.md`
+- `/home/agent/hermesoptimizer/brain/resolver.md`
+- `/home/agent/hermesoptimizer/brain/providers/`
+- `/home/agent/hermesoptimizer/brain/incidents/`
+- `/home/agent/hermesoptimizer/brain/active-work/`
+- `/home/agent/hermesoptimizer/brain/scripts/provider_probe.py`
+- `/home/agent/hermesoptimizer/brain/scripts/request_dump_digest.py`
+- `/home/agent/hermesoptimizer/brain/evals/resolver-cases.json`
+- `/home/agent/hermesoptimizer/brain/evals/provider-canaries.json`
 
 The attached article gives the right habit. The logs give the real constraints. The compiled brain for our projects should be built around those constraints, not around idealized agent behavior.
 

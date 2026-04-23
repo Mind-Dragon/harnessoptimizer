@@ -15,7 +15,7 @@ Repeated `max_retries_exhausted` failures when routing requests to `https://api.
 - Impact: failed completions, fallback to alternate lane required
 
 ## Evidence
-- request dumps: 99 artifacts in digest of 100 files (2026-04-22 digest, `--limit 100`)
+- request dumps: 99 artifacts in digest of 100 files (2026-04-22 digest, `--limit 100`); latest brain-doctor sample still shows 49 artifacts in 50 files on 2026-04-23
 - consistency: 99/100 = 99% of current digest cluster
 - time spread: multiple cron sessions on 2026-04-04 (cron_92803da5237b_*, cron_f8426740ccae_*)
 - sample artifact paths:

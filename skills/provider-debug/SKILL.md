@@ -32,8 +32,8 @@ use this skill to diagnose deterministically and record the outcome.
 
 2. **Run provider probe**
    ```bash
-   python3 /home/agent/hermesagent/brain/scripts/provider_probe.py \
-     --config /home/agent/hermesagent/brain/evals/provider-canaries.json \
+   python3 /home/agent/hermesoptimizer/brain/scripts/provider_probe.py \
+     --config /home/agent/hermesoptimizer/brain/evals/provider-canaries.json \
      --provider <name> --timeout 20
    ```
    - If pass: lane is currently healthy. Look for transient or auth issue.
@@ -41,7 +41,7 @@ use this skill to diagnose deterministically and record the outcome.
 
 3. **Check request-dump history**
    ```bash
-   python3 /home/agent/hermesagent/brain/scripts/request_dump_digest.py \
+   python3 /home/agent/hermesoptimizer/brain/scripts/request_dump_digest.py \
      --limit 50
    ```
    - Filter to the provider's URL pattern.
@@ -49,11 +49,11 @@ use this skill to diagnose deterministically and record the outcome.
    - If count >= 5 with same reason + URL, treat as recurring class.
 
 4. **Read canonical provider note**
-   - File: `/home/agent/hermesagent/brain/providers/<name>.md`
+   - File: `/home/agent/hermesoptimizer/brain/providers/<name>.md`
    - Check: known failure modes, last probe timestamp, fallback policy.
 
 5. **Check for existing incident**
-   - Search `/home/agent/hermesagent/brain/incidents/` for provider name.
+   - Search `/home/agent/hermesoptimizer/brain/incidents/` for provider name.
    - If incident exists, append new evidence. Do not create duplicate.
 
 6. **Decide structural action**
@@ -84,8 +84,8 @@ After running this skill:
 
 ## References
 
-- [R1] `/home/agent/hermesagent/brain/scripts/provider_probe.py`
-- [R2] `/home/agent/hermesagent/brain/scripts/request_dump_digest.py`
-- [R3] `/home/agent/hermesagent/brain/providers/_template.md`
-- [R4] `/home/agent/hermesagent/brain/incidents/_template.md`
-- [R5] `/home/agent/hermesagent/brain/patterns/incident-promotion.md`
+- [R1] `/home/agent/hermesoptimizer/brain/scripts/provider_probe.py`
+- [R2] `/home/agent/hermesoptimizer/brain/scripts/request_dump_digest.py`
+- [R3] `/home/agent/hermesoptimizer/brain/providers/_template.md`
+- [R4] `/home/agent/hermesoptimizer/brain/incidents/_template.md`
+- [R5] `/home/agent/hermesoptimizer/brain/patterns/incident-promotion.md`

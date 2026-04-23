@@ -1,19 +1,19 @@
-# Hermes Optimizer Test Plan — v0.9.1
+# Hermes Optimizer Test Plan — v0.9.2
 
 ## Status
 
-Active. Canonical test strategy. Updated for v0.9.1 budget-tuning module.
+Active. Canonical test strategy. Updated for v0.9.2 release hardening, extension lifecycle, config governance, and model/provider truth checks.
 
-## Baseline (updated 2026-04-19)
+## Baseline (updated 2026-04-23)
 
 || Metric | Value |
 ||--------|-------|
 || Repo path | `/home/agent/hermesoptimizer` |
 || Python path | `src` (set in `pyproject.toml`) |
-|| Collected tests | 1,534 |
-|| Skipped | 5 |
-|| Non-skipped green | 1,528 |
-|| Test files | 75 |
+|| Collected tests | 1,960 |
+|| Skipped | 4 |
+|| Non-skipped green | 1,956 |
+|| Test files | 97 under `tests/` plus 5 brain-script test modules |
 || Pytest config | `pyproject.toml [tool.pytest.ini_options]` |
 || Default flags | `-q` |
 
