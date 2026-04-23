@@ -35,6 +35,7 @@ class ExtensionEntry:
     target_paths: list[str] = field(default_factory=list)
     verify_command: str | None = None
     ownership: Ownership = Ownership.REPO_ONLY
+    selected: bool = True
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

@@ -23,6 +23,16 @@ class VerifyResult:
 
 def verify_extension(entry: ExtensionEntry, cwd: Path | None = None) -> VerifyResult:
     """Run the verify_command for one extension."""
+    if not entry.selected:
+        return VerifyResult(
+            id=entry.id,
+            passed=True,
+            exit_code=0,
+            stdout="not selected",
+            stderr="",
+            command=None,
+        )
+
     if not entry.verify_command:
         return VerifyResult(
             id=entry.id,

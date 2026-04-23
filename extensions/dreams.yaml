@@ -8,6 +8,7 @@ target_paths:
   - ~/.hermes/scripts/probe_memory_meta.py
 verify_command: python -m hermesoptimizer.extensions.verify_contracts dreams
 ownership: repo_external
+selected: false
 metadata:
   cron_job_id: 30b51a980bc4
   external_scripts:

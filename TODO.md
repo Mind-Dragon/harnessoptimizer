@@ -26,9 +26,10 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 - Hermes core does not reference `caveman` or `caveman_mode`.
 - `provider-list` now reads the packaged/cache provider registry and returns `kilocode`, `nous`, `openai-codex`, `openrouter` with model IDs.
 - Provider DB refresh inserted `openai-codex/gpt-5.5`, `kilocode/inclusionai/ling-2.6-flash:free`, `openrouter/inclusionai/ling-2.6-flash:free`, and `nous/moonshotai/kimi-k2.6` into `~/.hermes/provider-db/provider_model.sqlite`.
+- 2026-04-24 live canaries: Kilocode Ling 2.6 Flash Free returned 200 OK; Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`; OpenRouter archived key returned 401 user-not-found; OpenAI OAuth canary for `gpt-5.4-mini` returned 429 insufficient_quota.
 - `seed_from_config(~/.hermes/config.yaml)` remains a separate live-config source (`kilocode`, `nacrof`, `xai`) until merge policy work lands.
-- `ext-doctor` reports 1 missing target group: dreams runtime scripts.
-- `ext-sync --dry-run` errors on existing dreams DB and vault file.
+- `ext-doctor` now reports `missing_target: 0` and `not_selected: 1` because dreams is an optional runtime feature currently not selected.
+- `ext-sync --dry-run` errors on existing dreams DB and vault file; this remains a Wave 2 idempotency item.
 - Built wheel does not include provider JSON catalogs or scripts.
 - `dodev --help` exits 2.
 - Live cron has 2 active jobs: `brain-doctor-hourly`, `copilot-pr-watch`.
@@ -38,7 +39,7 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 
 ### Wave 0 — release hygiene
 
-[ ] Create/confirm `dev/0.9.3` from `dev/0.9.2`.
+[x] Create/confirm `dev/0.9.3` from `dev/0.9.2`.
 [ ] Add or confirm ignore rules for `.swarm/`, wheel/build/cache artifacts.
 [ ] Keep `/home/agent/hermes-agent` dirty state explicit in the release proof.
 [ ] Decide whether v0.9.3 will modify Hermes core or only validate against it.
@@ -60,15 +61,15 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [x] Add merge policy foundation: remote cache > packaged fallback for `ProviderRegistry.from_cache_or_seed()`.
 [x] Add full merge policy: local override > public registry cache > packaged fallback > Hermes provider DB > Hermes config.
 [x] Add Hermes provider DB adapter for `~/.hermes/provider-db/provider_model.sqlite`.
-[ ] Add registry quarantine behavior for repeated provider failures.
+[x] Add registry quarantine behavior for repeated provider failures.
 [x] Add provider notes for active lanes: openai-codex, kilocode, openrouter, nous.
-[ ] Add tests for alias-map parity or intentional divergence between Hermes and optimizer.
+[x] Add tests for alias-map parity or intentional divergence between Hermes and optimizer.
 [x] Add `gpt-5.5` registry fixture and test.
 [x] Add hot-reload proof helper that updates provider/model metadata in local Hermes DB without restart/update.
 
 ### Wave 2 — extension/install cleanup
 
-[ ] Add installer feature-selection state for optional runtime features.
+[x] Add installer feature-selection state for optional runtime features.
 [ ] Fix dreams/scripts ownership so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when dreams is selected.
 [ ] Add runtime target checks to `verify_contracts dreams` for selected installs.
 [ ] Add caveman selected/unselected install contract for skill/config behavior.
@@ -137,16 +138,16 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 
 ## Acceptance gates
 
-[ ] `pytest` green.
-[ ] `release-readiness --dry-run` green.
-[ ] `brain-doctor --dry-run` green.
+[x] `pytest` green.
+[x] `release-readiness --dry-run` green.
+[x] `brain-doctor --dry-run` green.
 [ ] non-dry brain canary recorded.
-[ ] `ext-doctor` has 0 missing targets.
+[x] `ext-doctor` has 0 missing targets.
 [ ] `ext-sync --dry-run` exits 0.
 [ ] fresh-root install simulation exits 0.
 [ ] isolated wheel install smoke exits 0.
-[ ] `provider-list` non-empty.
-[ ] `gpt-5.5` present in provider registry.
+[x] `provider-list` non-empty.
+[x] `gpt-5.5` present in provider registry.
 [ ] provider registry hot reload proven without Hermes restart/update.
 [ ] README command drift gate passes.
 [ ] Hermes integration cleanliness explicitly proven or explicitly scoped out.

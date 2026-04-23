@@ -220,7 +220,7 @@ class TestInspectHotReloadReadiness:
         registry = ProviderRegistry.from_seed()
         result = refresh_provider_db(home, registry, source="unit-test")
         assert result.provider_count == 4
-        assert result.model_count == 4
+        assert result.model_count == 5
         assert result.endpoint_count == 4
 
         conn = sqlite3.connect(result.provider_db_path)
@@ -234,6 +234,7 @@ class TestInspectHotReloadReadiness:
         ).fetchall()
         conn.close()
         assert ("openai-codex", "gpt-5.5") in rows
+        assert ("openai-codex", "gpt-5.4-mini") in rows
         assert ("nous", "moonshotai/kimi-k2.6") in rows
         assert ("kilocode", "inclusionai/ling-2.6-flash:free") in rows
         assert ("openrouter", "inclusionai/ling-2.6-flash:free") in rows

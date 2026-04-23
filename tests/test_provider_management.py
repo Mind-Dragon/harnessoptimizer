@@ -12,10 +12,13 @@ These tests cover:
 """
 from __future__ import annotations
 
+import ast
 import time
+from pathlib import Path
 
 import pytest
 
+from hermesoptimizer.sources.provider_truth import canonical_provider_name
 from hermesoptimizer.verify.provider_management import (
     CollapseRecommendation,
     CredentialProvenance,
@@ -27,7 +30,9 @@ from hermesoptimizer.verify.provider_management import (
     ModelPin,
     ProviderHealthRecord,
     ProviderHealthStore,
+    ProviderQuarantine,
     QuarantinedEndpoint,
+    QuarantinedProvider,
     collapse_duplicates,
     get_credential_provenance,
     get_credential_source_label,
@@ -35,6 +40,63 @@ from hermesoptimizer.verify.provider_management import (
     record_endpoint_failure,
     record_endpoint_success,
 )
+
+
+# --------------------------------------------------------------------------- #
+# Alias-map parity / intentional divergence tests
+# --------------------------------------------------------------------------- #
+
+
+def _load_hermes_agent_aliases() -> dict[str, str]:
+    models_py = Path("/home/agent/hermes-agent/hermes_cli/models.py")
+    if not models_py.exists():
+        pytest.skip("local Hermes agent alias map not available")
+    tree = ast.parse(models_py.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "_PROVIDER_ALIASES":
+                    value = ast.literal_eval(node.value)
+                    return {str(k): str(v) for k, v in value.items()}
+    pytest.fail("Hermes agent _PROVIDER_ALIASES not found")
+
+
+class TestAliasMapParity:
+    """Tests selected alias parity and intentional divergence with Hermes agent."""
+
+    def test_shared_xai_aliases_match_hermes_agent(self) -> None:
+        agent_aliases = _load_hermes_agent_aliases()
+        for alias in ("x-ai", "x.ai"):
+            assert canonical_provider_name(alias) == "xai"
+            assert agent_aliases[alias] == "xai"
+
+    def test_kimi_canonical_direction_is_intentional_divergence(self) -> None:
+        agent_aliases = _load_hermes_agent_aliases()
+        assert canonical_provider_name("kimi-coding") == "kimi"
+        assert agent_aliases["kimi"] == "kimi-coding"
+
+    def test_alibaba_qwen_canonical_direction_is_intentional_divergence(self) -> None:
+        agent_aliases = _load_hermes_agent_aliases()
+        assert canonical_provider_name("alibaba") == "qwen"
+        assert canonical_provider_name("qwen") == "qwen"
+        assert agent_aliases["qwen"] == "alibaba"
+        assert agent_aliases["dashscope"] == "alibaba"
+
+    def test_agent_only_aliases_remain_unclaimed_by_optimizer(self) -> None:
+        agent_aliases = _load_hermes_agent_aliases()
+        assert agent_aliases["github"] == "copilot"
+        assert agent_aliases["google"] == "gemini"
+        assert agent_aliases["claude"] == "anthropic"
+        assert canonical_provider_name("github") == "github"
+        assert canonical_provider_name("google") == "google"
+        assert canonical_provider_name("claude") == "claude"
+
+    def test_optimizer_only_aliases_are_documented_as_optimizer_scope(self) -> None:
+        agent_aliases = _load_hermes_agent_aliases()
+        assert canonical_provider_name("zai-chat") == "zai"
+        assert canonical_provider_name("tongyi") == "qwen"
+        assert "zai-chat" not in agent_aliases
+        assert "tongyi" not in agent_aliases
 
 
 # --------------------------------------------------------------------------- #
@@ -300,6 +362,88 @@ class TestEndpointQuarantineTTL:
         """is_quarantined returns False for non-quarantined endpoints."""
         quarantine = EndpointQuarantine()
         assert quarantine.is_quarantined("https://good.example.com/v1") is False
+
+
+# --------------------------------------------------------------------------- #
+# Provider quarantine TTL with decay tests
+# --------------------------------------------------------------------------- #
+
+
+class TestProviderQuarantineTTL:
+    """Tests for provider quarantine with TTL, aliases, and health integration."""
+
+    def test_quarantine_provider_adds_to_quarantine_list(self) -> None:
+        quarantine = ProviderQuarantine()
+        quarantine.quarantine("openai-codex", ttl_seconds=300, failure_count=3)
+        assert quarantine.is_quarantined("openai")
+        assert quarantine.is_quarantined("openai-codex")
+
+    def test_provider_quarantine_respects_ttl(self) -> None:
+        quarantine = ProviderQuarantine(default_ttl_seconds=1)
+        quarantine.quarantine("openai", ttl_seconds=1)
+        assert quarantine.is_quarantined("openai")
+        time.sleep(1.1)
+        assert not quarantine.is_quarantined("openai")
+
+    def test_provider_quarantine_permanent_is_permanent(self) -> None:
+        quarantine = ProviderQuarantine()
+        quarantine.quarantine_permanent("openrouter", failure_count=9, reason="auth_failed")
+        assert quarantine.is_quarantined("openrouter")
+        time.sleep(0.1)
+        assert quarantine.is_quarantined("openrouter")
+        assert quarantine.get_failure_count("openrouter") == 9
+
+    def test_provider_quarantine_release_removes_from_list(self) -> None:
+        quarantine = ProviderQuarantine()
+        quarantine.quarantine("nous", ttl_seconds=300)
+        quarantine.release("nous")
+        assert not quarantine.is_quarantined("nous")
+
+    def test_provider_quarantine_decay_reduces_failure_count(self) -> None:
+        quarantine = ProviderQuarantine()
+        quarantine.quarantine("kilocode", ttl_seconds=300, failure_count=4)
+        quarantine.apply_decay(factor=0.5)
+        assert quarantine.get_failure_count("kilocode") == 2
+
+    def test_quarantined_provider_fields(self) -> None:
+        qp = QuarantinedProvider(
+            provider="openrouter",
+            quarantined_at=1234567890.0,
+            ttl_seconds=300,
+            failure_count=3,
+            reason="repeated_failures",
+        )
+        assert qp.provider == "openrouter"
+        assert qp.failure_count == 3
+        assert qp.is_permanent is False
+
+    def test_record_failure_triggers_provider_quarantine_after_threshold(self) -> None:
+        quarantine = ProviderQuarantine()
+        store = ProviderHealthStore(
+            provider_quarantine=quarantine,
+            quarantine_threshold=2,
+            quarantine_ttl_seconds=60,
+        )
+        store.record_failure("openai-codex")
+        assert not quarantine.is_quarantined("openai")
+        store.record_failure("openai-codex")
+        assert quarantine.is_quarantined("openai")
+        assert quarantine.get_failure_count("openai") == 2
+
+    def test_provider_success_releases_quarantine_and_resets_streak(self) -> None:
+        quarantine = ProviderQuarantine()
+        store = ProviderHealthStore(
+            provider_quarantine=quarantine,
+            quarantine_threshold=1,
+            quarantine_ttl_seconds=60,
+        )
+        store.record_failure("nous")
+        assert quarantine.is_quarantined("nous")
+        store.record_success("nous")
+        record = store.get("nous")
+        assert record is not None
+        assert record.consecutive_failures == 0
+        assert not quarantine.is_quarantined("nous")
 
 
 # --------------------------------------------------------------------------- #

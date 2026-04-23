@@ -26,6 +26,19 @@
             "last_checked": "2026-04-23",
             "evidence": "User reported OpenAI announced/released GPT-5.5; local Hermes had gpt-5.5 on OpenAI Codex plan in prior probe."
           }
+        },
+        {
+          "id": "gpt-5.4-mini",
+          "aliases": ["gpt 5.4 mini"],
+          "capabilities": ["chat", "coding"],
+          "context_window": 128000,
+          "max_output_tokens": 65536,
+          "status": "configured",
+          "probe": {
+            "last_status": "429 insufficient_quota",
+            "last_checked": "2026-04-24",
+            "evidence": "OpenAI OAuth credential was present, but chat-completions canary for gpt-5.4-mini returned insufficient_quota. Keep registered for single-lane use only when plan quota is available."
+          }
         }
       ]
     },
@@ -74,7 +87,7 @@
     {
       "id": "nous",
       "name": "Nous Portal",
-      "endpoint": "https://portal.nousresearch.com/v1",
+      "endpoint": "https://inference-api.nousresearch.com/v1",
       "api_style": "openai-compatible",
       "status": "active",
       "models": [

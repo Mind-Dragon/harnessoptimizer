@@ -4,6 +4,7 @@ description: Caveman mode output compression for Hermes-wide sessions
 source_path: src/hermesoptimizer/caveman/__init__.py
 verify_command: python -m hermesoptimizer.extensions.verify_contracts caveman
 ownership: external_runtime
+selected: true
 metadata:
   config_key: caveman_mode
   skill_path: ~/.hermes/skills/software-development/caveman/

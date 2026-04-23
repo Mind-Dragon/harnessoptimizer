@@ -215,6 +215,15 @@ _FAMILY_CHECKERS: dict[str, callable] = {
 
 def check_drift(entry: ExtensionEntry) -> list[DriftFinding]:
     """Run family-specific drift checks for an extension entry."""
+    if not entry.selected:
+        return [
+            DriftFinding(
+                id=entry.id,
+                check="feature_selection",
+                severity="info",
+                detail="not selected: optional runtime feature disabled",
+            )
+        ]
     checker = _FAMILY_CHECKERS.get(entry.id)
     if checker is None:
         return []

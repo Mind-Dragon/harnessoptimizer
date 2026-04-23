@@ -126,8 +126,9 @@ class TestProviderRegistry:
         registry = ProviderRegistry.from_seed()
         assert registry.source == "package-seed"
         assert "openai-codex" in registry.providers()
-        assert registry.model_ids("openai-codex") == ["gpt-5.5"]
+        assert registry.model_ids("openai-codex") == ["gpt-5.5", "gpt-5.4-mini"]
         assert registry.contains_model("gpt-5.5") is True
+        assert registry.contains_model("gpt-5.4-mini") is True
         assert registry.contains_model("moonshotai/kimi-k2.6") is True
         assert registry.contains_model("inclusionai/ling-2.6-flash:free") is True
 
@@ -138,6 +139,7 @@ class TestProviderRegistry:
         assert openai is not None
         assert openai.provider == "openai"
         assert "gpt-5.5" in openai.known_models
+        assert "gpt-5.4-mini" in openai.known_models
         assert openai.canonical_endpoint == "https://api.openai.com/v1"
 
     def test_registry_from_cache_or_seed_uses_cache_when_present(self, tmp_path: Path) -> None:
@@ -186,7 +188,7 @@ class TestProviderRegistry:
         assert registry.model_ids("cacheonly") == ["cache-only-model"]
         assert registry.model_ids("dbonly") == ["db-only-model"]
         assert registry.model_ids("configonly") == ["config-only-model"]
-        assert registry.model_ids("openai-codex") == ["gpt-5.5"]
+        assert registry.model_ids("openai-codex") == ["gpt-5.5", "gpt-5.4-mini"]
 
     def test_merged_registry_ignores_missing_optional_sources(self, tmp_path: Path) -> None:
         registry = ProviderRegistry.from_merged_sources(
@@ -196,7 +198,23 @@ class TestProviderRegistry:
             hermes_config_path=tmp_path / "missing-config.yaml",
         )
         assert registry.source == "merged"
-        assert registry.model_ids("openai-codex") == ["gpt-5.5"]
+        assert registry.model_ids("openai-codex") == ["gpt-5.5", "gpt-5.4-mini"]
+
+    def test_registry_can_mark_quarantined_providers_without_losing_models(self) -> None:
+        registry = ProviderRegistry.from_seed().with_quarantined_providers({"openrouter"})
+        assert "openrouter" not in registry.providers()
+        assert "openrouter" in registry.providers(include_quarantined=True)
+        assert registry.quarantined_providers() == ["openrouter"]
+        assert registry.model_ids("openrouter") == ["inclusionai/ling-2.6-flash:free"]
+        assert registry.model_ids("openrouter", include_quarantined=False) == []
+
+    def test_registry_preserves_existing_quarantine_status_from_data(self) -> None:
+        registry = ProviderRegistry.from_data(
+            _registry_doc("bad", "https://bad.invalid/v1", "bad-model"),
+            source="unit",
+        ).with_quarantined_providers({"bad"})
+        assert registry.providers() == []
+        assert registry.providers(include_quarantined=True) == ["bad"]
 
     def test_fetch_remote_registry_caches_payload_with_hash_and_provenance(self, monkeypatch, tmp_path: Path) -> None:
         payload = _payload_bytes()

@@ -13,7 +13,7 @@ Implemented and verified in the v0.9.3 first pass:
 - Packaged fallback registry: `src/hermesoptimizer/data/provider_registry.seed.json`.
 - Registry schema: `src/hermesoptimizer/data/provider_registry.schema.json`.
 - Registry cache/fetch foundation: `ProviderRegistry.from_cache_or_seed()` and `fetch_remote_registry()`.
-- Seed models: `openai-codex/gpt-5.5`, Kilocode/OpenRouter `inclusionai/ling-2.6-flash:free`, Nous `moonshotai/kimi-k2.6`.
+- Seed models: `openai-codex/gpt-5.5`, `openai-codex/gpt-5.4-mini`, Kilocode/OpenRouter `inclusionai/ling-2.6-flash:free`, Nous `moonshotai/kimi-k2.6`.
 - `provider-list` now reads the packaged/cache registry instead of an empty truth store.
 - Hermes provider DB adapter: `refresh_provider_db()` upserts providers/models/endpoints into `~/.hermes/provider-db/provider_model.sqlite`.
 - Local Hermes `/reload` patch upgraded through `scripts/apply_reload_patch.py` to call `refresh_provider_db()`.
@@ -34,7 +34,6 @@ python3 -m py_compile /home/agent/hermes-agent/cli.py
 
 Remaining for this wave:
 
-- Add quarantine/health-state behavior for repeated provider failures.
 - Add a real CLI command for hot-reload proof if desired; current slice provides the helper and direct Python proof.
 
 Second pass update:
@@ -48,6 +47,22 @@ Third pass update:
 - `ProviderRegistry.from_merged_sources()` implements the declared priority order: Hermes config < Hermes provider DB < packaged fallback < public cache < local override.
 - Provider rows with the same ID are replaced by the higher-priority source; unique providers from lower-priority sources remain available.
 - `provider-list` now uses the merged source view, so live DB/config-only providers such as `nacrof` appear alongside packaged/cache registry entries.
+
+Fourth pass update — 2026-04-24:
+
+- Live provider canaries were run with available local credentials: Kilocode Ling 2.6 Flash Free returned 200 OK, Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`, OpenRouter archived auth returned 401 `User not found`, and OpenAI OAuth for `gpt-5.4-mini` returned 429 `insufficient_quota`.
+- Registry seed now includes `openai-codex/gpt-5.4-mini` as configured-but-quota-blocked evidence, and the Nous endpoint is corrected to `https://inference-api.nousresearch.com/v1`.
+- Provider quarantine behavior now exists at provider-family level: repeated failures in `ProviderHealthStore` trigger `ProviderQuarantine`, success releases quarantine, aliases normalize through `canonical_provider_name()`, and `ProviderRegistry` can hide/show quarantined providers without losing model metadata.
+- Alias-map tests now compare selected optimizer aliases against the local Hermes agent alias table and encode intentional divergences such as Kimi and Alibaba/Qwen canonical direction.
+- Verified with `pytest -q tests/test_provider_registry.py tests/test_provider_management.py tests/test_package_resources.py`.
+
+Wave 2 feature-selection update — 2026-04-24:
+
+- Extension entries now carry `selected: true|false` through YAML loading and package data.
+- Not-selected optional runtime features return `not_selected` status and a clean no-op verify result instead of missing/broken target failures.
+- `dreams` is currently marked `selected: false`; `caveman` remains `selected: true` and external-runtime managed.
+- `ext-doctor` now reports `not_selected: 1`, `missing_target: 0`, `verify_failed: 0`.
+- Verified with `pytest -q tests/test_extensions_loader.py tests/test_extensions_status.py tests/test_extensions_verify_contracts.py tests/test_release_readiness.py`, full `pytest -q`, `release-readiness --dry-run`, `brain-doctor --dry-run`, `provider-list`, and `ext-doctor`.
 
 
 ## Goal

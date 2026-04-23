@@ -45,6 +45,7 @@ target_paths:
   - scripts/dreaming_pre_sweep.py
 verify_command: python -m hermesoptimizer dreams-sweep --help
 ownership: repo_external
+selected: false
 metadata:
   cron: true
 """
@@ -55,6 +56,7 @@ metadata:
         assert entry.target_paths == ["~/.hermes/dreams/", "scripts/dreaming_pre_sweep.py"]
         assert entry.verify_command == "python -m hermesoptimizer dreams-sweep --help"
         assert entry.ownership == Ownership.REPO_EXTERNAL
+        assert entry.selected is False
         assert entry.metadata == {"cron": True}
 
     def test_missing_required_field_raises(self, tmp_path: Path) -> None:

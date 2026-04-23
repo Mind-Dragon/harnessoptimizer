@@ -15,6 +15,7 @@ class Status(str):
     DRIFTED = "drifted"
     EXTERNAL = "external"
     BLOCKED = "blocked"
+    NOT_SELECTED = "not_selected"
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,14 @@ def check_extension_status(entry: ExtensionEntry, repo_root: Path, dry_run: bool
     the missing targets only indicate they have not been *installed* to
     the runtime yet.  This is expected in CI / test environments.
     """
+    if not entry.selected:
+        return ExtensionStatus(
+            id=entry.id,
+            status=Status.NOT_SELECTED,
+            source_ok=True,
+            detail="not selected: optional runtime feature disabled",
+        )
+
     if entry.ownership == Ownership.EXTERNAL_RUNTIME:
         return ExtensionStatus(
             id=entry.id,

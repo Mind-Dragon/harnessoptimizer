@@ -118,6 +118,7 @@ def run_doctor(dry_run: bool = False) -> dict:
         "missing_source": 0,
         "missing_target": 0,
         "external": 0,
+        "not_selected": 0,
         "verify_passed": 0,
         "verify_failed": 0,
         "drift_warnings": 0,
@@ -170,7 +171,9 @@ def run_doctor(dry_run: bool = False) -> dict:
         verify_res = verify_by_id.get(entry.id)
         entry_drift = drift_by_id.get(entry.id, [])
 
-        if entry.ownership == Ownership.EXTERNAL_RUNTIME:
+        if status.status == "not_selected":
+            report["not_selected"] += 1
+        elif entry.ownership == Ownership.EXTERNAL_RUNTIME:
             report["external"] += 1
         elif not status.source_ok:
             report["missing_source"] += 1
@@ -221,18 +224,24 @@ def run_doctor(dry_run: bool = False) -> dict:
         for finding in entry_drift:
             if finding.severity == "error":
                 report["drift_errors"] += 1
+                report["issues"].append({
+                    "id": entry.id,
+                    "issue": f"drift ({finding.severity}): {finding.detail}",
+                    "check": finding.check,
+                })
             elif finding.severity == "warning":
                 report["drift_warnings"] += 1
-            report["issues"].append({
-                "id": entry.id,
-                "issue": f"drift ({finding.severity}): {finding.detail}",
-                "check": finding.check,
-            })
+                report["issues"].append({
+                    "id": entry.id,
+                    "issue": f"drift ({finding.severity}): {finding.detail}",
+                    "check": finding.check,
+                })
 
         report["entries"].append({
             "id": entry.id,
             "type": entry.type.value,
             "ownership": entry.ownership.value,
+            "selected": entry.selected,
             "status": status.status,
             "verify": "pass" if (verify_res and verify_res.passed) else ("fail" if verify_res else "n/a"),
             "drift": len(entry_drift),

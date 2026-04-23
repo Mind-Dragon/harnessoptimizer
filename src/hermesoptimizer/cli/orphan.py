@@ -304,6 +304,7 @@ def add_subparsers(subparsers: argparse._SubParsersAction) -> None:
             print(f"missing_source: {report['missing_source']}")
             print(f"missing_target: {report.get('missing_target', 0)}")
             print(f"external: {report['external']}")
+            print(f"not_selected: {report.get('not_selected', 0)}")
             print(f"verify_passed: {report.get('verify_passed', 0)}")
             print(f"verify_failed: {report.get('verify_failed', 0)}")
             print(f"drift_warnings: {report.get('drift_warnings', 0)}")

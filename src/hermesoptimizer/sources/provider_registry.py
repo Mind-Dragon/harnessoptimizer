@@ -211,12 +211,42 @@ class ProviderRegistry:
             overlay(cls.from_file(local_path))
         return cls(providers_by_id=merged, source="merged")
 
-    def providers(self) -> list[str]:
-        return sorted(self.providers_by_id)
+    def providers(self, *, include_quarantined: bool = False) -> list[str]:
+        if include_quarantined:
+            return sorted(self.providers_by_id)
+        return sorted(
+            provider_id
+            for provider_id, provider in self.providers_by_id.items()
+            if provider.status != "quarantined"
+        )
 
-    def model_ids(self, provider_id: str) -> list[str]:
+    def quarantined_providers(self) -> list[str]:
+        return sorted(
+            provider_id
+            for provider_id, provider in self.providers_by_id.items()
+            if provider.status == "quarantined"
+        )
+
+    def with_quarantined_providers(self, providers: list[str] | tuple[str, ...] | set[str]) -> "ProviderRegistry":
+        quarantined = {str(provider).strip().lower() for provider in providers if str(provider).strip()}
+        updated: dict[str, RegistryProvider] = {}
+        for provider_id, provider in self.providers_by_id.items():
+            status = "quarantined" if provider_id.lower() in quarantined else provider.status
+            updated[provider_id] = RegistryProvider(
+                id=provider.id,
+                name=provider.name,
+                endpoint=provider.endpoint,
+                api_style=provider.api_style,
+                status=status,
+                models=provider.models,
+            )
+        return ProviderRegistry(providers_by_id=updated, source=self.source)
+
+    def model_ids(self, provider_id: str, *, include_quarantined: bool = True) -> list[str]:
         provider = self.providers_by_id.get(provider_id)
         if provider is None:
+            return []
+        if provider.status == "quarantined" and not include_quarantined:
             return []
         return [model.id for model in provider.models]
 

@@ -57,6 +57,7 @@ def load_extension_file(path: Path) -> ExtensionEntry:
         target_paths=data.get("target_paths", []),
         verify_command=data.get("verify_command"),
         ownership=_coerce_ownership(data.get("ownership", "repo_only")),
+        selected=bool(data.get("selected", True)),
         metadata=data.get("metadata", {}),
     )
 

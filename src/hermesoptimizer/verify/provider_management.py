@@ -25,6 +25,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from hermesoptimizer.sources.provider_truth import canonical_provider_name
+
 
 # --------------------------------------------------------------------------- #
 # CredentialSource provenance
@@ -202,36 +204,60 @@ class ProviderHealthStore:
     and other provider-management recommendations.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        provider_quarantine: "ProviderQuarantine | None" = None,
+        quarantine_threshold: int = 3,
+        quarantine_ttl_seconds: int = 300,
+    ) -> None:
         self._records: dict[str, ProviderHealthRecord] = {}
+        self._provider_quarantine = provider_quarantine
+        self._quarantine_threshold = quarantine_threshold
+        self._quarantine_ttl_seconds = quarantine_ttl_seconds
 
     def record_success(self, provider: str) -> None:
         """Record a successful request for a provider."""
-        if provider not in self._records:
-            self._records[provider] = ProviderHealthRecord(provider=provider)
-        rec = self._records[provider]
+        canonical = canonical_provider_name(provider)
+        if canonical not in self._records:
+            self._records[canonical] = ProviderHealthRecord(provider=canonical)
+        rec = self._records[canonical]
         rec.successes += 1
         rec.consecutive_failures = 0
         rec.last_success = time.time()
+        if self._provider_quarantine is not None:
+            self._provider_quarantine.release(canonical)
 
     def record_failure(self, provider: str) -> None:
         """Record a failed request for a provider."""
-        if provider not in self._records:
-            self._records[provider] = ProviderHealthRecord(provider=provider)
-        rec = self._records[provider]
+        canonical = canonical_provider_name(provider)
+        if canonical not in self._records:
+            self._records[canonical] = ProviderHealthRecord(provider=canonical)
+        rec = self._records[canonical]
         rec.failures += 1
         rec.consecutive_failures += 1
         rec.last_failure = time.time()
+        if (
+            self._provider_quarantine is not None
+            and self._quarantine_threshold > 0
+            and rec.consecutive_failures >= self._quarantine_threshold
+        ):
+            self._provider_quarantine.quarantine(
+                canonical,
+                ttl_seconds=self._quarantine_ttl_seconds,
+                failure_count=rec.consecutive_failures,
+            )
 
     def get(self, provider: str) -> ProviderHealthRecord | None:
         """Get health record for a provider."""
-        return self._records.get(provider)
+        return self._records.get(canonical_provider_name(provider))
 
     def set_known_good_model(self, provider: str, model: str) -> None:
         """Pin a known-good model for a provider."""
-        if provider not in self._records:
-            self._records[provider] = ProviderHealthRecord(provider=provider)
-        self._records[provider].known_good_model = model
+        canonical = canonical_provider_name(provider)
+        if canonical not in self._records:
+            self._records[canonical] = ProviderHealthRecord(provider=canonical)
+        self._records[canonical].known_good_model = model
 
     def all_records(self) -> list[ProviderHealthRecord]:
         """Return all health records."""
@@ -244,6 +270,116 @@ class ProviderHealthStore:
             for rec in self._records.values()
             if rec.is_healthy(threshold)
         ]
+
+
+# --------------------------------------------------------------------------- #
+# Provider quarantine with TTL and decay
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(slots=True)
+class QuarantinedProvider:
+    """Represents a provider quarantined after repeated failures."""
+
+    provider: str
+    quarantined_at: float
+    ttl_seconds: int
+    failure_count: int = 0
+    is_permanent: bool = False
+    reason: str = "repeated_failures"
+
+    def is_expired(self, now: float | None = None) -> bool:
+        """Return True if this quarantine has expired."""
+        if self.is_permanent or self.ttl_seconds == 0:
+            return False
+        if now is None:
+            now = time.time()
+        return (now - self.quarantined_at) >= self.ttl_seconds
+
+
+class ProviderQuarantine:
+    """Tracks temporarily quarantined provider families by canonical name."""
+
+    def __init__(self, default_ttl_seconds: int = 300) -> None:
+        self._quarantined: dict[str, QuarantinedProvider] = {}
+        self._default_ttl = default_ttl_seconds
+
+    def quarantine(
+        self,
+        provider: str,
+        *,
+        ttl_seconds: int | None = None,
+        failure_count: int = 1,
+        reason: str = "repeated_failures",
+    ) -> None:
+        """Quarantine a provider for a TTL period."""
+        if ttl_seconds is None:
+            ttl_seconds = self._default_ttl
+        canonical = canonical_provider_name(provider)
+        self._quarantined[canonical] = QuarantinedProvider(
+            provider=canonical,
+            quarantined_at=time.time(),
+            ttl_seconds=ttl_seconds,
+            failure_count=failure_count,
+            is_permanent=False,
+            reason=reason,
+        )
+
+    def quarantine_permanent(
+        self,
+        provider: str,
+        *,
+        failure_count: int = 1,
+        reason: str = "permanent_failure",
+    ) -> None:
+        """Permanently quarantine a provider until manually released."""
+        canonical = canonical_provider_name(provider)
+        self._quarantined[canonical] = QuarantinedProvider(
+            provider=canonical,
+            quarantined_at=time.time(),
+            ttl_seconds=0,
+            failure_count=failure_count,
+            is_permanent=True,
+            reason=reason,
+        )
+
+    def release(self, provider: str) -> None:
+        """Release a provider from quarantine."""
+        self._quarantined.pop(canonical_provider_name(provider), None)
+
+    def is_quarantined(self, provider: str) -> bool:
+        """Return True when a provider is currently quarantined."""
+        canonical = canonical_provider_name(provider)
+        qp = self._quarantined.get(canonical)
+        if qp is None:
+            return False
+        if qp.is_expired():
+            self._quarantined.pop(canonical, None)
+            return False
+        return True
+
+    def get_quarantined_providers(self) -> list[QuarantinedProvider]:
+        """Return active, non-expired provider quarantines without mutating state."""
+        now = time.time()
+        return [qp for qp in self._quarantined.values() if not qp.is_expired(now)]
+
+    def remove_expired(self) -> int:
+        """Remove expired provider quarantines and return the count removed."""
+        now = time.time()
+        expired = [provider for provider, qp in self._quarantined.items() if qp.is_expired(now)]
+        for provider in expired:
+            self._quarantined.pop(provider, None)
+        return len(expired)
+
+    def apply_decay(self, factor: float = 0.5) -> None:
+        """Apply decay to stored provider failure counts."""
+        for qp in self._quarantined.values():
+            qp.failure_count = max(0, int(qp.failure_count * factor))
+
+    def get_failure_count(self, provider: str) -> int:
+        """Return failure count for a quarantined provider."""
+        qp = self._quarantined.get(canonical_provider_name(provider))
+        return qp.failure_count if qp else 0
 
 
 # --------------------------------------------------------------------------- #
