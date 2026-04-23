@@ -95,6 +95,12 @@ Before commit:
 - resolver audit flow
 - incident promotion helpers
 
+## Archived material
+
+- `.archives/` is historical scratch, superseded planning, validation dumps, and unrelated notes.
+- Ignore `.archives/` unless the user explicitly asks for historical material.
+- Do not use archived docs as current source of truth when `README.md`, `TODO.md`, `CHANGELOG.md`, `ARCHITECTURE.md`, or `docs/PLAN.md` disagree.
+
 ## References
 
 - [R1] `/home/agent/hermesagent/GUIDELINE.md`

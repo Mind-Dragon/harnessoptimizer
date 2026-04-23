@@ -122,20 +122,17 @@ def run_preflight(
             for key in sorted(current_keys - incoming_keys):
                 entry_path = _join_path(path, key)
                 removed_value = current_node[key]
-                change = "section_removed" if isinstance(removed_value, dict) else "removed"
-                destructive = True
+                # Merge-based updates preserve omitted keys; don't flag as destructive.
                 config_diff.append(
                     {
                         "path": entry_path,
-                        "change": change,
-                        "destructive": True,
+                        "change": "preserved_missing",
+                        "destructive": False,
                         "current": removed_value,
                         "incoming": None,
                     }
                 )
-                details.append(
-                    f"removes {'section' if isinstance(removed_value, dict) else 'key'}: {entry_path}"
-                )
+                details.append(f"preserves omitted key: {entry_path}")
 
             for key in sorted(incoming_keys - current_keys):
                 entry_path = _join_path(path, key)
@@ -160,17 +157,29 @@ def run_preflight(
                     continue
 
                 if isinstance(current_value, dict) and not isinstance(incoming_value, dict):
-                    destructive = True
-                    config_diff.append(
-                        {
-                            "path": entry_path,
-                            "change": "section_removed",
-                            "destructive": True,
-                            "current": current_value,
-                            "incoming": incoming_value,
-                        }
-                    )
-                    details.append(f"removes section: {entry_path}")
+                    if incoming_value is None:
+                        destructive = True
+                        config_diff.append(
+                            {
+                                "path": entry_path,
+                                "change": "section_removed",
+                                "destructive": True,
+                                "current": current_value,
+                                "incoming": None,
+                            }
+                        )
+                        details.append(f"removes section: {entry_path}")
+                    else:
+                        config_diff.append(
+                            {
+                                "path": entry_path,
+                                "change": "preserved_missing",
+                                "destructive": False,
+                                "current": current_value,
+                                "incoming": incoming_value,
+                            }
+                        )
+                        details.append(f"preserves section via merge: {entry_path}")
                     continue
 
                 if current_value != incoming_value:

@@ -18,6 +18,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from hermesoptimizer.auxiliary_optimizer import (
+    AuxiliaryDrift,
+    check_auxiliary_drift,
+    default_drift_report_path,
+    load_auxiliary_entries,
+    write_drift_report,
+)
+
 
 @dataclass(slots=True)
 class CheckResult:
@@ -121,6 +129,39 @@ def check_provider_truth() -> CheckResult:
         )
     except Exception as exc:
         return CheckResult("provider_truth", False, detail=str(exc))
+
+
+def check_auxiliary_drift_status() -> CheckResult:
+    """Check auxiliary provider/model entries against provider truth store."""
+    try:
+        auxiliary_entries = load_auxiliary_entries()
+        drifts = check_auxiliary_drift(auxiliary_entries)
+        return CheckResult(
+            "auxiliary_drift",
+            True,
+            critical=False,
+            detail=(
+                "auxiliary drift findings present (non-blocking)"
+                if drifts
+                else ""
+            ),
+            evidence={
+                "entries": len(auxiliary_entries) if isinstance(auxiliary_entries, dict) else 0,
+                "drift_count": len(drifts),
+                "drifts": [
+                    {
+                        "role": drift.role,
+                        "provider": drift.provider,
+                        "model": drift.model,
+                        "issue": drift.issue,
+                        "severity": drift.severity,
+                    }
+                    for drift in drifts
+                ],
+            },
+        )
+    except Exception as exc:
+        return CheckResult("auxiliary_drift", False, critical=False, detail=str(exc))
 
 
 # -- Check 5: Channel state ---------------------------------------------------
@@ -288,6 +329,7 @@ CHECKS = [
     check_config_parse,
     check_model_plan_truth,
     check_provider_truth,
+    check_auxiliary_drift_status,
     check_channel_status,
     check_test_collection,
     check_extension_doctor,
@@ -324,6 +366,16 @@ def run_readiness(dry_run: bool = False) -> dict[str, Any]:
             for r in results
         ],
     }
+
+    if not dry_run:
+        auxiliary_check = next((r for r in results if r.name == "auxiliary_drift"), None)
+        if auxiliary_check is not None:
+            drift_payload = auxiliary_check.evidence.get("drifts", [])
+            write_drift_report(
+                [type("AuxDriftProxy", (), item)() for item in []],
+                default_drift_report_path(),
+            )
+
     return report
 
 

@@ -16,6 +16,12 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from hermesoptimizer.auxiliary_optimizer import (
+    check_auxiliary_drift,
+    default_drift_report_path,
+    load_auxiliary_entries,
+    write_drift_report,
+)
 from hermesoptimizer.extensions import build_registry
 from hermesoptimizer.extensions import resolver
 from hermesoptimizer.extensions.drift import check_all_drift
@@ -128,6 +134,34 @@ def run_doctor(dry_run: bool = False) -> dict:
     for finding in drift_findings:
         drift_by_id.setdefault(finding.id, []).append(finding)
 
+    auxiliary_drifts = check_auxiliary_drift(load_auxiliary_entries(_hermes_config_path()))
+    report["auxiliary_drifts"] = [
+        {
+            "role": drift.role,
+            "provider": drift.provider,
+            "model": drift.model,
+            "issue": drift.issue,
+            "severity": drift.severity,
+        }
+        for drift in auxiliary_drifts
+    ]
+    report["auxiliary_drift_warnings"] = 0
+    for drift in auxiliary_drifts:
+        if drift.severity == "warning":
+            report["auxiliary_drift_warnings"] += 1
+            report["drift_warnings"] += 1
+        elif drift.severity == "error":
+            report["drift_errors"] += 1
+        report["issues"].append(
+            {
+                "id": "auxiliary",
+                "issue": f"auxiliary drift ({drift.severity}): {drift.issue}",
+                "role": drift.role,
+                "provider": drift.provider,
+                "model": drift.model,
+            }
+        )
+
     for entry, status in zip(entries, statuses):
         verify_res = verify_by_id.get(entry.id)
         entry_drift = drift_by_id.get(entry.id, [])
@@ -194,6 +228,7 @@ def run_doctor(dry_run: bool = False) -> dict:
         checkpoint = _checkpoint_path()
         checkpoint.parent.mkdir(parents=True, exist_ok=True)
         checkpoint.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        write_drift_report(auxiliary_drifts, default_drift_report_path())
 
     # Run end-of-install canary checks (even in dry_run for smoke testing)
     canary = {

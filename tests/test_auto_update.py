@@ -65,13 +65,13 @@ def test_preflight_detects_key_removal_as_destructive() -> None:
     }
     incoming = {
         "model": {"default": "gpt-5.4", "provider": "openai"},
-        "agent": {"verbose": False},
+        "agent": None,
     }
 
     result = run_preflight(current, incoming)
 
     assert result.destructive is True
-    assert any(diff["path"] == "agent.max_turns" and diff["change"] == "removed" for diff in result.config_diff)
+    assert any(diff["path"] == "agent" and diff["change"] == "section_removed" for diff in result.config_diff)
 
 
 def test_preflight_detects_section_removal_as_destructive() -> None:
@@ -81,6 +81,7 @@ def test_preflight_detects_section_removal_as_destructive() -> None:
     }
     incoming = {
         "model": {"default": "gpt-5.4", "provider": "openai"},
+        "providers": None,
     }
 
     result = run_preflight(current, incoming)
@@ -209,7 +210,7 @@ def test_apply_update_blocks_destructive_changes(tmp_path: Path) -> None:
 
     result = apply_update(
         config_path,
-        {"model": {"default": "gpt-5.4", "provider": "openai"}, "agent": {"verbose": False}},
+        {"model": {"default": "gpt-5.4", "provider": "openai"}, "agent": None},
         UpdateConfig(non_interactive=True),
     )
 

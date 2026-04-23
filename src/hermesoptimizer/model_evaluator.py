@@ -3,6 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from math import log2
 
+_CONTEXT_ALIASES = {
+    131072: 128000,
+    262144: 256000,
+}
+
+
+def _normalize_context_window(value: int) -> int:
+    return _CONTEXT_ALIASES.get(value, value)
+
 from hermesoptimizer.sources.model_catalog import MODEL_CATALOG, ModelCatalogEntry, ProviderModelCatalog
 from hermesoptimizer.sources.provider_truth import ProviderTruthStore
 
@@ -82,10 +91,11 @@ def _meets_requirements(
     if any(capability not in capabilities for capability in required_capabilities):
         return False
 
-    if entry.context_window < min_context_window:
+    normalized_context = _normalize_context_window(entry.context_window)
+    if normalized_context < min_context_window:
         return False
 
-    if max_context_window is not None and entry.context_window > max_context_window:
+    if max_context_window is not None and normalized_context > max_context_window:
         return False
 
     if entry.provider in excluded_providers:
@@ -134,11 +144,13 @@ def _score_entry(
         score -= 2
         rationale.append("reasoning capability penalized (-2)")
 
-    if requirement.min_context_window > 0 and entry.context_window == requirement.min_context_window:
+    normalized_context = _normalize_context_window(entry.context_window)
+
+    if requirement.min_context_window > 0 and normalized_context == requirement.min_context_window:
         score += 1
         rationale.append("right-sized context window (+1)")
 
-    waste_penalty = _wasteful_context_penalty(entry.context_window, requirement.min_context_window)
+    waste_penalty = _wasteful_context_penalty(normalized_context, requirement.min_context_window)
     if waste_penalty:
         score -= waste_penalty
         rationale.append(f"wasteful excess context (-{waste_penalty})")
