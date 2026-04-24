@@ -2,7 +2,7 @@
 
 Deterministic, offline guards that verify:
 - TESTPLAN.md lists every collected test file (no undocumented files).
-- Baseline test count (2048) and file count (118) match live pytest collect-only.
+- Baseline test count (2065) and file count (118) match live pytest collect-only.
 - Selector cheat sheet covers required domains.
 """
 
@@ -96,7 +96,7 @@ def _all_test_files_on_disk() -> set[str]:
 # Baseline counts
 # ---------------------------------------------------------------------------
 
-EXPECTED_TEST_COUNT = 2048
+EXPECTED_TEST_COUNT = 2065
 EXPECTED_FILE_COUNT = 118
 
 

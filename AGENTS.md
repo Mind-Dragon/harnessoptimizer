@@ -12,7 +12,7 @@ When entering this repo, read in this order:
 
 1. `GUIDELINE.md`
 2. `ARCHITECTURE.md`
-3. current release proof (`VERSION0.9.3.md` for v0.9.3)
+3. current release proof (`VERSION0.9.4.md` for v0.9.4)
 4. `TODO.md`
 5. `brain/active-work/current.md`
 6. `docs/PLAN.md`

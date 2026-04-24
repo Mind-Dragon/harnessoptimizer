@@ -2,6 +2,24 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.4 -- Testing and Refactor Hardening
+
+### Added
+- Machine-checked test inventory guard in `tests/test_testplan_inventory.py` with 2,065 tests across 118 files.
+- Generic provider/model lane-state policy via `LaneState` with green, fallback-only, quota-blocked, quarantined, and unknown states.
+- Characterization coverage for extension install/sync semantics and provider registry lane behavior.
+- v0.9.4 selector cheat sheet and complete test-file inventory in `TESTPLAN.md`.
+
+### Changed
+- Release-readiness canary checks now validate generic lane metadata instead of hardcoding a provider/model lane.
+- Governance docs and active-work handoff retargeted to v0.9.4 closeout.
+- Package version bumped to 0.9.4.
+
+### Tests
+- Final gate covers `git diff --check`, collect-only, governance/release/testplan selectors, extension doctor/sync, release-readiness, brain-doctor, provider dry-run canaries, and full pytest.
+
+---
+
 ## v0.9.3 -- Clean Install and Provider Registry Productization
 
 ### Added

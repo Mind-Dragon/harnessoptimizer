@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.9.3. The milestones below are release/capability labels and completed release contracts unless marked future.
+> Current package version: 0.9.4. The milestones below are release/capability labels and completed release contracts unless marked future.
 
 ## Product shape
 
@@ -92,6 +92,10 @@ Done. Added the extension registry (`extensions/*.yaml`), loader, schema, and CL
 
 Done locally. Added packaged provider registry data and schema, remote-cache integrity checks, merged provider source policy, Hermes provider DB adapter, hot-reload proof helpers, optional extension feature selection, fresh-root install simulation, isolated wheel smoke, CLI truthfulness gates, brain/provider canary evidence, and explicit local-Hermes integration scoping. `openai-codex/gpt-5.5` is represented in the registry and hot-reload proof. The release contract is `VERSION0.9.3.md`; older root version docs are historical.
 
+### v0.9.4 -- Testing and refactor hardening
+
+Done locally. Added a machine-checked test inventory, v0.9.4 selector cheat sheet, generic provider/model lane-state policy, characterization coverage for extension install semantics and provider registry behavior, release-readiness governance retargeting, and final closeout docs. The release contract is `VERSION0.9.4.md`; `VERSION0.9.3.md` remains historical proof for clean install/provider registry productization.
+
 ## Next version
 
 ### v1.0 series -- Other harnesses and remote workflow
@@ -144,8 +148,9 @@ That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into se
 17. ~~Land the v0.9.1 performance-intelligence and CLI closeout pass~~
 18. ~~Close v0.9.2 extension/config governance hardening~~
 19. ~~Close v0.9.3 clean install and provider registry productization~~
-20. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
-19. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and validation gates are stable
+20. ~~Close v0.9.4 testing and refactor hardening~~
+21. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
+22. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and validation gates are stable
 
 ## Definition of done for the roadmap
 

@@ -53,9 +53,9 @@ def test_active_release_docs_do_not_reopen_closed_v093_work() -> None:
     ]
     combined = todo + "\n" + active_work
     assert not any(token in combined for token in forbidden)
-    assert "Status: closed locally; testing preparation complete." in todo
+    assert "Status: closed locally; v0.9.4 testing/refactor hardening complete." in todo
     assert "Next deterministic step" in active_work
-    assert "run the testing-prep gate" in active_work
+    assert "run the final v0.9.4 gate" in active_work
 
 
 def test_provider_canary_lane_policy_is_generic() -> None:

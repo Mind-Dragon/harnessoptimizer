@@ -155,7 +155,7 @@ When two artifacts disagree, use this order:
 
 1. `GUIDELINE.md`
 2. `ARCHITECTURE.md`
-3. current release proof (`VERSION0.9.3.md` for v0.9.3)
+3. current release proof (`VERSION0.9.4.md` for v0.9.4)
 4. `TODO.md` and `brain/active-work/current.md` for active execution state
 5. `docs/PLAN.md`
 6. `TESTPLAN.md`, `CHANGELOG.md`, `ROADMAP.md`, `README.md`
@@ -192,7 +192,7 @@ If the same failure class appears twice, the default response is a structural ch
 
 ## Planned architecture extensions
 
-Deferred beyond v0.9.3:
+Deferred beyond v0.9.4:
 - broader resolver fixture coverage
 - incident promotion helper that scaffolds normalized incident files and skill candidates
 - skill scaffolding from normalized incidents

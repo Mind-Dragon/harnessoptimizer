@@ -1,9 +1,9 @@
 # Hermes Optimizer v0.9.4 — Testing + Refactor Hardening Release Contract
 
-Status: planned
+Status: closed locally; v0.9.4 testing/refactor hardening complete
 Base: v0.9.3 testing-prep state on `dev/0.9.3`
-Prepared: 2026-04-24 11:16 CDT
-Current package version: 0.9.3
+Prepared: 2026-04-24 11:16 Central time
+Current package version: 0.9.4
 Target package version: 0.9.4
 
 ## Goal
@@ -12,23 +12,24 @@ v0.9.4 is the last Hermes-only hardening pass before the v1.0 adapter/remote-wor
 
 Primary outcome:
 
-- the existing 2,033-test / 117-file suite becomes easier to reason about
+- the existing 2,065-test / 118-file suite is machine-inventoried and easier to reason about
 - release-readiness and docs drift gates remain deterministic
 - refactors land only behind tests that fail first or characterization tests that lock current behavior
 - wheel, fresh-root, extension, provider, brain, and governance gates stay green before and after each refactor
 
-## Current known base
+## Closeout baseline
 
 Commands were run from `/home/agent/hermesoptimizer` on 2026-04-24.
 
-- Branch: `dev/0.9.3`
-- HEAD: `08df8a7 docs: close v0.9.3 phase`
-- Current working tree already contains v0.9.3 testing-prep edits. Do not mix v0.9.4 implementation into that diff until the v0.9.3 prep slice is sealed.
-- Test collection: 2,033 tests across 117 files.
-- Full v0.9.3 gate previously passed with docling deprecation warnings only.
-- `release-readiness --dry-run` previously passed and now includes `governance_doc_drift`.
-- `brain-doctor --dry-run` previously passed while still recording provider/model lane health evidence. Current examples are MiniMax quarantine evidence and crof/nacrof fallback-only policy.
-- `ext-sync --dry-run` now reports `repo_only_no_sync` skips for repo-only extensions.
+- Branch: `dev/0.9.4`.
+- Package version: `0.9.4`.
+- Base proof: `VERSION0.9.3.md` at `08df8a7 docs: close v0.9.3 phase`.
+- v0.9.4 head includes test inventory hardening, extension semantics characterization, generic provider lane policy, and release-governance retargeting.
+- Test collection: 2,065 tests across 118 files (113 under `tests/`, 5 under `brain/scripts/`).
+- Full suite passes with docling deprecation warnings only.
+- `release-readiness --dry-run` passes and includes `governance_doc_drift`, wheel smoke, extension simulation, provider truth, and brain canary checks.
+- `brain-doctor --dry-run` passes while recording provider/model lane health evidence. MiniMax/crof/nacrof remain examples of generic lane-state policy, not special cases.
+- `ext-sync --dry-run` reports `repo_only_no_sync` skips for repo-only extensions.
 - `provider-list` includes `kilocode`, `nacrof`, `nous`, `openai-codex`, and `openrouter`.
 
 Large-file inventory from the v0.9.4 planning check:
@@ -88,7 +89,7 @@ If the behavior cannot be described in a test, the refactor waits.
 
 ## Release waves
 
-### Wave 0 — seal and freeze the v0.9.3 base
+### Wave 0 — seal and freeze the v0.9.3 base — complete
 
 Objective: prevent v0.9.4 work from contaminating the v0.9.3 testing-prep closeout.
 
@@ -108,7 +109,7 @@ PYTHONPATH=src python -m pytest --collect-only -q
 PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
 ```
 
-### Wave 1 — test inventory and selector hardening
+### Wave 1 — test inventory and selector hardening — complete
 
 Objective: make the suite navigable before refactoring.
 
@@ -128,7 +129,7 @@ PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release
 PYTHONPATH=src python -m pytest -q
 ```
 
-### Wave 2 — characterization tests for refactor seams
+### Wave 2 — characterization tests for refactor seams — complete
 
 Objective: lock current behavior before moving code.
 
@@ -148,7 +149,7 @@ PYTHONPATH=src python -m pytest tests/test_cli_dispatch.py tests/test_cli_unifie
 PYTHONPATH=src python -m pytest tests/test_provider_registry.py tests/test_provider_management.py tests/test_tool_surface_provider_recommend.py -q
 ```
 
-### Wave 3 — low-risk refactors, only where tests justify them
+### Wave 3 — low-risk refactors, only where tests justify them — complete
 
 Objective: reduce drift risk without changing product behavior.
 
@@ -176,7 +177,7 @@ PYTHONPATH=src python -m pytest <focused test selector> -q
 PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
 ```
 
-### Wave 4 — install, wheel, provider, and brain repeat gates
+### Wave 4 — install, wheel, provider, and brain repeat gates — complete
 
 Objective: prove that refactors did not break the v0.9.3 release surface.
 
@@ -198,7 +199,7 @@ PYTHONPATH=src python -m hermesoptimizer brain-doctor --dry-run
 python3 brain/scripts/provider_probe.py --config brain/evals/provider-canaries.json --dry-run
 ```
 
-### Wave 5 — v0.9.4 closeout docs and gate retarget
+### Wave 5 — v0.9.4 closeout docs and gate retarget — complete
 
 Objective: close the planning loop only after the testing/refactor pass is proven.
 
@@ -220,6 +221,24 @@ PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release
 PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
 PYTHONPATH=src python -m pytest -q
 ```
+
+## Final proof
+
+Final closeout gate for v0.9.4:
+
+```bash
+git diff --check
+PYTHONPATH=src python -m pytest --collect-only -q
+PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release_readiness.py tests/test_testplan_inventory.py -q
+PYTHONPATH=src python -m hermesoptimizer ext-doctor --dry-run
+PYTHONPATH=src python -m hermesoptimizer ext-sync --dry-run
+PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
+PYTHONPATH=src python -m hermesoptimizer brain-doctor --dry-run
+python3 brain/scripts/provider_probe.py --config brain/evals/provider-canaries.json --dry-run
+PYTHONPATH=src python -m pytest -q
+```
+
+Verified result: all commands pass; full pytest exits 0 with only upstream docling deprecation warnings and 4 expected skips.
 
 ## Definition of done
 

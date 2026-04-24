@@ -1,8 +1,8 @@
-# Hermes Optimizer Test Plan — v0.9.3
+# Hermes Optimizer Test Plan — v0.9.4
 
 ## Status
 
-Active. Canonical test strategy. Updated for v0.9.3 clean-install, provider-registry, extension feature-selection, wheel-smoke, CLI-drift, and model/provider truth checks.
+Active. Canonical test strategy. Updated for v0.9.4 test-inventory hardening, provider lane policy, extension install semantics, release-governance gates, and final closeout checks.
 
 ## Baseline (updated 2026-04-24)
 
@@ -10,10 +10,10 @@ Active. Canonical test strategy. Updated for v0.9.3 clean-install, provider-regi
 ||--------|-------|
 || Repo path | `/home/agent/hermesoptimizer` |
 || Python path | `src` (set in `pyproject.toml`) |
-|| Collected tests | 2,033 |
+|| Collected tests | 2,065 |
 || Skipped | tracked by live pytest output |
 || Non-skipped green | tracked by live pytest output |
-|| Test files | 112 under `tests/` plus 5 brain-script test modules |
+|| Test files | 113 under `tests/` plus 5 brain-script test modules (118 total) |
 || Pytest config | `pyproject.toml [tool.pytest.ini_options]` |
 || Default flags | `-q` |
 
@@ -216,6 +216,7 @@ Coverage:
 The repo-wide `python3 -m pytest -q` serves as the L4 gate. Current L4 anchors:
 - `tests/test_release_readiness.py` — release-readiness checks, including `governance_doc_drift`
 - `tests/test_governance_docs.py` — doc/source-of-truth reconciliation guards for GUIDELINE, ARCHITECTURE, TODO, provider canaries, extension no-sync metadata, and release history
+- `tests/test_testplan_inventory.py` — v0.9.4 test inventory and selector cheat-sheet guard
 
 ---
 
@@ -581,8 +582,8 @@ python3 -m pytest tests/test_budget_profile.py tests/test_budget_analyzer.py tes
 |----------|------|
 | `TESTPLAN.md` | This file. Canonical test strategy, layers, selectors, coverage matrix |
 | `TODO.md` | Active execution queue and closeout state for the current release |
-| `VERSION0.8.1.md` | Version goal, scope, release gate |
-| `VERSION0.8.0.md` | Archived v0.8.0 completed queue |
+| `VERSION0.9.4.md` | Version goal, scope, release gate |
+| `VERSION0.9.3.md` | Archived v0.9.3 completed proof |
 | `GUIDELINE.md` | Success rules, release gates, workflow contracts |
 | `ARCHITECTURE.md` | System shape, module boundaries, data flow |
 | `ROADMAP.md` | Broader release sequence |
@@ -685,10 +686,10 @@ This section is machine-checked by `tests/test_testplan_inventory.py`. Every tes
 | `tests/test_e2e_workflow.py` | 21 |
 | `tests/test_extensions_commands.py` | 22 |
 | `tests/test_extensions_drift.py` | 6 |
-| `tests/test_extensions_integration.py` | 2 |
+| `tests/test_extensions_integration.py` | 3 |
 | `tests/test_extensions_loader.py` | 11 |
 | `tests/test_extensions_schema.py` | 8 |
-| `tests/test_extensions_status.py` | 3 |
+| `tests/test_extensions_status.py` | 8 |
 | `tests/test_extensions_sync.py` | 10 |
 | `tests/test_extensions_verify_contracts.py` | 4 |
 | `tests/test_governance_docs.py` | 6 |
@@ -712,10 +713,10 @@ This section is machine-checked by `tests/test_testplan_inventory.py`. Every tes
 | `tests/test_provider_catalog.py` | 44 |
 | `tests/test_provider_management.py` | 53 |
 | `tests/test_provider_model_refresh.py` | 39 |
-| `tests/test_provider_registry.py` | 12 |
+| `tests/test_provider_registry.py` | 21 |
 | `tests/test_provider_truth.py` | 12 |
 | `tests/test_provider_truth_rework.py` | 20 |
-| `tests/test_release_readiness.py` | 25 |
+| `tests/test_release_readiness.py` | 27 |
 | `tests/test_reports.py` | 18 |
 | `tests/test_request_dump_health_inputs.py` | 1 |
 | `tests/test_route_diagnosis.py` | 6 |
@@ -725,10 +726,9 @@ This section is machine-checked by `tests/test_testplan_inventory.py`. Every tes
 | `tests/test_scheduler.py` | 23 |
 | `tests/test_smoke_workflow.py` | 8 |
 | `tests/test_sources.py` | 2 |
-| `tests/test_testplan_inventory.py` | — |
+| `tests/test_testplan_inventory.py` | 15 |
 | `tests/test_todo_shaper.py` | 22 |
 | `tests/test_tokens.py` | 14 |
-| `tests/test_tools.py` | 14 |
 | `tests/test_tool_surface_audit.py` | 44 |
 | `tests/test_tool_surface_chain.py` | 30 |
 | `tests/test_tool_surface_commands.py` | 31 |
@@ -736,6 +736,7 @@ This section is machine-checked by `tests/test_testplan_inventory.py`. Every tes
 | `tests/test_tool_surface_provider_recommend.py` | 34 |
 | `tests/test_tool_surface_registry.py` | 15 |
 | `tests/test_tool_surface_schema.py` | 40 |
+| `tests/test_tools.py` | 14 |
 | `tests/test_ux_format.py` | 13 |
 | `tests/test_validator.py` | 2 |
 | `tests/test_vault_audit.py` | 7 |
@@ -783,7 +784,7 @@ This section is machine-checked by `tests/test_testplan_inventory.py`. Every tes
 | `TESTPLAN.md` | This file. Canonical test strategy, layers, selectors, coverage matrix |
 | `TODO.md` | Active execution queue and closeout state for the current release |
 | `VERSION0.9.4.md` | Version goal, scope, release gate |
-| `VERSION0.8.0.md` | Archived v0.8.0 completed queue |
+| `VERSION0.9.3.md` | Archived v0.9.3 completed proof |
 | `GUIDELINE.md` | Success rules, release gates, workflow contracts |
 | `ARCHITECTURE.md` | System shape, module boundaries, data flow |
 | `ROADMAP.md` | Broader release sequence |

@@ -341,7 +341,7 @@ def fetch_remote_registry(
     package seed and never block on the network. The detached hash/signature
     arguments intentionally validate the raw payload before it is cached.
     """
-    request = urllib.request.Request(url, headers={"User-Agent": "hermesoptimizer/0.9.3"})
+    request = urllib.request.Request(url, headers={"User-Agent": "hermesoptimizer/0.9.4"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
         payload = response.read()
     data = json.loads(payload.decode("utf-8"))

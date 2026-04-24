@@ -18,7 +18,7 @@
 
 ---
 
-Current release: **v0.9.3**
+Current release: **v0.9.4**
 
 Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a workflow planning and run-inspection system (`/todo` + `/devdo`) for multi-agent development orchestration; autonomous execution remains an explicitly scoped future contract.
 
@@ -51,7 +51,7 @@ Harness Optimizer reads agent config, sessions, logs, and runtime health surface
 - `budget-review` analyzes session utilization and recommends profiles
 - `budget-set` applies turn-budget profiles with dry-run safety
 - five-step sliding scale (low → high) with per-role overrides
-- passive `budget-watch` monitor for post-session advice
+- passive post-session budget advice through the sidecar entrypoint; no `budget-watch` CLI subcommand is exposed
 
 **Reports:**
 - grouped findings with plain-language recommendations
@@ -99,6 +99,9 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer report-latest` | Print the newest report from the runtime report directory |
 | `hermesoptimizer verify-endpoints` | Verify a provider endpoint/model against truth data |
 | `hermesoptimizer dreams-sweep` | Run a read-only dreams memory sweep summary |
+| `hermesoptimizer brain-doctor` | Run the rail/request-dump/provider canary brain health bundle |
+| `hermesoptimizer brain-probe` | Probe brain-system readiness surfaces |
+| `hermesoptimizer brain-audit` | Audit brain-system continuity and resolver state |
 | `hermesoptimizer release-readiness` | Run closeout gate: install integrity, model truth, channel status |
 | Planned: config/auxiliary/yolo/service status commands | Tracked for later release; not exposed by the current CLI |
 
@@ -137,7 +140,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-`PYTHONPATH=src pytest --collect-only` currently reports 2,033 collected tests.
+`PYTHONPATH=src pytest --collect-only` currently reports 2,065 collected tests across 118 files.
 
 Run the full suite with:
 

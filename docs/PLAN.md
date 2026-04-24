@@ -1,10 +1,10 @@
 # Brain System Build Plan
 
-> For Hermes: this plan preserves the build sequence that produced the compiled-brain workspace and identifies the small remaining post-v0.9.3 work. It is not the active v0.9.3 execution queue; use `TODO.md` and `brain/active-work/current.md` for current handoff state.
+> For Hermes: this plan preserves the build sequence that produced the compiled-brain workspace and identifies the small remaining post-v0.9.4 work. It is not the active v0.9.4 execution queue; use `TODO.md` and `brain/active-work/current.md` for current handoff state.
 
 **Goal:** build a local-first, deterministic-first brain system that can absorb repeated runtime failures and turn them into durable project structure.
 
-**Architecture:** the repo is organized around governance docs, structured brain artifacts, deterministic helper scripts, eval fixtures, and evidence-driven provider/incident management. v0.9.3 completed substrate, provider gates, rail checks, continuity state, resolver audits, and release readiness; the remaining work is narrower post-release automation. [R1][R2][R3]
+**Architecture:** the repo is organized around governance docs, structured brain artifacts, deterministic helper scripts, eval fixtures, and evidence-driven provider/incident management. v0.9.4 completed substrate, provider gates, rail checks, continuity state, resolver audits, release readiness, test-inventory hardening, and generic provider lane policy; the remaining work is narrower post-release automation. [R1][R2][R3]
 
 **Tech Stack:** Markdown docs, Python 3.14 scripts, git, local Hermes session/log artifacts.
 
@@ -24,15 +24,15 @@ Present and release-gated:
 - provider bootstrap and provider health notes
 - request-dump summary and provider-health inputs
 - `brain/active-work/current.md` compact live snapshot
-- v0.9.3 provider registry / clean-install closeout proof
+- v0.9.4 testing/refactor hardening closeout proof
 - governance doc drift tests in `tests/test_governance_docs.py`
 - release-readiness `governance_doc_drift` gate
 
-Current open work beyond v0.9.3:
+Current open work beyond v0.9.4:
 - incident-to-skill promotion automation
 - broader resolver fixture coverage
 - live canary proof before enabling `nacrof-crof` for required work
-- optional native Hermes status/doctor bridge, intentionally deferred beyond v0.9.3
+- optional native Hermes status/doctor bridge, intentionally deferred beyond v0.9.4
 
 The phase tasks below are a historical build record unless a future TODO explicitly reopens one.
 
