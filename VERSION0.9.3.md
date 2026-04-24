@@ -1,9 +1,30 @@
 # Hermes Optimizer v0.9.3 — Clean Install + Provider Registry Release Contract
 
-Status: setup
+Status: closed locally
 Base: v0.9.2 hardening commit `ab7fef8`
 Target: 100% clean install against current Hermes v0.10.0 / near origin main
 Prepared: 2026-04-23
+Closed: 2026-04-24
+
+
+## Final closeout — 2026-04-24
+
+Decision:
+
+- v0.9.3 is closed locally as the clean-install and provider-registry productization phase.
+- Hermes core integration remains deliberately small: the tested local compatibility target is `/home/agent/hermes-agent/cli.py` with the hot-reload patch block applied. No native `hermes status`/`hermes doctor` bridge is shipped in this phase.
+- `/home/agent/hermes-agent/internal/` is unrelated untracked Go search work and is excluded from the v0.9.3 proof boundary.
+- Older root `VERSION*` docs are retained as historical release contracts. This file is the current v0.9.3 closeout proof.
+- `.swarm/`, wheel/build/cache artifacts, local Hermes optimizer state, and archives are ignored by `.gitignore` and excluded from tracked release truth.
+
+Closed acceptance evidence:
+
+- `provider-list` is backed by the merged provider registry and includes `openai-codex/gpt-5.5`.
+- `refresh_provider_db()` updates `~/.hermes/provider-db/provider_model.sqlite` without Hermes restart/update.
+- Optional runtime features report `not_selected` when disabled rather than missing/broken.
+- Fresh-root extension simulation and isolated wheel smoke are part of release readiness.
+- CLI help and README command drift are release-gated.
+- Final local verification commands are listed at the bottom of this document.
 
 ## First-pass implementation status — 2026-04-23
 
@@ -268,8 +289,8 @@ Exit checks:
 
 Verified issue:
 
-- `dodev --help` exits 2 because the parser disables help and requires `workflow_id`.
-- `dodev/devdo` creates/loads a run and prints metadata; it does not execute a plan.
+- Initial gap, now resolved: `dodev --help` previously exited 2 because the parser disabled help and required `workflow_id`.
+- Current contract: `dodev/devdo` creates/loads a run and prints metadata; it does not execute an autonomous plan.
 - README mentions commands not implemented as CLI choices, including service/config/auxiliary/yolo surfaces.
 - Several commands are dry-run/report-only while phrasing suggests active repair.
 

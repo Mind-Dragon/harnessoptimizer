@@ -17,16 +17,19 @@ Already present:
 - `brain/` scaffold with providers, incidents, evals, scripts
 - `provider_probe.py`
 - `request_dump_digest.py`
-- provider bootstrap notes
-- request-dump summary report
+- `rail_loader_check.py`
+- `brain_doctor.py`
+- `resolver_audit.py`
+- `active_work_lint.py`
+- provider bootstrap and provider health notes
+- request-dump summary and provider-health inputs
+- `brain/active-work/current.md` compact live snapshot
+- v0.9.3 provider registry / clean-install closeout proof
 
 Missing or still partial:
-- rail loader check
-- orchestrated brain doctor runner
-- active-work live snapshot
-- resolver audit helper
-- incident promotion flow
-- initial committed git history with hygiene choices
+- incident-to-skill promotion automation
+- broader resolver fixture coverage
+- native Hermes status/doctor bridge, intentionally deferred beyond v0.9.3
 
 ---
 

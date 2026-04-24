@@ -1,18 +1,18 @@
-# Hermes Optimizer Test Plan — v0.9.2
+# Hermes Optimizer Test Plan — v0.9.3
 
 ## Status
 
-Active. Canonical test strategy. Updated for v0.9.2 release hardening, extension lifecycle, config governance, and model/provider truth checks.
+Active. Canonical test strategy. Updated for v0.9.3 clean-install, provider-registry, extension feature-selection, wheel-smoke, CLI-drift, and model/provider truth checks.
 
-## Baseline (updated 2026-04-23)
+## Baseline (updated 2026-04-24)
 
 || Metric | Value |
 ||--------|-------|
 || Repo path | `/home/agent/hermesoptimizer` |
 || Python path | `src` (set in `pyproject.toml`) |
-|| Collected tests | 1,960 |
-|| Skipped | 4 |
-|| Non-skipped green | 1,956 |
+|| Collected tests | 2,025 |
+|| Skipped | tracked by live pytest output |
+|| Non-skipped green | tracked by live pytest output |
 || Test files | 97 under `tests/` plus 5 brain-script test modules |
 || Pytest config | `pyproject.toml [tool.pytest.ini_options]` |
 || Default flags | `-q` |
@@ -573,7 +573,7 @@ python3 -m pytest tests/test_budget_profile.py tests/test_budget_analyzer.py tes
 | Document | Role |
 |----------|------|
 | `TESTPLAN.md` | This file. Canonical test strategy, layers, selectors, coverage matrix |
-| `TODO.md` | Active execution queue for v0.8.1 |
+| `TODO.md` | Active execution queue and closeout state for the current release |
 | `VERSION0.8.1.md` | Version goal, scope, release gate |
 | `VERSION0.8.0.md` | Archived v0.8.0 completed queue |
 | `GUIDELINE.md` | Success rules, release gates, workflow contracts |

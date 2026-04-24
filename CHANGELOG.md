@@ -2,6 +2,28 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.3 -- Clean Install and Provider Registry Productization
+
+### Added
+- Packaged provider registry seed/schema with `openai-codex/gpt-5.5`, active Ling/Kimi lanes, and merged source loading.
+- Remote registry cache fetch with SHA-256/signature/provenance validation.
+- Hermes provider DB adapter and hot-reload proof helper for updating local Hermes provider/model metadata without restart/update.
+- Optional extension feature-selection state for caveman and dreams.
+- Fresh-root extension install simulation and isolated wheel install smoke in release readiness.
+- CLI help smoke and README command drift checks in release readiness.
+- Provider health notes and brain-doctor canary release input.
+
+### Changed
+- `provider-list` now reads merged provider truth rather than an empty store.
+- Extension doctor/sync report unselected optional features as `not_selected`, not missing targets.
+- Caveman is documented as optional optimizer/runtime behavior, not native Hermes response-shape behavior.
+- Local Hermes integration proof is scoped to the small hot-reload patch; broader Hermes core integration is deferred.
+
+### Tests
+- Release gate covers provider truth, extension doctor, fresh install simulation, wheel smoke, CLI help, README drift, and brain canary checks.
+
+---
+
 ## v0.9.2 -- Config Governance, Model Evaluation, and Service Hardening
 
 ### Added

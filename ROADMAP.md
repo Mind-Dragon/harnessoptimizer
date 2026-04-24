@@ -2,7 +2,7 @@
 
 > Goal: keep Hermes accurate first, then extend to credential lifecycle management and multi-harness coverage.
 >
-> Current package version: 0.9.2. The milestones below are release/capability labels, not the installed package version.
+> Current package version: 0.9.3. The milestones below are release/capability labels and completed release contracts unless marked future.
 
 ## Product shape
 
@@ -16,8 +16,8 @@ Core responsibilities:
 - keep raw source text for auditability
 
 Workflow layer:
-- `/todo` plans work, `/devdo` executes it
-- task DAGs with role pools scale to 10+ concurrent subagents
+- `/todo` plans work, `/devdo` / `dodev` inspect or start workflow run state
+- task DAGs with role pools are represented for future autonomous execution
 - checkpoints, resume, two-stage review
 
 Harness adapters:
@@ -42,7 +42,7 @@ Done. ProviderTruthStore with model validation. RKWE detection. Routing diagnosi
 
 ### v0.4.0 -- Workflow engine and multi-agent orchestration
 
-Done. `/todo` + `/devdo` two-command workflow. Task DAGs, role pools, scheduler, guard, executor, checkpoints, resume, two-stage review, UX rendering. 332 tests passing.
+Done. `/todo` + `/devdo` workflow planning/run-state surface. Task DAGs, role pools, scheduler, guard, executor primitives, checkpoints, resume, two-stage review, UX rendering. 332 tests passing.
 
 ### v0.5.0 -- Vault management and credential lifecycle
 
@@ -74,8 +74,6 @@ Done. TEMM1E-inspired dreaming sidecar implemented under `src/hermesoptimizer/dr
 
 Done. Added the Tool Surface IR, Hermes-first registry, audit engine, presentation-layer rendering contract, narrow read-only command layer, command chaining parser, and ranked provider/model recommendations. The kickoff and evaluation artifacts are archived under `.hermes/reports/hermesoptimizer/archive/v0.8.0/`, and the completed execution snapshot is preserved in `VERSION0.8.0.md`.
 
-## Next version
-
 ### v0.8.1 -- Test strategy and validation hardening
 
 Done. Defined the canonical layered test model (L0-L4) with explicit domain ownership. TESTPLAN.md is the single source of truth. Plugin-backed and installed-artifact behavior treated as first-class test surfaces. 76 test files, 1,534 tests collected, default gate stays green.
@@ -90,7 +88,11 @@ Done. Added token/perf/tool/network analysis domains, catalog tables, and the un
 
 ### v0.9.2 -- Extension lifecycle and config governance hardening
 
-In progress toward solid release. Added the extension registry (`extensions/*.yaml`), loader, schema, and CLI commands (`ext-list`, `ext-status`, `ext-verify`, `ext-sync`, `ext-doctor`). Added config maintainer, model evaluator, auxiliary routing drift checks, service lifecycle, auto-update/yolo safeguards, and release readiness hardening. The build/test gate is green; remaining release-hardening work is tracked in `TODO.md` and summarized in `VERSION0.9.2.md`.
+Done. Added the extension registry (`extensions/*.yaml`), loader, schema, and CLI commands (`ext-list`, `ext-status`, `ext-verify`, `ext-sync`, `ext-doctor`). Added config maintainer, model evaluator, auxiliary routing drift checks, service lifecycle, auto-update/yolo safeguards, and release readiness hardening. The release contract is preserved in `VERSION0.9.2.md`.
+
+### v0.9.3 -- Clean install and provider registry productization
+
+Done locally. Added packaged provider registry data and schema, remote-cache integrity checks, merged provider source policy, Hermes provider DB adapter, hot-reload proof helpers, optional extension feature selection, fresh-root install simulation, isolated wheel smoke, CLI truthfulness gates, brain/provider canary evidence, and explicit local-Hermes integration scoping. `openai-codex/gpt-5.5` is represented in the registry and hot-reload proof. The release contract is `VERSION0.9.3.md`; older root version docs are historical.
 
 ## Next version
 
@@ -142,7 +144,9 @@ That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into se
 15. ~~Prototype the hybrid read-only command layer and LLM-facing presentation contract~~
 16. ~~Build the v0.8.1 layered test matrix and installed-artifact smoke strategy~~
 17. ~~Land the v0.9.1 performance-intelligence and CLI closeout pass~~
-18. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
+18. ~~Close v0.9.2 extension/config governance hardening~~
+19. ~~Close v0.9.3 clean install and provider registry productization~~
+20. Defer non-Hermes adapters and remote workflow automation to the v1.0 series
 19. Add adapter template for new harness onboarding once the Hermes repair path, tool-surface contract, and validation gates are stable
 
 ## Definition of done for the roadmap

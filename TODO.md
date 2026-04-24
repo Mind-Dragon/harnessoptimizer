@@ -4,6 +4,7 @@ Current package version: 0.9.3
 Target package version: 0.9.3
 Base release proof: VERSION0.9.2.md
 Current release contract: VERSION0.9.3.md
+Status: closed locally; follow-up audit pending.
 Primary target: 100% clean install against current Hermes v0.10.0 / near origin main.
 
 ## Scope decisions locked
@@ -30,8 +31,8 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 - `seed_from_config(~/.hermes/config.yaml)` remains a separate live-config source (`kilocode`, `nacrof`, `xai`) until merge policy work lands.
 - `ext-doctor` now reports `missing_target: 0` and `not_selected: 1` because dreams is an optional runtime feature currently not selected.
 - `ext-sync --dry-run` now exits 0 on existing runtime; dreams is skipped as `not selected`, and vault secret data is classified as external runtime data.
-- Built wheel does not include provider JSON catalogs or scripts.
-- `dodev --help` exits 2.
+- Built wheel includes required provider registry/catalog package data and wheel smoke covers provider/extension/brain/caveman commands.
+- `dodev --help` exits 0 and documents the inspect/start-run contract.
 - Live cron has 2 active jobs: `brain-doctor-hourly`, `copilot-pr-watch`.
 - `brain-doctor --dry-run` currently passes but provider request dumps show MiniMax and crof failures.
 
@@ -40,13 +41,13 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 ### Wave 0 — release hygiene
 
 [x] Create/confirm `dev/0.9.3` from `dev/0.9.2`.
-[ ] Add or confirm ignore rules for `.swarm/`, wheel/build/cache artifacts.
-[ ] Keep `/home/agent/hermes-agent` dirty state explicit in the release proof.
-[ ] Decide whether v0.9.3 will modify Hermes core or only validate against it.
-[ ] Update ROADMAP.md with a v0.9.3 milestone.
+[x] Add or confirm ignore rules for `.swarm/`, wheel/build/cache artifacts.
+[x] Keep `/home/agent/hermes-agent` dirty state explicit in the release proof.
+[x] Decide whether v0.9.3 will modify Hermes core or only validate against it.
+[x] Update ROADMAP.md with a v0.9.3 milestone.
 [x] Bump package version only after first green implementation wave.
 [x] Update hardcoded release-readiness test version assertions when bumping from 0.9.2 to 0.9.3.
-[ ] Archive or explicitly exempt older root VERSION docs so release doc drift remains intentional.
+[x] Archive or explicitly exempt older root VERSION docs so release doc drift remains intentional.
 
 ### Wave 1 — provider registry
 
@@ -135,6 +136,13 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 [x] Prove current running local Hermes can ingest provider/model update without restart/update.
 [x] Decide whether optimizer health surfaces in native `hermes status` / `hermes doctor`; prefer a tiny bridge only if low-risk.
 [x] Add a final clean-install proof block to VERSION0.9.3.md.
+
+## Closeout decision
+
+- v0.9.3 modifies local Hermes only through the already-scoped small hot-reload patch in `/home/agent/hermes-agent/cli.py`; broader Hermes core integration is intentionally out of scope.
+- `/home/agent/hermes-agent/internal/` remains unrelated untracked Go search work and is excluded from this release proof.
+- Older root version docs are retained as historical release contracts; `VERSION0.9.3.md` is the current closeout proof.
+- `.gitignore` already excludes `.swarm/`, `dist/`, `build/`, wheels, pytest/cache, `.hermes/`, `.hoptimizer/`, and `.archives/`.
 
 ## Acceptance gates
 

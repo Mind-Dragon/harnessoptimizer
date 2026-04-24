@@ -20,7 +20,7 @@
 
 Current release: **v0.9.3**
 
-Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
+Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a workflow planning and run-inspection system (`/todo` + `/devdo`) for multi-agent development orchestration; autonomous execution remains an explicitly scoped future contract.
 
 ## What it does
 
@@ -42,10 +42,10 @@ Harness Optimizer reads agent config, sessions, logs, and runtime health surface
 
 **Workflow orchestration:**
 - `/todo` creates and freezes execution plans
-- `/devdo` runs plans through parallel subagent batches
-- task DAGs with dependency resolution and role pools
-- two-stage review, checkpoint/resume, blocker routing
-- scales to 10+ concurrent subagents
+- `/devdo` / `dodev` inspect or start workflow run state
+- task DAGs with dependency resolution and role pools are represented in the engine
+- two-stage review, checkpoint/resume, and blocker routing are modeled surfaces
+- autonomous parallel execution is a future contract, not claimed by the current CLI
 
 **Budget tuning:**
 - `budget-review` analyzes session utilization and recommends profiles
@@ -85,7 +85,7 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer ip-list` / `ip-add` / `network-scan` | Manage IP inventory and scan local IPv4s |
 | `hermesoptimizer budget-review` / `budget-set` | Review and apply turn-budget profiles |
 | `hermesoptimizer vault-audit` / `vault-writeback` | Audit vault state and execute confirmed write-back |
-| `hermesoptimizer todo` / `devdo` / `dodev` | Plan and execute workflow runs |
+| `hermesoptimizer todo` / `devdo` / `dodev` | Plan workflow work and inspect/start workflow run state |
 | `hermesoptimizer caveman` | Toggle caveman mode |
 | `hermesoptimizer ext-list` | List registered extensions |
 | `hermesoptimizer ext-status` | Show extension source vs runtime status |

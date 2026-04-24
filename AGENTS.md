@@ -89,11 +89,10 @@ Before commit:
 
 ## Immediate next targets in this repo
 
-- `brain/scripts/rail_loader_check.py`
-- `brain/scripts/brain_doctor.py`
-- first real `brain/active-work/current.md`
-- resolver audit flow
-- incident promotion helpers
+- post-v0.9.3 full-codebase governance audit against `GUIDELINE.md`, `ARCHITECTURE.md`, `docs/PLAN.md`, and release docs
+- incident-to-skill promotion helpers
+- broader resolver fixture coverage
+- optional native Hermes status/doctor bridge, only if it stays small and separately proven
 
 ## Archived material
 
