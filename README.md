@@ -137,7 +137,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-`PYTHONPATH=src pytest --collect-only` currently reports 2,025 collected tests.
+`PYTHONPATH=src pytest --collect-only` currently reports 2,033 collected tests.
 
 Run the full suite with:
 

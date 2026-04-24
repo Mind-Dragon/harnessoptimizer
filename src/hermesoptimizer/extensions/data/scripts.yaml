@@ -6,6 +6,8 @@ target_paths: []
 verify_command: python scripts/validate_testplan.py --help
 ownership: repo_only
 metadata:
+  install_mode: repo_only_no_sync
+  no_sync_reason: Repo utility scripts are used from the installed package or checkout; dreams-owned runtime scripts are selected through the dreams extension metadata.sync_files contract.
   scripts:
     - validate_testplan.py
     - convert_vault.py

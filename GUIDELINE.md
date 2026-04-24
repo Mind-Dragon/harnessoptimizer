@@ -78,6 +78,12 @@ A model advertised somewhere upstream is not enough. If GLM 5.1V is present in a
 A model choice is only valid when provider, model, and plan all agree.
 
 If any one of these is wrong:
+- provider unavailable
+- model missing
+- plan mismatch
+- capability mismatch
+
+then the selection is invalid and must be rejected or rerouted before install or execution proceeds.
 
 ### 8. Config is user-owned
 
@@ -94,14 +100,8 @@ The auxiliary model routing table is derived from the model evaluator against th
 ### 11. Destructive changes are blocked by default
 
 YOLO mode maximizes autonomy while blocking destructive commands via substring blocklist and regex patterns. All auto-approved commands are audited. Credential mutations are blocked in safe mode.
-- provider unavailable
-- model missing
-- plan mismatch
-- capability mismatch
 
-then the selection is invalid and must be rejected or rerouted before install or execution proceeds.
-
-### 8. Keep the brain small and queryable
+### 12. Keep the brain small and queryable
 
 Do not turn `brain/` into a prose landfill. Prefer short, typed, narrow files over giant narrative notes.
 

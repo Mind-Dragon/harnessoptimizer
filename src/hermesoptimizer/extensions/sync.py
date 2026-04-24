@@ -127,11 +127,17 @@ def sync_extension(
         )
 
     if not entry.target_paths:
+        install_mode = entry.metadata.get("install_mode") if isinstance(entry.metadata, dict) else None
+        no_sync_reason = entry.metadata.get("no_sync_reason") if isinstance(entry.metadata, dict) else None
+        if install_mode == "repo_only_no_sync" and no_sync_reason:
+            action = f"skipped: no target_paths defined (repo_only_no_sync: {no_sync_reason})"
+        else:
+            action = "skipped: no target_paths defined"
         return SyncResult(
             id=entry.id,
             synced=False,
             skipped=True,
-            actions=["skipped: no target_paths defined"],
+            actions=[action],
         )
 
     # Expand target paths and check for existing targets (if not force)

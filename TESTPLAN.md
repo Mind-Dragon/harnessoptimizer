@@ -10,10 +10,10 @@ Active. Canonical test strategy. Updated for v0.9.3 clean-install, provider-regi
 ||--------|-------|
 || Repo path | `/home/agent/hermesoptimizer` |
 || Python path | `src` (set in `pyproject.toml`) |
-|| Collected tests | 2,025 |
+|| Collected tests | 2,033 |
 || Skipped | tracked by live pytest output |
 || Non-skipped green | tracked by live pytest output |
-|| Test files | 97 under `tests/` plus 5 brain-script test modules |
+|| Test files | 112 under `tests/` plus 5 brain-script test modules |
 || Pytest config | `pyproject.toml [tool.pytest.ini_options]` |
 || Default flags | `-q` |
 
@@ -211,9 +211,11 @@ Coverage:
 - Lane A real config — providers present, auth redacted, session/log sampling
 - Lane A CLI — init-db→add-record→export on data derived from real config
 
-#### L4 — release-gate smoke (covered by full-suite gate)
+#### L4 — release-gate and governance smoke (covered by full-suite gate)
 
-The repo-wide `python3 -m pytest -q` serves as the L4 gate. No separate L4 files needed beyond the L2 smoke files above.
+The repo-wide `python3 -m pytest -q` serves as the L4 gate. Current L4 anchors:
+- `tests/test_release_readiness.py` — release-readiness checks, including `governance_doc_drift`
+- `tests/test_governance_docs.py` — doc/source-of-truth reconciliation guards for GUIDELINE, ARCHITECTURE, TODO, provider canaries, extension no-sync metadata, and release history
 
 ---
 
@@ -510,6 +512,11 @@ git status --short
 ## Selector cheat sheet
 
 Full copy-paste selectors by domain:
+
+**Testing-prep governance gate:**
+```
+python3 -m pytest tests/test_governance_docs.py tests/test_release_readiness.py -q
+```
 
 **All domains (full gate):**
 ```

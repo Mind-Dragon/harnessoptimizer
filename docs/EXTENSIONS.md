@@ -50,7 +50,8 @@ If drift_errors > 0, investigate before starting work.
 
 | Ownership | Sync behavior |
 |-----------|---------------|
-| repo_only | Copied to target. `--force` required to overwrite. |
+| repo_only with target_paths | Copied to target. `--force` required to overwrite. |
+| repo_only with `target_paths: []` + `metadata.install_mode: repo_only_no_sync` | Verified from the checkout/package only; no runtime copy target exists. |
 | repo_external | Repo artifacts copied; external paths are verify-only. |
 | external_runtime | Never synced. Registry tracks for visibility only. |
 

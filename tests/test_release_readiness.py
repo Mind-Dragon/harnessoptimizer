@@ -17,6 +17,7 @@ from hermesoptimizer.release.readiness import (
     check_cli_boot,
     check_config_parse,
     check_extension_doctor,
+    check_governance_doc_drift,
     check_model_plan_truth,
     check_provider_truth,
     check_release_doc_drift,
@@ -147,6 +148,13 @@ class TestCheckExtensionDoctor:
         assert result.passed is True
         assert result.critical is False
         assert "doctor unavailable" in result.detail.lower()
+
+
+class TestCheckGovernanceDocDrift:
+    def test_governance_doc_drift_is_clean(self) -> None:
+        result = check_governance_doc_drift()
+        assert result.passed is True
+        assert result.evidence["issue_count"] == 0
 
 
 class TestCheckReleaseDocDrift:

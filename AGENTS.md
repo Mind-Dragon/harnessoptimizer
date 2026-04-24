@@ -12,11 +12,15 @@ When entering this repo, read in this order:
 
 1. `GUIDELINE.md`
 2. `ARCHITECTURE.md`
-3. `docs/PLAN.md`
-4. `brain/README.md`
-5. any relevant file under `brain/providers/`, `brain/incidents/`, or `brain/active-work/`
+3. current release proof (`VERSION0.9.3.md` for v0.9.3)
+4. `TODO.md`
+5. `brain/active-work/current.md`
+6. `docs/PLAN.md`
+7. `TESTPLAN.md`
+8. `brain/README.md`
+9. any relevant file under `brain/providers/`, `brain/incidents/`, or `brain/active-work/`
 
-If those docs disagree, follow `GUIDELINE.md` first, then `ARCHITECTURE.md`.
+If those docs disagree, follow this order: `GUIDELINE.md`, `ARCHITECTURE.md`, current release proof, active execution state (`TODO.md` and `brain/active-work/current.md`), `docs/PLAN.md`, test/release history docs, then lower-level brain artifacts.
 
 ## Operating model
 
@@ -89,9 +93,9 @@ Before commit:
 
 ## Immediate next targets in this repo
 
-- post-v0.9.3 full-codebase governance audit against `GUIDELINE.md`, `ARCHITECTURE.md`, `docs/PLAN.md`, and release docs
 - incident-to-skill promotion helpers
 - broader resolver fixture coverage
+- live canary proof before enabling `nacrof-crof` for required work
 - optional native Hermes status/doctor bridge, only if it stays small and separately proven
 
 ## Archived material

@@ -74,5 +74,25 @@
       "forbid_statuses": [404],
       "forbid_body_substrings": ["model_not_found", "does not exist", "<html"]
     }
+  },
+  {
+    "name": "nacrof-crof",
+    "auth_provider": "nacrof",
+    "method": "POST",
+    "url": "https://crof.ai/v1/chat/completions",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${NACROF_API_KEY}"
+    },
+    "body": {
+      "model": "qwen3-coder-next-fp8",
+      "messages": [{"role": "user", "content": "Reply with OK"}],
+      "max_tokens": 4
+    },
+    "expect": {
+      "allowed_statuses": [200, 400, 401, 403, 429],
+      "forbid_statuses": [404],
+      "forbid_body_substrings": ["model_not_found", "does not exist", "resource_not_found_error", "<html", "cf-chl"]
+    }
   }
 ]

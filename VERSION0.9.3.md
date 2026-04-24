@@ -531,11 +531,21 @@ Latest live canary run:
 - Nous Portal `moonshotai/kimi-k2.6`: 200 OK using the provider-scoped Nous `device_code` credential/agent key path.
 - OpenAI Codex `gpt-5.4-mini`: provider-scoped OpenAI OAuth `device_code` credential resolves correctly; live probe returns 429 `insufficient_quota`, not model-not-found. Keep as single fallback lane when quota is available.
 
+## Testing preparation update — 2026-04-24
+
+Post-closeout governance audit findings were converted into deterministic testing prep:
+
+- Added `tests/test_governance_docs.py` to guard GUIDELINE numbering, ARCHITECTURE layer count/current-helper language, closed TODO/active-work state, provider canary lockstep, repo-only no-sync extension metadata, and release history heading uniqueness.
+- Added `governance_doc_drift` to `release-readiness` so the release gate fails if those doc/source-of-truth contracts drift again.
+- Added `nacrof-crof` to `brain/evals/provider-canaries.json`; the lane remains fallback-only and must not be used for required release work unless the canary is green.
+- Marked `scripts` and `tool_surface` as `repo_only_no_sync` extensions in both root and packaged YAML so `target_paths: []` is explicit rather than accidental.
+
 ## Final verification commands
 
 Passed targeted checks:
 
 ```bash
+PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release_readiness.py -q
 PYTHONPATH=src python -m pytest tests/test_wave4_wave7_contracts.py tests/test_release_readiness.py tests/test_channel_management.py tests/test_caveman_config.py tests/test_extensions_status.py tests/test_extensions_sync.py tests/test_request_dump_health_inputs.py brain/scripts/test_brain_doctor.py -q
 PYTHONPATH=src python -m pytest tests/test_hot_reload_proof.py tests/test_package_resources.py tests/test_provider_registry.py tests/test_provider_management.py -q
 PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run

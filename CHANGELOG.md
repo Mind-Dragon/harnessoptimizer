@@ -12,6 +12,7 @@ All notable changes to Hermes Optimizer.
 - Fresh-root extension install simulation and isolated wheel install smoke in release readiness.
 - CLI help smoke and README command drift checks in release readiness.
 - Provider health notes and brain-doctor canary release input.
+- Governance doc drift gate and `tests/test_governance_docs.py` for post-closeout testing preparation.
 
 ### Changed
 - `provider-list` now reads merged provider truth rather than an empty store.
@@ -47,7 +48,7 @@ All notable changes to Hermes Optimizer.
 
 ---
 
-## v0.9.2 -- Extension Lifecycle Management Initial Slice
+### Extension Lifecycle Management Initial Slice
 
 ### Added
 

@@ -15,7 +15,7 @@ The brain system is the primary source of truth for future buildout in this fold
 
 ## System model
 
-The system is split into six layers.
+The system is split into seven layers.
 
 ### 1. Governance layer
 
@@ -46,7 +46,10 @@ This is the durable project-knowledge surface. It stores structured truth about 
 Files under `brain/scripts/`:
 - `provider_probe.py`
 - `request_dump_digest.py`
-- future: `rail_loader_check.py`, `resolver_audit.py`, `brain_doctor.py`
+- `rail_loader_check.py`
+- `brain_doctor.py`
+- `resolver_audit.py`
+- `active_work_lint.py`
 
 These scripts convert repeatable work into code. If a task has stable inputs and outputs, it should be compiled here instead of re-done in latent space. [R1]
 
@@ -152,9 +155,12 @@ When two artifacts disagree, use this order:
 
 1. `GUIDELINE.md`
 2. `ARCHITECTURE.md`
-3. `docs/PLAN.md`
-4. `brain/` structured artifacts
-5. ad hoc notes or transient session context
+3. current release proof (`VERSION0.9.3.md` for v0.9.3)
+4. `TODO.md` and `brain/active-work/current.md` for active execution state
+5. `docs/PLAN.md`
+6. `TESTPLAN.md`, `CHANGELOG.md`, `ROADMAP.md`, `README.md`
+7. `brain/` structured artifacts
+8. ad hoc notes or transient session context
 
 `brain.md` is the analysis seed and rationale document. The operational truth lives in the smaller files under `brain/` plus this architecture/governance suite.
 
@@ -186,13 +192,11 @@ If the same failure class appears twice, the default response is a structural ch
 
 ## Planned architecture extensions
 
-Planned but not yet built:
-- `rail_loader_check.py` for SOUL/HEARTBEAT prefill validation
-- `brain_doctor.py` orchestration runner
-- resolver audit and overlap checks
-- active-work linter
-- incident promotion helpers
+Deferred beyond v0.9.3:
+- broader resolver fixture coverage
+- incident promotion helper that scaffolds normalized incident files and skill candidates
 - skill scaffolding from normalized incidents
+- optional native Hermes status/doctor bridge, only if it stays small and separately proven
 
 ## Verification expectations
 

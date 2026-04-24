@@ -58,7 +58,7 @@ Done. Live provider validation backends, broader source parsing (YAML/JSON/shell
 
 ### v0.5.3 -- Caveman mode for token-efficient output
 
-Done. Caveman-style output compression added as an opt-in feature for Hermes-wide work. Reduces output tokens ~75% while preserving technical accuracy. Safety-critical paths (vault write-back, config mutations, destructive operations, auth/credential handling, setup/onboarding) stay in full mode regardless of setting. Persistent config via `~/.hermes/config.yaml` with `caveman_mode` key. CLI toggle via `python -m hermesoptimizer caveman`. Hermes skill created at `~/.hermes/skills/software-development/caveman/SKILL.md`. 34 tests passing.
+Done. Caveman-style output compression added as an opt-in optimizer/runtime feature. It provides a token-efficient response mode and ships a runtime skill/config toggle, but native Hermes core response-shape consumption is intentionally not claimed in v0.9.3 without a separate small Hermes patch and live probe. Safety-critical paths (vault write-back, config mutations, destructive operations, auth/credential handling, setup/onboarding) stay in full mode regardless of setting. Persistent config via `~/.hermes/config.yaml` with `caveman_mode` key. CLI toggle via `python -m hermesoptimizer caveman`. Hermes skill created at `~/.hermes/skills/software-development/caveman/SKILL.md`. 34 tests passing.
 
 ### v0.6.0 -- Provider/model/config repair pass
 
@@ -67,8 +67,6 @@ Done. Hermes-only provider truth rework: explicit canonical providers with endpo
 ### v0.7.0 -- Dreaming and memory-consolidation sidecar
 
 Done. TEMM1E-inspired dreaming sidecar implemented under `src/hermesoptimizer/dreams/` plus companion scripts under `scripts/` and `~/.hermes/scripts/`. Covers sidecar DB bootstrap, exponential decay + sweep, fidelity tiers (`full` / `summary` / `essence`), transcript-based recall reheating, and external reflection plumbing without modifying Hermes core. Repo tests cover the dreaming modules and the full suite stays green on main.
-
-## Completed versions
 
 ### v0.8.0 -- Agent-native tool surface optimization
 

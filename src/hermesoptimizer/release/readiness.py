@@ -548,7 +548,98 @@ def check_wheel_install_smoke() -> CheckResult:
     )
 
 
-# -- Check 10: Release doc drift -----------------------------------------------
+# -- Check 10: Governance/doc drift --------------------------------------------
+
+def check_governance_doc_drift() -> CheckResult:
+    """Fail when governance docs reopen closed work or disagree with live contracts."""
+    repo_root = _repo_root()
+    issues: list[dict[str, str]] = []
+
+    def add(path: str, issue: str) -> None:
+        issues.append({"path": path, "issue": issue})
+
+    guideline = (repo_root / "GUIDELINE.md").read_text(encoding="utf-8")
+    try:
+        section = guideline.split("## Non-negotiables", 1)[1].split("## Build priorities", 1)[0]
+        numbers = [int(match.group(1)) for match in re.finditer(r"^### (\d+)\. ", section, re.MULTILINE)]
+        if numbers != list(range(1, len(numbers) + 1)) or len(numbers) != len(set(numbers)):
+            add("GUIDELINE.md", "non-negotiable headings are not sequential and unique")
+    except IndexError:
+        add("GUIDELINE.md", "missing Non-negotiables or Build priorities section")
+
+    architecture = (repo_root / "ARCHITECTURE.md").read_text(encoding="utf-8")
+    layer_words = {"seven": 7, "7": 7}
+    layer_match = re.search(r"split into (\w+) layers", architecture)
+    if not layer_match or layer_words.get(layer_match.group(1).lower()) != 7:
+        add("ARCHITECTURE.md", "system model must declare seven layers")
+    else:
+        model = architecture.split("## System model", 1)[1].split("## Directory architecture", 1)[0]
+        headings = re.findall(r"^### \d+\. ", model, re.MULTILINE)
+        if len(headings) != 7:
+            add("ARCHITECTURE.md", f"system model declares seven layers but lists {len(headings)}")
+    planned = architecture.split("## Planned architecture extensions", 1)[1] if "## Planned architecture extensions" in architecture else ""
+    stale_helpers = ["rail_loader_check.py", "brain_doctor.py", "resolver_audit.py", "active_work_lint.py"]
+    if "Planned but not yet built" in planned or any(f"- `{helper}`" in planned for helper in stale_helpers):
+        add("ARCHITECTURE.md", "planned extensions section lists helpers that already exist")
+
+    todo = (repo_root / "TODO.md").read_text(encoding="utf-8")
+    active_work = (repo_root / "brain" / "active-work" / "current.md").read_text(encoding="utf-8")
+    closed_work_markers = [
+        "follow-up audit pending",
+        "until merge policy work lands",
+        "dispatch parallel whole-codebase governance audit agents",
+        "dispatch audit agents",
+    ]
+    combined = todo + "\n" + active_work
+    for marker in closed_work_markers:
+        if marker in combined:
+            add("TODO.md/brain/active-work/current.md", f"closed v0.9.3 work marker still present: {marker}")
+    if "Status: closed locally; testing preparation complete." not in todo:
+        add("TODO.md", "status must say testing preparation complete after governance reconciliation")
+
+    try:
+        canaries = json.loads((repo_root / "brain" / "evals" / "provider-canaries.json").read_text(encoding="utf-8"))
+        names = {entry.get("name") for entry in canaries if isinstance(entry, dict)}
+        if "nacrof-crof" not in names:
+            add("brain/evals/provider-canaries.json", "missing nacrof-crof canary fixture")
+    except Exception as exc:  # noqa: BLE001
+        add("brain/evals/provider-canaries.json", f"could not parse provider canaries: {exc}")
+    nacrof_note = (repo_root / "brain" / "providers" / "nacrof-crof.md").read_text(encoding="utf-8")
+    if "not yet present" in nacrof_note or "do not use for required release work unless the canary is green" not in nacrof_note:
+        add("brain/providers/nacrof-crof.md", "nacrof canary/fallback policy is stale or unclear")
+
+    import yaml
+
+    for rel in [
+        "extensions/scripts.yaml",
+        "extensions/tool_surface.yaml",
+        "src/hermesoptimizer/extensions/data/scripts.yaml",
+        "src/hermesoptimizer/extensions/data/tool_surface.yaml",
+    ]:
+        data = yaml.safe_load((repo_root / rel).read_text(encoding="utf-8"))
+        if data.get("ownership") == "repo_only" and data.get("target_paths") == []:
+            metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+            if metadata.get("install_mode") != "repo_only_no_sync" or not metadata.get("no_sync_reason"):
+                add(rel, "repo_only target_paths=[] must declare install_mode and no_sync_reason")
+
+    changelog = (repo_root / "CHANGELOG.md").read_text(encoding="utf-8")
+    versions = re.findall(r"^## (v\d+\.\d+\.\d+)", changelog, re.MULTILINE)
+    duplicates = sorted({version for version in versions if versions.count(version) > 1})
+    if duplicates:
+        add("CHANGELOG.md", f"duplicate version headings: {duplicates}")
+    roadmap = (repo_root / "ROADMAP.md").read_text(encoding="utf-8")
+    if roadmap.count("## Completed versions") != 1:
+        add("ROADMAP.md", "Completed versions heading must appear exactly once")
+
+    return CheckResult(
+        "governance_doc_drift",
+        not issues,
+        evidence={"issues": issues, "issue_count": len(issues)},
+        detail="" if not issues else f"governance/doc drift found: {len(issues)} issue(s)",
+    )
+
+
+# -- Check 11: Release doc drift -----------------------------------------------
 
 def check_release_doc_drift() -> CheckResult:
     """Fail if active release docs/scripts contain known stale release markers."""
@@ -605,6 +696,7 @@ CHECKS = [
     check_installer_canary,
     check_brain_doctor_canary,
     check_wheel_install_smoke,
+    check_governance_doc_drift,
     check_release_doc_drift,
 ]
 

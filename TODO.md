@@ -1,161 +1,163 @@
-# Hermes Optimizer /todo — v0.9.3 clean install + provider registry
+# Hermes Optimizer /todo — v0.9.4 testing + refactor hardening
 
 Current package version: 0.9.3
-Target package version: 0.9.3
-Base release proof: VERSION0.9.2.md
-Current release contract: VERSION0.9.3.md
-Status: closed locally; follow-up audit pending.
-Primary target: 100% clean install against current Hermes v0.10.0 / near origin main.
+Target package version: 0.9.4
+Base release proof: VERSION0.9.3.md
+Current planning contract: VERSION0.9.4.md
+Status: planned; do not implement until v0.9.3 testing-prep diff is sealed.
+Previous phase status: Status: closed locally; testing preparation complete.
+Primary target: one more deterministic testing pass with behavior-preserving refactors where tests justify them.
 
 ## Scope decisions locked
 
-- Provider registry lives in a separate public repo consumed by both Hermes and HermesOptimizer.
-- Hermes modifications stay small. v0.9.3 should extend the current hot-reload patch model, not rewrite Hermes.
-- Test target is the local running Hermes here: `/home/agent/hermes-agent` plus `~/.hermes`.
-- Dreams and caveman are optional runtime install choices.
-- If dreams/caveman are not selected, extension status must say `not selected`, not `missing`.
-- If selected, dreams/caveman must install cleanly and pass runtime probes.
-- Vault secret files are external runtime state; validate/fingerprint only.
-- Both editable and wheel installs need gates.
+- v0.9.4 is not a new feature release. It is a testing, characterization, and refactor-safety pass.
+- v0.9.3 clean-install/provider-registry behavior remains the baseline to preserve.
+- Refactors are allowed only after focused tests or characterization tests lock current behavior.
+- Default gates remain offline/deterministic. Live provider checks stay explicit and opt-in unless already dry-run safe.
+- Provider/model lane health policy applies to any provider/model tuple. Red, absent, quota-blocked, quarantined, or fallback-only canaries are non-blocking unless that lane is declared required; required lanes must be green. MiniMax and crof/nacrof are current examples, not special cases.
+- Extension `repo_only_no_sync` semantics must remain explicit in root and packaged manifests.
+- Do not retarget governance checks away from the v0.9.3 closed marker until v0.9.4 is actually ready to close.
+- Do not mix v0.9.4 implementation changes into the uncommitted v0.9.3 testing-prep slice.
 
-## Verified baseline
+## Verified baseline to preserve
 
-- Caveman source: `src/hermesoptimizer/caveman/__init__.py`
-- Caveman CLI: `src/hermesoptimizer/cli/workflow.py`
-- Caveman runtime skill: `~/.hermes/skills/software-development/caveman/SKILL.md`
-- Caveman config: `~/.hermes/config.yaml` contains `caveman_mode: true`
-- Hermes core does not reference `caveman` or `caveman_mode`.
-- `provider-list` now reads the packaged/cache provider registry and returns `kilocode`, `nous`, `openai-codex`, `openrouter` with model IDs.
-- Provider DB refresh inserted `openai-codex/gpt-5.5`, `kilocode/inclusionai/ling-2.6-flash:free`, `openrouter/inclusionai/ling-2.6-flash:free`, and `nous/moonshotai/kimi-k2.6` into `~/.hermes/provider-db/provider_model.sqlite`.
-- 2026-04-24 live canaries: Kilocode Ling 2.6 Flash Free returned 200 OK; Nous Kimi k2.6 returned 200 OK on `https://inference-api.nousresearch.com/v1`; OpenRouter Ling 2.6 Flash Free returned 200 OK; OpenAI OAuth canary for `gpt-5.4-mini` returned 429 insufficient_quota.
-- `seed_from_config(~/.hermes/config.yaml)` remains a separate live-config source (`kilocode`, `nacrof`, `xai`) until merge policy work lands.
-- `ext-doctor` now reports `missing_target: 0` and `not_selected: 1` because dreams is an optional runtime feature currently not selected.
-- `ext-sync --dry-run` now exits 0 on existing runtime; dreams is skipped as `not selected`, and vault secret data is classified as external runtime data.
-- Built wheel includes required provider registry/catalog package data and wheel smoke covers provider/extension/brain/caveman commands.
-- `dodev --help` exits 0 and documents the inspect/start-run contract.
-- Live cron has 2 active jobs: `brain-doctor-hourly`, `copilot-pr-watch`.
-- `brain-doctor --dry-run` currently passes but provider request dumps show MiniMax and crof failures.
+- 2,033 tests collected across 117 test files.
+- Full v0.9.3 suite previously passed with docling deprecation warnings only.
+- `release-readiness --dry-run` previously passed and includes `governance_doc_drift`.
+- `brain-doctor --dry-run` previously passed with provider/model lane health evidence recorded as policy. MiniMax/crof are current examples only.
+- `ext-doctor --dry-run`, `ext-sync --dry-run`, and provider dry-run canaries previously passed.
+- `provider-list` returns `kilocode`, `nacrof`, `nous`, `openai-codex`, and `openrouter`.
+- Largest refactor candidates from live inventory:
+  - `src/hermesoptimizer/sources/model_catalog.py` — 1,291 lines
+  - `src/hermesoptimizer/verify/provider_management.py` — 1,109 lines
+  - `src/hermesoptimizer/release/readiness.py` — 766 lines
+  - `src/hermesoptimizer/verify/endpoints.py` — 720 lines
+  - `src/hermesoptimizer/schemas/provider_model_refresh.py` — 635 lines
+  - `src/hermesoptimizer/route/diagnosis.py` — 592 lines
+  - `src/hermesoptimizer/tool_surface/provider_recommend.py` — 586 lines
+  - `src/hermesoptimizer/extensions/install_integrity.py` — 478 lines
 
-## Release waves
+## Wave 0 — freeze v0.9.3 and open v0.9.4 safely
 
-### Wave 0 — release hygiene
+[ ] Commit or otherwise freeze the current v0.9.3 testing-prep diff.
+[ ] Create `dev/0.9.4` from the sealed v0.9.3 state.
+[ ] Confirm `VERSION0.9.4.md` is the active planning contract.
+[ ] Keep `VERSION0.9.3.md` as historical closeout proof.
+[ ] Record fresh baseline outputs in `VERSION0.9.4.md` before code refactors begin.
 
-[x] Create/confirm `dev/0.9.3` from `dev/0.9.2`.
-[x] Add or confirm ignore rules for `.swarm/`, wheel/build/cache artifacts.
-[x] Keep `/home/agent/hermes-agent` dirty state explicit in the release proof.
-[x] Decide whether v0.9.3 will modify Hermes core or only validate against it.
-[x] Update ROADMAP.md with a v0.9.3 milestone.
-[x] Bump package version only after first green implementation wave.
-[x] Update hardcoded release-readiness test version assertions when bumping from 0.9.2 to 0.9.3.
-[x] Archive or explicitly exempt older root VERSION docs so release doc drift remains intentional.
+Exit checks:
 
-### Wave 1 — provider registry
+```bash
+git status --short
+git diff --check
+PYTHONPATH=src python -m pytest --collect-only -q
+PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
+```
 
-[x] Fix `provider-list` to load the same seeded truth as the provider registry fallback.
-[x] Define the first-pass canonical provider registry schema for separate public repo `Mind-Dragon/Liminal-Registry`.
-[x] Add HermesOptimizer support for a packaged fallback/cache copy of the public registry.
-[x] Create machine-readable registry seed with active lanes and `openai-codex/gpt-5.5`.
-[x] Move first-pass provider registry data under `src/hermesoptimizer/data/` and add `importlib.resources` resolver.
-[x] Package provider registry/catalog files into the wheel package-data config.
-[x] Add explicit remote registry fetcher/cache path for `Mind-Dragon/Liminal-Registry`.
-[x] Add hash/signature/provenance validation for remote registry fetches.
-[x] Add merge policy foundation: remote cache > packaged fallback for `ProviderRegistry.from_cache_or_seed()`.
-[x] Add full merge policy: local override > public registry cache > packaged fallback > Hermes provider DB > Hermes config.
-[x] Add Hermes provider DB adapter for `~/.hermes/provider-db/provider_model.sqlite`.
-[x] Add registry quarantine behavior for repeated provider failures.
-[x] Add provider notes for active lanes: openai-codex, kilocode, openrouter, nous.
-[x] Add tests for alias-map parity or intentional divergence between Hermes and optimizer.
-[x] Add `gpt-5.5` registry fixture and test.
-[x] Add hot-reload proof helper that updates provider/model metadata in local Hermes DB without restart/update.
+## Wave 1 — test inventory and selector hardening
 
-### Wave 2 — extension/install cleanup
+[ ] Regenerate per-file test collection counts.
+[ ] Compare collection counts against `TESTPLAN.md`.
+[ ] Add or update a deterministic test inventory guard for undocumented test files.
+[ ] Ensure every test file belongs to exactly one layer and one domain.
+[ ] Add copy-paste selectors for release, provider, extension, CLI, tool-surface, vault, dreams, budget, workflow, and governance domains.
+[ ] Decide whether inventory enforcement belongs in `tests/test_governance_docs.py`, a new `tests/test_testplan_inventory.py`, or release-readiness.
+[ ] Run the focused governance/release selector before broader suite work.
 
-[x] Add installer feature-selection state for optional runtime features.
-[x] Fix dreams/scripts ownership so `dreaming_pre_sweep.py` and `probe_memory_meta.py` install only when dreams is selected.
-[x] Add runtime target checks to `verify_contracts dreams` for selected installs.
-[x] Add caveman selected/unselected install contract for skill/config behavior.
-[x] Reclassify `~/.vault/vault.enc.json` as external runtime data, not a sync overwrite target.
-[x] Make `ext-sync --dry-run` idempotent on existing runtime.
-[x] Add fresh-root install simulation for base, base+caveman, base+dreams, base+caveman+dreams.
-[x] Add generated-runtime-artifact classification.
-[x] Add extension release gate: selected features have 0 missing targets and 0 sync errors; unselected optional features report `not selected`.
+Exit checks:
 
-### Wave 3 — packaging/wheel install
+```bash
+PYTHONPATH=src python -m pytest --collect-only -q
+PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release_readiness.py -q
+PYTHONPATH=src python -m pytest -q
+```
 
-[x] Add isolated wheel build inspection to tests/release readiness.
-[x] Add isolated venv wheel install smoke.
-[x] Prove `provider-list`, `provider-recommend`, `ext-list`, `ext-doctor`, `brain-doctor --dry-run`, and `caveman` from wheel install.
-[x] Replace repo-root `parents[3] / data` lookups with packaged resource resolver.
-[x] Package required installer scripts or install them through explicit extension sync.
+## Wave 2 — characterization tests before refactor
 
-### Wave 4 — CLI truthfulness
+[ ] Add characterization coverage for `release/readiness.py` check order, criticality, evidence shape, dry-run JSON shape, and CLI output markers.
+[ ] Add characterization coverage for extension sync/install semantics: repo-owned, external runtime, generated runtime, optional unselected, and `repo_only_no_sync`.
+[ ] Add characterization coverage for CLI parser behavior: command names, help exit codes, report-only wording, and README command drift.
+[ ] Add characterization coverage for provider registry merge priority, quarantine visibility, fallback-only policy, lane-state classification, and provider/model canary fixture integration.
+[ ] Add characterization coverage for tool-surface provider recommendation ordering and output contract.
+[ ] Run each characterization test before refactoring and record whether it locks existing behavior or exposes a real bug.
 
-[x] Fix `dodev --help` to exit 0 and show help.
-[x] Decide whether `dodev/devdo` executes plans or only inspects them.
-[x] If inspect-only, rename or rewrite command help.
-[x] Audit README command list against `hermesoptimizer --help`.
-[x] Remove or mark planned commands that do not exist.
-[x] Add release gate for CLI help smoke across all commands.
-[x] Add README-command drift test.
-[x] Update stale README test-count claim from 1,626 to current collected count, or generate it dynamically.
+Exit checks:
 
-### Wave 4b — release gate hardening
+```bash
+PYTHONPATH=src python -m pytest tests/test_release_readiness.py tests/test_extensions_sync.py tests/test_extensions_status.py -q
+PYTHONPATH=src python -m pytest tests/test_cli_dispatch.py tests/test_cli_unified.py tests/test_commands.py tests/test_tool_surface_commands.py -q
+PYTHONPATH=src python -m pytest tests/test_provider_registry.py tests/test_provider_management.py tests/test_tool_surface_provider_recommend.py -q
+```
 
-[x] Remove undocumented `--ignore=tests/test_channel_management.py` from `check_test_collection`, or document and justify it in code.
-[x] Fix/simplify suspicious `test_channel_management.py` assertion around `sources.isdisjoint(targets) is False` if it is actually redundant or wrong.
-[x] Make `check_provider_truth` fail when provider truth has zero entries.
-[x] Make dry-run `check_extension_doctor` surface REPO_EXTERNAL missing-target drift explicitly instead of hiding the dreams gap as non-critical.
-[x] Replace conditional gate assertion in `test_gate_passes_when_critical_checks_pass` with an unconditional invariant.
-[x] Add `check_installer_canary` or equivalent fresh-install simulation to release readiness.
+## Wave 3 — behavior-preserving refactor slices
 
-### Wave 5 — caveman contract
+[ ] Refactor `release/readiness.py` into smaller check modules or a typed check registry only if Wave 2 locks output shape.
+[ ] Extract extension manifest parity helpers so root manifests and packaged manifests cannot drift silently.
+[ ] Centralize CLI command metadata only if parser behavior and README drift checks stay unchanged.
+[ ] Separate provider registry merge logic from provider health/quarantine state only if priority and policy tests are green.
+[ ] Extract repeated test fixture builders from the largest tests without weakening assertions.
+[ ] Keep each refactor as a small slice with focused selector proof before moving to the next slice.
+[ ] Revert any refactor that requires changing product behavior without an explicit bug test.
 
-[x] Normalize `extensions/caveman.yaml` and packaged `extensions/data/caveman.yaml` source paths.
-[x] Implement caveman as an optional runtime install selection.
-[x] If unselected: doctor/status reports `not selected`, not missing/broken.
-[x] If selected: install/verify skill and config behavior against local Hermes runtime.
-[x] Do not claim native Hermes consumption of `caveman_mode` unless a small Hermes patch lands and live response-shape probe passes.
-[x] Add clean config writer test for `caveman_mode` around adjacent comments/free text.
-[x] Keep existing caveman unit/CLI/config tests green.
+Required after each refactor slice:
 
-### Wave 6 — brain/dreams/provider health
+```bash
+git diff --check
+PYTHONPATH=src python -m pytest <focused test selector> -q
+PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
+```
 
-[x] Convert request dump provider failures into provider health status/quarantine input.
-[x] Add non-dry `brain-doctor` canary to release readiness, safely scoped.
-[x] Implement dreams as an optional runtime install selection.
-[x] If unselected: dreams status reports `not selected`, not missing/broken.
-[x] If selected: install dream sweep scripts and verify memory DB/script probes against local Hermes runtime.
-[x] Add brain/provider notes for all active provider lanes.
-[x] Ensure MiniMax and crof failure docs are current and actionable.
+## Wave 4 — repeat install, wheel, provider, and brain gates
 
-### Wave 7 — Hermes integration proof
+[ ] Re-run `ext-doctor --dry-run` against the real local runtime.
+[ ] Re-run `ext-sync --dry-run` and verify `repo_only_no_sync` reasons remain visible.
+[ ] Re-run fresh-root extension simulation through release-readiness.
+[ ] Re-run isolated wheel smoke through release-readiness.
+[ ] Re-run `provider-list` and provider/model dry-run canaries.
+[ ] Re-run `brain-doctor --dry-run` and keep generic provider/model lane policy current. MiniMax/crof are examples, not hardcoded exceptions.
+[ ] Verify docs still describe external vault state as validate/fingerprint only.
 
-[x] Keep Hermes modifications small: registry reload/import hook only, preferably near the existing config hot-reload patch path.
-[x] Resolve or explicitly quarantine `/home/agent/hermes-agent/cli.py` dirty hot-reload patch.
-[x] Resolve or explicitly quarantine `/home/agent/hermes-agent/internal/` untracked files.
-[x] Prove current running local Hermes can ingest provider/model update without restart/update.
-[x] Decide whether optimizer health surfaces in native `hermes status` / `hermes doctor`; prefer a tiny bridge only if low-risk.
-[x] Add a final clean-install proof block to VERSION0.9.3.md.
+Exit checks:
 
-## Closeout decision
+```bash
+PYTHONPATH=src python -m hermesoptimizer ext-doctor --dry-run
+PYTHONPATH=src python -m hermesoptimizer ext-sync --dry-run
+PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
+PYTHONPATH=src python -m hermesoptimizer brain-doctor --dry-run
+python3 brain/scripts/provider_probe.py --config brain/evals/provider-canaries.json --dry-run
+```
 
-- v0.9.3 modifies local Hermes only through the already-scoped small hot-reload patch in `/home/agent/hermes-agent/cli.py`; broader Hermes core integration is intentionally out of scope.
-- `/home/agent/hermes-agent/internal/` remains unrelated untracked Go search work and is excluded from this release proof.
-- Older root version docs are retained as historical release contracts; `VERSION0.9.3.md` is the current closeout proof.
-- `.gitignore` already excludes `.swarm/`, `dist/`, `build/`, wheels, pytest/cache, `.hermes/`, `.hoptimizer/`, and `.archives/`.
+## Wave 5 — close v0.9.4 docs and retarget gates
+
+[ ] Update `TESTPLAN.md` with final collection counts and selector map.
+[ ] Update `README.md` current release only after v0.9.4 is actually closed.
+[ ] Update `ROADMAP.md` and `CHANGELOG.md` after green gates.
+[ ] Update `brain/active-work/current.md` with final v0.9.4 state.
+[ ] Retarget governance checks from v0.9.3 closed-state text to v0.9.4 closed-state text after v0.9.4 is ready to close.
+[ ] Bump package version to 0.9.4 atomically with version tests.
+[ ] Add final proof block to `VERSION0.9.4.md`.
+
+Final exit checks:
+
+```bash
+git diff --check
+PYTHONPATH=src python -m pytest --collect-only -q
+PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release_readiness.py -q
+PYTHONPATH=src python -m hermesoptimizer release-readiness --dry-run
+PYTHONPATH=src python -m pytest -q
+```
 
 ## Acceptance gates
 
-[x] `pytest` green.
-[x] `release-readiness --dry-run` green.
-[x] `brain-doctor --dry-run` green.
-[x] non-dry brain canary recorded.
-[x] `ext-doctor` has 0 missing targets.
-[x] `ext-sync --dry-run` exits 0.
-[x] fresh-root install simulation exits 0.
-[x] isolated wheel install smoke exits 0.
-[x] `provider-list` non-empty.
-[x] `gpt-5.5` present in provider registry.
-[x] provider registry hot reload proven without Hermes restart/update.
-[x] README command drift gate passes.
-[x] Hermes integration cleanliness explicitly proven or explicitly scoped out.
+[ ] v0.9.3 prep slice is sealed before v0.9.4 implementation begins.
+[ ] Test inventory matches `TESTPLAN.md` or fails with a clear drift message.
+[ ] Every refactor has focused before/after proof.
+[ ] Default tests remain deterministic and network-free.
+[ ] `release-readiness --dry-run` passes.
+[ ] `brain-doctor --dry-run` passes with generic provider/model lane policy current.
+[ ] `ext-doctor --dry-run` passes.
+[ ] `ext-sync --dry-run` passes and reports `repo_only_no_sync` reasons.
+[ ] Provider/model dry-run canaries include every configured required lane, preserve fallback-only policy for optional/degraded lanes, and keep `nacrof-crof` as one current example unless green.
+[ ] Isolated wheel smoke passes.
+[ ] Full `PYTHONPATH=src python -m pytest -q` passes.
+[ ] `VERSION0.9.4.md`, `TODO.md`, `TESTPLAN.md`, `ROADMAP.md`, `CHANGELOG.md`, `README.md`, and `brain/active-work/current.md` agree at closeout.

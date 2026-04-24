@@ -13,9 +13,10 @@ Required fields per provider note:
 - fallback policy
 - do-not-use conditions
 
-Current bootstrap notes:
+Current provider notes:
 
-- `minimax-chat.md`
-- `kimi-coding.md`
-- `chatgpt-codex-summary-lane.md`
+- `minimax-chat.md` — quarantined/non-required candidate until canary health is restored.
+- `kimi-coding.md` — legacy Kimi coding lane note.
+- `chatgpt-codex-summary-lane.md` — summary-lane risk note.
+- `nacrof-crof.md` — config-sourced fallback lane; has canary fixture but is not required-release eligible until green.
 - `_template.md`

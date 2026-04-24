@@ -53,6 +53,27 @@ class TestSyncExtension:
         assert res.skipped is True
         assert any("not selected" in a for a in res.actions)
 
+    def test_repo_only_no_sync_metadata_is_reported(self, tmp_path: Path) -> None:
+        entry = ExtensionEntry(
+            id="repo-only-no-sync",
+            type=ExtensionType.SCRIPT,
+            description="repo only no sync",
+            source_path="src.txt",
+            target_paths=[],
+            ownership=Ownership.REPO_ONLY,
+            metadata={
+                "install_mode": "repo_only_no_sync",
+                "no_sync_reason": "imported from package",
+            },
+        )
+        (tmp_path / "src.txt").write_text("hello")
+        res = sync_extension(entry, tmp_path, dry_run=True)
+        assert res.synced is False
+        assert res.skipped is True
+        assert res.errors == []
+        assert any("repo_only_no_sync" in action for action in res.actions)
+        assert any("imported from package" in action for action in res.actions)
+
     def test_sync_dry_run_idempotent_on_existing_target(self, tmp_path: Path) -> None:
         target = tmp_path / "target.txt"
         target.write_text("existing")
