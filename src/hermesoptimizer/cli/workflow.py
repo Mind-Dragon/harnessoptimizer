@@ -21,13 +21,13 @@ def add_subparsers(subparsers) -> None:
     HANDLERS["todo"] = handle_todo
 
     # devdo command
-    devdo_parser = subparsers.add_parser("devdo", help="Execute a plan")
-    devdo_parser.add_argument("workflow_id", help="Workflow ID to execute")
+    devdo_parser = subparsers.add_parser("devdo", help="Inspect and start a workflow run")
+    devdo_parser.add_argument("workflow_id", help="Workflow ID to inspect/start")
     HANDLERS["devdo"] = handle_devdo
 
     # dodev is an alias for devdo
-    dodev_parser = subparsers.add_parser("dodev", help="Alias for devdo", add_help=False)
-    dodev_parser.add_argument("workflow_id", help="Workflow ID to execute")
+    dodev_parser = subparsers.add_parser("dodev", help="Alias for devdo")
+    dodev_parser.add_argument("workflow_id", help="Workflow ID to inspect/start")
     HANDLERS["dodev"] = handle_devdo
 
     # caveman command
@@ -59,7 +59,11 @@ def handle_todo(args: argparse.Namespace) -> int:
 
 
 def handle_devdo(args: argparse.Namespace) -> int:
-    """Handle devdo/dodev command: execute a plan."""
+    """Handle devdo/dodev command: inspect and start a workflow run.
+
+    This command does not execute plan tasks itself. It creates/loads run
+    state and prints the next action for an operator or external executor.
+    """
     from hermesoptimizer.commands.devdo_cmd import start_run, load_run_state
 
     base = Path(".")

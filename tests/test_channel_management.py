@@ -437,8 +437,8 @@ class TestChannelIsolation:
         # and dev is not a source of anything except beta
         sources = set(channel_promote.PROMOTION_PATHS.keys())
         targets = set(channel_promote.PROMOTION_PATHS.values())
-        # No overlap (no channel is both a source and a target)
-        assert sources.isdisjoint(targets) is False  # dev and beta overlap as targets
+        # Promotion graph is a chain: beta is both a target and a source.
+        assert sources & targets == {"beta"}
         # But no channel should appear as a target of itself
         for src, tgt in channel_promote.PROMOTION_PATHS.items():
             assert src != tgt

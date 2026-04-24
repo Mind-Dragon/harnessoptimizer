@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -120,14 +121,21 @@ def check_model_plan_truth() -> CheckResult:
 # -- Check 4: Provider truth store loads -------------------------------------
 
 def check_provider_truth() -> CheckResult:
-    """Verify provider truth store can be instantiated."""
+    """Verify merged provider truth can be instantiated and is non-empty."""
     try:
-        from hermesoptimizer.sources.provider_truth import ProviderTruthStore
-        store = ProviderTruthStore()
-        count = len(store.all_records())
+        from hermesoptimizer.sources.provider_registry import ProviderRegistry
+
+        registry = ProviderRegistry.from_merged_sources()
+        try:
+            providers = registry.providers(include_quarantined=True)
+        except TypeError:
+            providers = registry.providers()
+        count = len(providers)
         return CheckResult(
-            "provider_truth", True,
-            evidence={"entries": count},
+            "provider_truth",
+            count > 0,
+            evidence={"entries": count, "source": getattr(registry, "source", "unknown"), "providers": providers[:20]},
+            detail="" if count > 0 else "provider registry is empty",
         )
     except Exception as exc:
         return CheckResult("provider_truth", False, detail=str(exc))
@@ -213,7 +221,7 @@ def check_test_collection() -> CheckResult:
     env = {**os.environ, "PYTHONPATH": str(repo_root / "src")}
     try:
         proc = subprocess.run(
-            [sys.executable, "-m", "pytest", "--co", "--ignore=tests/test_channel_management.py"],
+            [sys.executable, "-m", "pytest", "--co"],
             capture_output=True, text=True, timeout=60,
             cwd=str(repo_root),
             env=env,
@@ -227,6 +235,134 @@ def check_test_collection() -> CheckResult:
         )
     except Exception as exc:
         return CheckResult("test_collection", False, detail=str(exc))
+
+
+def _cli_command_names() -> list[str]:
+    """Return top-level CLI command names from the argparse surface."""
+    from hermesoptimizer.cli import build_parser
+
+    parser = build_parser()
+    for action in parser._actions:
+        choices = getattr(action, "choices", None)
+        if choices:
+            return sorted(choices.keys())
+    return []
+
+
+def check_cli_help_smoke() -> CheckResult:
+    """Verify every top-level CLI command responds to --help with exit 0."""
+    repo_root = _repo_root()
+    env = {**os.environ, "PYTHONPATH": str(repo_root / "src")}
+    commands = _cli_command_names()
+    failed: list[dict[str, Any]] = []
+    for command in commands:
+        proc = subprocess.run(
+            [sys.executable, "-m", "hermesoptimizer", command, "--help"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(repo_root),
+            env=env,
+        )
+        if proc.returncode != 0:
+            failed.append(
+                {
+                    "command": command,
+                    "exit_code": proc.returncode,
+                    "stderr": proc.stderr[-200:],
+                    "stdout": proc.stdout[-200:],
+                }
+            )
+    return CheckResult(
+        "cli_help_smoke",
+        not failed and bool(commands),
+        evidence={"commands_checked": commands, "failed": failed},
+        detail="" if not failed else f"{len(failed)} command help smoke(s) failed",
+    )
+
+
+def check_readme_command_drift() -> CheckResult:
+    """Fail when README references top-level commands absent from argparse."""
+    repo_root = _repo_root()
+    text = (repo_root / "README.md").read_text(encoding="utf-8")
+    documented: set[str] = set()
+    for match in re.finditer(r"`hermesoptimizer ([^`]+)`", text):
+        for part in match.group(1).split("/"):
+            root = part.strip().split()[0]
+            if root:
+                documented.add(root)
+    actual = set(_cli_command_names())
+    missing = sorted(documented - actual)
+    return CheckResult(
+        "readme_command_drift",
+        not missing,
+        evidence={"documented": sorted(documented), "missing": missing},
+        detail="" if not missing else f"README documents unknown commands: {missing}",
+    )
+
+
+def check_installer_canary() -> CheckResult:
+    """Run the no-write fresh-root installer canary used for clean installs."""
+    repo_root = _repo_root()
+    with tempfile.TemporaryDirectory(prefix="hopt-installer-canary-") as td:
+        fresh_root = Path(td) / "fresh-root"
+        commands = {
+            "ext_sync_fresh_root": [
+                sys.executable,
+                "-m",
+                "hermesoptimizer",
+                "ext-sync",
+                "--dry-run",
+                "--fresh-root",
+                str(fresh_root),
+            ],
+            "ext_doctor": [sys.executable, "-m", "hermesoptimizer", "ext-doctor", "--dry-run"],
+        }
+        results: dict[str, dict[str, Any]] = {}
+        for name, cmd in commands.items():
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=90,
+                cwd=str(repo_root),
+                env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+            )
+            results[name] = {"exit_code": proc.returncode, "stdout_tail": proc.stdout[-300:], "stderr_tail": proc.stderr[-300:]}
+            if proc.returncode != 0:
+                return CheckResult(
+                    "installer_canary",
+                    False,
+                    detail=f"{name} failed with exit {proc.returncode}",
+                    evidence={"commands": results},
+                )
+    return CheckResult("installer_canary", True, evidence={"commands": results})
+
+
+def check_brain_doctor_canary() -> CheckResult:
+    """Run a non-dry, local-only brain canary without live provider network calls."""
+    repo_root = _repo_root()
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "hermesoptimizer",
+            "brain-doctor",
+            "--check",
+            "request_dump",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        cwd=str(repo_root),
+        env={**os.environ, "PYTHONPATH": str(repo_root / "src")},
+    )
+    return CheckResult(
+        "brain_doctor_canary",
+        proc.returncode == 0,
+        evidence={"exit_code": proc.returncode, "stdout_tail": proc.stdout[-500:], "stderr_tail": proc.stderr[-500:]},
+        detail="" if proc.returncode == 0 else "non-dry local brain canary failed",
+    )
 
 
 # -- Check 7: Extension doctor smoke ------------------------------------------
@@ -284,6 +420,10 @@ def check_extension_doctor() -> CheckResult:
             evidence={
                 "extensions_checked": report.get("extensions_checked", 0),
                 "issues": real_issues_count,
+                "dry_run_drift_issues": [
+                    i for i in issues
+                    if i.get("issue", "").startswith("not installed (dry-run)")
+                ],
                 "drift_warnings": drift_warnings,
                 "verify_failed": verify_failed,
                 "missing_source": missing_source,
@@ -459,7 +599,11 @@ CHECKS = [
     check_auxiliary_drift_status,
     check_channel_status,
     check_test_collection,
+    check_cli_help_smoke,
+    check_readme_command_drift,
     check_extension_doctor,
+    check_installer_canary,
+    check_brain_doctor_canary,
     check_wheel_install_smoke,
     check_release_doc_drift,
 ]

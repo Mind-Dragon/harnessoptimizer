@@ -6,5 +6,6 @@ verify_command: python -m hermesoptimizer.extensions.verify_contracts caveman
 ownership: external_runtime
 selected: true
 metadata:
+  optional_runtime: true
   config_key: caveman_mode
   skill_path: ~/.hermes/skills/software-development/caveman/

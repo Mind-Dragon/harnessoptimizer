@@ -184,6 +184,28 @@ class TestCavemanConfigWrite:
         assert config_data.get("providers") == original_config["providers"]
         assert config_data.get("log") == original_config["log"]
 
+    def test_config_writer_handles_adjacent_comments_and_free_text(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Writer should produce clean YAML when caveman_mode is added near comments/scalars."""
+        hermes_dir = tmp_path / ".hermes"
+        hermes_dir.mkdir(parents=True)
+        config_file = hermes_dir / "config.yaml"
+        config_file.write_text(
+            "# operator note\nnotes: keep this free text value\nproviders:\n  openai:\n    model: gpt-4\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        import importlib
+        import hermesoptimizer.caveman as caveman_module
+        importlib.reload(caveman_module)
+
+        caveman_module.enable()
+
+        config_data = yaml.safe_load(config_file.read_text(encoding="utf-8"))
+        assert config_data["caveman_mode"] is True
+        assert config_data["notes"] == "keep this free text value"
+        assert config_data["providers"]["openai"]["model"] == "gpt-4"
+
 
 class TestCavemanCLISmoke:
     """Smoke tests for CLI caveman command with persistent config."""

@@ -18,7 +18,7 @@
 
 ---
 
-Current release: **v0.9.2**
+Current release: **v0.9.3**
 
 Harness Optimizer reads agent config, sessions, logs, and runtime health surfaces. Detects what is actually wrong, ranks it, and reports it. Also provides a plan-then-execute workflow system (`/todo` + `/devdo`) for multi-agent development orchestration.
 
@@ -100,11 +100,7 @@ PYTHONPATH=src python -m hermesoptimizer --help   # src-layout repo-root check
 | `hermesoptimizer verify-endpoints` | Verify a provider endpoint/model against truth data |
 | `hermesoptimizer dreams-sweep` | Run a read-only dreams memory sweep summary |
 | `hermesoptimizer release-readiness` | Run closeout gate: install integrity, model truth, channel status |
-| `hermesoptimizer config-status` | Show current model/provider, last backup, diff since backup |
-| `hermesoptimizer auxiliary-status` | Show auxiliary role routing, constraint pass/fail, evaluator recommendations |
-| `hermesoptimizer auxiliary-recommend` | Rank optimal auxiliary model assignments from catalog |
-| `hermesoptimizer yolo-status` | Show YOLO mode state, blocklist count, auto-approve status |
-| `hermesoptimizer service start/stop/status/flush` | Config watcher daemon lifecycle and flag management |
+| Planned: config/auxiliary/yolo/service status commands | Tracked for later release; not exposed by the current CLI |
 
 ## Architecture
 
@@ -141,7 +137,7 @@ src/hermesoptimizer/
 
 ## Tests
 
-`PYTHONPATH=src pytest --collect-only` currently reports 1,626 collected tests.
+`PYTHONPATH=src pytest --collect-only` currently reports 2,025 collected tests.
 
 Run the full suite with:
 

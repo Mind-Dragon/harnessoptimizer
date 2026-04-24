@@ -15,6 +15,7 @@ import glob
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any
 
 
@@ -23,6 +24,55 @@ def load_dump(path: str) -> dict[str, Any] | None:
         return json.loads(Path(path).read_text())
     except Exception:
         return None
+
+
+def _provider_from_url(url: str) -> str:
+    host = urlparse(url).netloc.lower()
+    if "openrouter" in host:
+        return "openrouter"
+    if "kilocode" in host:
+        return "kilocode"
+    if "nousresearch" in host:
+        return "nous"
+    if "openai" in host:
+        return "openai-codex"
+    if "kimi" in host or "moonshot" in host:
+        return "kimi"
+    if "minimax" in host:
+        return "minimax"
+    return host or "unknown"
+
+
+def _is_failure_reason(reason: str) -> bool:
+    lowered = reason.lower()
+    return any(token in lowered for token in ("fail", "error", "timeout", "retry", "retries", "429", "401", "403", "404", "quota", "auth", "blocked"))
+
+
+def build_provider_health_inputs(url_model_reason: Counter[tuple[str, str, str]]) -> list[dict[str, Any]]:
+    """Convert request-dump failure buckets into provider health/quarantine input."""
+    health: dict[tuple[str, str], dict[str, Any]] = {}
+    for (url, model, reason), count in url_model_reason.items():
+        provider = _provider_from_url(url)
+        key = (provider, model or "unknown")
+        row = health.setdefault(
+            key,
+            {
+                "provider": provider,
+                "model": model or "unknown",
+                "failure_count": 0,
+                "success_count": 0,
+                "reasons": [],
+                "quarantine_candidate": False,
+            },
+        )
+        if _is_failure_reason(reason):
+            row["failure_count"] += count
+            row["reasons"].append({"reason": reason, "count": count, "url": url})
+        else:
+            row["success_count"] += count
+    for row in health.values():
+        row["quarantine_candidate"] = row["failure_count"] >= 3
+    return sorted(health.values(), key=lambda item: (-item["failure_count"], item["provider"], item["model"]))
 
 
 def main() -> int:
@@ -81,6 +131,7 @@ def main() -> int:
             {"url": u, "model": m, "reason": r, "count": c}
             for (u, m, r), c in url_model_reason.most_common(20)
         ],
+        "provider_health_inputs": build_provider_health_inputs(url_model_reason),
         "sample_sessions_by_reason": sessions_by_reason,
     }
 

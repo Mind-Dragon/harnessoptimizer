@@ -23,7 +23,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)\}")
+ENV_PATTERN = re.compile(r"\$\{([A-Za-z0-9_]+)\}")
 
 DEFAULT_AUTH_PATH = Path.home() / ".hermes" / "auth.json"
 
@@ -61,16 +61,17 @@ def _load_auth_json(path: Path | None = None) -> dict[str, Any]:
     return data
 
 
-def _find_credential_by_label(label: str, auth_data: dict[str, Any]) -> str | None:
-    """Find credential in credential_pool by label, return access_token or None.
-
-    Selects the credential with the lowest priority value.
-    Does not log or return secret values.
-    """
+def _find_credential_by_label(label: str, auth_data: dict[str, Any], provider: str | None = None) -> str | None:
+    """Find credential in credential_pool by label, optionally scoped to provider."""
     credential_pool = auth_data.get("credential_pool", {})
     matching_credentials: list[tuple[int, str]] = []
 
-    for provider_credentials in credential_pool.values():
+    provider_items = (
+        [(provider, credential_pool.get(provider, []))]
+        if provider
+        else list(credential_pool.items())
+    )
+    for _provider_name, provider_credentials in provider_items:
         if not isinstance(provider_credentials, list):
             continue
         for cred in provider_credentials:
@@ -78,7 +79,7 @@ def _find_credential_by_label(label: str, auth_data: dict[str, Any]) -> str | No
                 continue
             if cred.get("label") == label:
                 priority = cred.get("priority", 0)
-                access_token = cred.get("access_token", "")
+                access_token = cred.get("agent_key") or cred.get("access_token") or cred.get("api_key") or ""
                 # Don't use masked tokens (***)
                 if access_token and access_token != "***":
                     matching_credentials.append((priority, access_token))
@@ -104,7 +105,7 @@ def load_config(path: Path) -> list[dict[str, Any]]:
     return data
 
 
-def resolve_env(value: Any, missing: list[str], auth_path: Path | None = None) -> Any:
+def resolve_env(value: Any, missing: list[str], auth_path: Path | None = None, auth_provider: str | None = None) -> Any:
     """Resolve ${ENV_VAR} placeholders.
 
     Priority:
@@ -120,7 +121,7 @@ def resolve_env(value: Any, missing: list[str], auth_path: Path | None = None) -
                 return env
             # Fallback: try auth.json
             auth_data = _load_auth_json(auth_path)
-            token = _find_credential_by_label(key, auth_data)
+            token = _find_credential_by_label(key, auth_data, provider=auth_provider)
             if token is not None:
                 return token
             # Still missing
@@ -128,9 +129,9 @@ def resolve_env(value: Any, missing: list[str], auth_path: Path | None = None) -
             return match.group(0)
         return ENV_PATTERN.sub(repl, value)
     if isinstance(value, dict):
-        return {k: resolve_env(v, missing, auth_path) for k, v in value.items()}
+        return {k: resolve_env(v, missing, auth_path, auth_provider) for k, v in value.items()}
     if isinstance(value, list):
-        return [resolve_env(v, missing, auth_path) for v in value]
+        return [resolve_env(v, missing, auth_path, auth_provider) for v in value]
     return value
 
 
@@ -138,7 +139,8 @@ def run_probe(
     entry: dict[str, Any], timeout: int, dry_run: bool, auth_path: Path | None = None
 ) -> dict[str, Any]:
     missing: list[str] = []
-    resolved = resolve_env(entry, missing, auth_path)
+    auth_provider = entry.get("auth_provider")
+    resolved = resolve_env(entry, missing, auth_path, auth_provider if isinstance(auth_provider, str) else None)
     result: dict[str, Any] = {
         "name": resolved.get("name"),
         "url": resolved.get("url"),
@@ -200,7 +202,8 @@ def run_probe(
             violations.append(f"forbidden_body:{token}")
 
     result["violations"] = violations
-    result["status"] = "pass" if not violations and not error else ("fail" if violations else "transport_error")
+    expected_http_error = error and status in allowed_statuses
+    result["status"] = "pass" if not violations and (not error or expected_http_error) else ("fail" if violations else "transport_error")
     return result
 
 

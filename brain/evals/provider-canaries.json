@@ -1,17 +1,15 @@
 [
   {
-    "name": "minimax-chat",
+    "name": "kilocode-ling-2.6-flash-free",
     "method": "POST",
-    "url": "https://api.minimax.io/v1/chat/completions",
+    "url": "https://api.kilo.ai/api/gateway/chat/completions",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer ${MINIMAX_API_KEY}"
+      "Authorization": "Bearer ${KILOCODE_API_KEY}"
     },
     "body": {
-      "model": "MiniMax-M2.7",
-      "messages": [
-        {"role": "user", "content": "Reply with OK"}
-      ],
+      "model": "inclusionai/ling-2.6-flash:free",
+      "messages": [{"role": "user", "content": "Reply with OK"}],
       "max_tokens": 4
     },
     "expect": {
@@ -20,42 +18,61 @@
     }
   },
   {
-    "name": "kimi-coding",
+    "name": "openrouter-ling-2.6-flash-free",
     "method": "POST",
-    "url": "https://api.kimi.com/coding/v1/chat/completions",
+    "url": "https://openrouter.ai/api/v1/chat/completions",
     "headers": {
       "Content-Type": "application/json",
-      "Authorization": "Bearer ${KIMI_API_KEY}",
-      "User-Agent": "KimiCLI/1.3"
+      "Authorization": "Bearer ${OPENROUTER_API_KEY}"
     },
     "body": {
-      "model": "kimi-k2-turbo-preview",
-      "messages": [
-        {"role": "user", "content": "Reply with OK"}
-      ],
+      "model": "inclusionai/ling-2.6-flash:free",
+      "messages": [{"role": "user", "content": "Reply with OK"}],
+      "max_tokens": 4
+    },
+    "expect": {
+      "allowed_statuses": [200, 400, 401, 403, 429],
+      "forbid_body_substrings": ["<html", "cf-chl", "Enable JavaScript and cookies to continue"]
+    }
+  },
+  {
+    "name": "nous-kimi-k2p6",
+    "auth_provider": "nous",
+    "method": "POST",
+    "url": "https://inference-api.nousresearch.com/v1/chat/completions",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${device_code}"
+    },
+    "body": {
+      "model": "moonshotai/kimi-k2.6",
+      "messages": [{"role": "user", "content": "Reply with OK"}],
       "max_tokens": 4
     },
     "expect": {
       "allowed_statuses": [200, 400, 401, 403, 429],
       "forbid_statuses": [404],
-      "forbid_body_substrings": ["resource_not_found_error", "access_terminated_error"]
+      "forbid_body_substrings": ["resource_not_found_error", "access_terminated_error", "<html"]
     }
   },
   {
-    "name": "chatgpt-codex-summary-lane",
+    "name": "openai-gpt-5.4-mini",
+    "auth_provider": "openai-codex",
     "method": "POST",
-    "url": "https://chatgpt.com/backend-api/codex/chat/completions",
+    "url": "https://api.openai.com/v1/chat/completions",
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${device_code}"
     },
     "body": {
-      "messages": [
-        {"role": "user", "content": "Reply with OK"}
-      ]
+      "model": "gpt-5.4-mini",
+      "messages": [{"role": "user", "content": "Reply with OK"}],
+      "max_tokens": 4
     },
     "expect": {
-      "allowed_statuses": [200, 401, 403],
-      "forbid_body_substrings": ["<html", "cf-chl", "Enable JavaScript and cookies to continue"]
+      "allowed_statuses": [200, 400, 401, 403, 429],
+      "forbid_statuses": [404],
+      "forbid_body_substrings": ["model_not_found", "does not exist", "<html"]
     }
   }
 ]

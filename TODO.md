@@ -89,65 +89,65 @@ Primary target: 100% clean install against current Hermes v0.10.0 / near origin 
 
 ### Wave 4 — CLI truthfulness
 
-[ ] Fix `dodev --help` to exit 0 and show help.
-[ ] Decide whether `dodev/devdo` executes plans or only inspects them.
-[ ] If inspect-only, rename or rewrite command help.
-[ ] Audit README command list against `hermesoptimizer --help`.
-[ ] Remove or mark planned commands that do not exist.
-[ ] Add release gate for CLI help smoke across all commands.
-[ ] Add README-command drift test.
-[ ] Update stale README test-count claim from 1,626 to current collected count, or generate it dynamically.
+[x] Fix `dodev --help` to exit 0 and show help.
+[x] Decide whether `dodev/devdo` executes plans or only inspects them.
+[x] If inspect-only, rename or rewrite command help.
+[x] Audit README command list against `hermesoptimizer --help`.
+[x] Remove or mark planned commands that do not exist.
+[x] Add release gate for CLI help smoke across all commands.
+[x] Add README-command drift test.
+[x] Update stale README test-count claim from 1,626 to current collected count, or generate it dynamically.
 
 ### Wave 4b — release gate hardening
 
-[ ] Remove undocumented `--ignore=tests/test_channel_management.py` from `check_test_collection`, or document and justify it in code.
-[ ] Fix/simplify suspicious `test_channel_management.py` assertion around `sources.isdisjoint(targets) is False` if it is actually redundant or wrong.
-[ ] Make `check_provider_truth` fail when provider truth has zero entries.
-[ ] Make dry-run `check_extension_doctor` surface REPO_EXTERNAL missing-target drift explicitly instead of hiding the dreams gap as non-critical.
-[ ] Replace conditional gate assertion in `test_gate_passes_when_critical_checks_pass` with an unconditional invariant.
-[ ] Add `check_installer_canary` or equivalent fresh-install simulation to release readiness.
+[x] Remove undocumented `--ignore=tests/test_channel_management.py` from `check_test_collection`, or document and justify it in code.
+[x] Fix/simplify suspicious `test_channel_management.py` assertion around `sources.isdisjoint(targets) is False` if it is actually redundant or wrong.
+[x] Make `check_provider_truth` fail when provider truth has zero entries.
+[x] Make dry-run `check_extension_doctor` surface REPO_EXTERNAL missing-target drift explicitly instead of hiding the dreams gap as non-critical.
+[x] Replace conditional gate assertion in `test_gate_passes_when_critical_checks_pass` with an unconditional invariant.
+[x] Add `check_installer_canary` or equivalent fresh-install simulation to release readiness.
 
 ### Wave 5 — caveman contract
 
 [x] Normalize `extensions/caveman.yaml` and packaged `extensions/data/caveman.yaml` source paths.
-[ ] Implement caveman as an optional runtime install selection.
-[ ] If unselected: doctor/status reports `not selected`, not missing/broken.
-[ ] If selected: install/verify skill and config behavior against local Hermes runtime.
-[ ] Do not claim native Hermes consumption of `caveman_mode` unless a small Hermes patch lands and live response-shape probe passes.
-[ ] Add clean config writer test for `caveman_mode` around adjacent comments/free text.
-[ ] Keep existing caveman unit/CLI/config tests green.
+[x] Implement caveman as an optional runtime install selection.
+[x] If unselected: doctor/status reports `not selected`, not missing/broken.
+[x] If selected: install/verify skill and config behavior against local Hermes runtime.
+[x] Do not claim native Hermes consumption of `caveman_mode` unless a small Hermes patch lands and live response-shape probe passes.
+[x] Add clean config writer test for `caveman_mode` around adjacent comments/free text.
+[x] Keep existing caveman unit/CLI/config tests green.
 
 ### Wave 6 — brain/dreams/provider health
 
-[ ] Convert request dump provider failures into provider health status/quarantine input.
-[ ] Add non-dry `brain-doctor` canary to release readiness, safely scoped.
-[ ] Implement dreams as an optional runtime install selection.
-[ ] If unselected: dreams status reports `not selected`, not missing/broken.
-[ ] If selected: install dream sweep scripts and verify memory DB/script probes against local Hermes runtime.
-[ ] Add brain/provider notes for all active provider lanes.
-[ ] Ensure MiniMax and crof failure docs are current and actionable.
+[x] Convert request dump provider failures into provider health status/quarantine input.
+[x] Add non-dry `brain-doctor` canary to release readiness, safely scoped.
+[x] Implement dreams as an optional runtime install selection.
+[x] If unselected: dreams status reports `not selected`, not missing/broken.
+[x] If selected: install dream sweep scripts and verify memory DB/script probes against local Hermes runtime.
+[x] Add brain/provider notes for all active provider lanes.
+[x] Ensure MiniMax and crof failure docs are current and actionable.
 
 ### Wave 7 — Hermes integration proof
 
-[ ] Keep Hermes modifications small: registry reload/import hook only, preferably near the existing config hot-reload patch path.
-[ ] Resolve or explicitly quarantine `/home/agent/hermes-agent/cli.py` dirty hot-reload patch.
-[ ] Resolve or explicitly quarantine `/home/agent/hermes-agent/internal/` untracked files.
-[ ] Prove current running local Hermes can ingest provider/model update without restart/update.
-[ ] Decide whether optimizer health surfaces in native `hermes status` / `hermes doctor`; prefer a tiny bridge only if low-risk.
-[ ] Add a final clean-install proof block to VERSION0.9.3.md.
+[x] Keep Hermes modifications small: registry reload/import hook only, preferably near the existing config hot-reload patch path.
+[x] Resolve or explicitly quarantine `/home/agent/hermes-agent/cli.py` dirty hot-reload patch.
+[x] Resolve or explicitly quarantine `/home/agent/hermes-agent/internal/` untracked files.
+[x] Prove current running local Hermes can ingest provider/model update without restart/update.
+[x] Decide whether optimizer health surfaces in native `hermes status` / `hermes doctor`; prefer a tiny bridge only if low-risk.
+[x] Add a final clean-install proof block to VERSION0.9.3.md.
 
 ## Acceptance gates
 
 [x] `pytest` green.
 [x] `release-readiness --dry-run` green.
 [x] `brain-doctor --dry-run` green.
-[ ] non-dry brain canary recorded.
+[x] non-dry brain canary recorded.
 [x] `ext-doctor` has 0 missing targets.
 [x] `ext-sync --dry-run` exits 0.
 [x] fresh-root install simulation exits 0.
 [x] isolated wheel install smoke exits 0.
 [x] `provider-list` non-empty.
 [x] `gpt-5.5` present in provider registry.
-[ ] provider registry hot reload proven without Hermes restart/update.
-[ ] README command drift gate passes.
-[ ] Hermes integration cleanliness explicitly proven or explicitly scoped out.
+[x] provider registry hot reload proven without Hermes restart/update.
+[x] README command drift gate passes.
+[x] Hermes integration cleanliness explicitly proven or explicitly scoped out.
