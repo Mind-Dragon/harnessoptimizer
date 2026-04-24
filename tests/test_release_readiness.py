@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -155,6 +156,88 @@ class TestCheckGovernanceDocDrift:
         result = check_governance_doc_drift()
         assert result.passed is True
         assert result.evidence["issue_count"] == 0
+
+    def test_governance_doc_drift_fails_on_invalid_lane_state(self, tmp_path: Path) -> None:
+        import hermesoptimizer.release.readiness as mod
+        original_repo_root = mod._repo_root
+        try:
+            fake_repo = tmp_path / "fake_repo"
+            fake_repo.mkdir()
+            (fake_repo / "GUIDELINE.md").write_text("## Non-negotiables\n### 1. Foo\n## Build priorities\n")
+            (fake_repo / "ARCHITECTURE.md").write_text("split into seven layers\n## System model\n" + "### 1. \n" * 7 + "## Directory architecture\n## Planned architecture extensions\n")
+            (fake_repo / "TODO.md").write_text("Status: closed locally; testing preparation complete.\n")
+            (fake_repo / "brain").mkdir()
+            (fake_repo / "brain" / "active-work").mkdir()
+            (fake_repo / "brain" / "active-work" / "current.md").write_text("Next deterministic step\nrun the testing-prep gate\n")
+            (fake_repo / "brain" / "evals").mkdir()
+            (fake_repo / "brain" / "evals" / "provider-canaries.json").write_text(
+                json.dumps([{"name": "bad-canary", "lane_state": "bogus"}])
+            )
+            (fake_repo / "brain" / "providers").mkdir()
+            (fake_repo / "brain" / "providers" / "nacrof-crof.md").write_text(
+                "do not use for required release work unless the canary is green\n"
+            )
+            for rel in [
+                "extensions/scripts.yaml",
+                "extensions/tool_surface.yaml",
+                "src/hermesoptimizer/extensions/data/scripts.yaml",
+                "src/hermesoptimizer/extensions/data/tool_surface.yaml",
+            ]:
+                p = fake_repo / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(
+                    yaml.safe_dump({"ownership": "repo_only", "target_paths": [], "metadata": {"install_mode": "repo_only_no_sync", "no_sync_reason": "test"}})
+                )
+            (fake_repo / "CHANGELOG.md").write_text("## v0.9.3\n")
+            (fake_repo / "ROADMAP.md").write_text("## Completed versions\n")
+
+            mod._repo_root = lambda: fake_repo
+            result = check_governance_doc_drift()
+            assert result.passed is False
+            assert any("invalid lane_state" in issue["issue"] for issue in result.evidence["issues"])
+        finally:
+            mod._repo_root = original_repo_root
+
+    def test_governance_doc_drift_fails_on_required_release_non_green(self, tmp_path: Path) -> None:
+        import hermesoptimizer.release.readiness as mod
+        original_repo_root = mod._repo_root
+        try:
+            fake_repo = tmp_path / "fake_repo"
+            fake_repo.mkdir()
+            (fake_repo / "GUIDELINE.md").write_text("## Non-negotiables\n### 1. Foo\n## Build priorities\n")
+            (fake_repo / "ARCHITECTURE.md").write_text("split into seven layers\n## System model\n" + "### 1. \n" * 7 + "## Directory architecture\n## Planned architecture extensions\n")
+            (fake_repo / "TODO.md").write_text("Status: closed locally; testing preparation complete.\n")
+            (fake_repo / "brain").mkdir()
+            (fake_repo / "brain" / "active-work").mkdir()
+            (fake_repo / "brain" / "active-work" / "current.md").write_text("Next deterministic step\nrun the testing-prep gate\n")
+            (fake_repo / "brain" / "evals").mkdir()
+            (fake_repo / "brain" / "evals" / "provider-canaries.json").write_text(
+                json.dumps([{"name": "bad-canary", "lane_state": "fallback_only", "required_release": True}])
+            )
+            (fake_repo / "brain" / "providers").mkdir()
+            (fake_repo / "brain" / "providers" / "nacrof-crof.md").write_text(
+                "do not use for required release work unless the canary is green\n"
+            )
+            for rel in [
+                "extensions/scripts.yaml",
+                "extensions/tool_surface.yaml",
+                "src/hermesoptimizer/extensions/data/scripts.yaml",
+                "src/hermesoptimizer/extensions/data/tool_surface.yaml",
+            ]:
+                p = fake_repo / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(
+                    yaml.safe_dump({"ownership": "repo_only", "target_paths": [], "metadata": {"install_mode": "repo_only_no_sync", "no_sync_reason": "test"}})
+                )
+            (fake_repo / "CHANGELOG.md").write_text("## v0.9.3\n")
+            (fake_repo / "ROADMAP.md").write_text("## Completed versions\n")
+
+            mod._repo_root = lambda: fake_repo
+            result = check_governance_doc_drift()
+            assert result.passed is False
+            assert any("required_release=true but lane_state" in issue["issue"] for issue in result.evidence["issues"])
+        finally:
+            mod._repo_root = original_repo_root
 
 
 class TestCheckReleaseDocDrift:

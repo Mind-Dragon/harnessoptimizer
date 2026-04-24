@@ -6,6 +6,8 @@ from pathlib import Path
 
 import yaml
 
+from hermesoptimizer.sources.lane_state import LaneState
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -56,15 +58,28 @@ def test_active_release_docs_do_not_reopen_closed_v093_work() -> None:
     assert "run the testing-prep gate" in active_work
 
 
-def test_provider_notes_and_canaries_are_in_lockstep() -> None:
+def test_provider_canary_lane_policy_is_generic() -> None:
     canaries = json.loads(_read("brain/evals/provider-canaries.json"))
-    canary_names = {entry["name"] for entry in canaries}
-    assert "nacrof-crof" in canary_names
+    assert canaries, "provider canary fixture must not be empty"
+    valid_states = {s.value for s in LaneState}
+    seen_names: set[str] = set()
 
-    nacrof_note = _read("brain/providers/nacrof-crof.md")
-    assert "not yet present" not in nacrof_note
-    assert "Config fixture: `evals/provider-canaries.json` entry `nacrof-crof`" in nacrof_note
-    assert "do not use for required release work unless the canary is green" in nacrof_note
+    for entry in canaries:
+        name = entry.get("name")
+        assert isinstance(name, str) and name, f"canary missing name: {entry}"
+        assert name not in seen_names, f"duplicate canary name: {name}"
+        seen_names.add(name)
+
+        lane_state = entry.get("lane_state")
+        assert lane_state in valid_states, f"canary {name} has invalid lane_state: {lane_state}"
+
+        required_release = bool(entry.get("required_release"))
+        if required_release:
+            assert LaneState.from_string(lane_state) is LaneState.GREEN, (
+                f"canary {name} is required_release but lane_state is {lane_state}"
+            )
+        else:
+            assert LaneState.from_string(lane_state) is not None
 
 
 def test_repo_only_empty_target_extensions_declare_no_sync_contract() -> None:

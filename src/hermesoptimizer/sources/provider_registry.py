@@ -20,6 +20,7 @@ import yaml
 
 from hermesoptimizer.paths import get_data_dir
 from hermesoptimizer.resources import read_provider_registry
+from hermesoptimizer.sources.lane_state import LaneState
 from hermesoptimizer.sources.provider_truth import ProviderTruthRecord, ProviderTruthStore
 
 DEFAULT_REGISTRY_URL = (
@@ -218,6 +219,14 @@ class ProviderRegistry:
             provider_id
             for provider_id, provider in self.providers_by_id.items()
             if provider.status != "quarantined"
+        )
+
+    def required_release_providers(self) -> list[str]:
+        """Return provider IDs whose lane state is green (or legacy active alias)."""
+        return sorted(
+            provider_id
+            for provider_id, provider in self.providers_by_id.items()
+            if LaneState.from_string(provider.status).is_green()
         )
 
     def quarantined_providers(self) -> list[str]:

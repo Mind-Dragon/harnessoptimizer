@@ -1,6 +1,8 @@
 [
   {
     "name": "kilocode-ling-2.6-flash-free",
+    "lane_state": "green",
+    "required_release": true,
     "method": "POST",
     "url": "https://api.kilo.ai/api/gateway/chat/completions",
     "headers": {
@@ -19,6 +21,8 @@
   },
   {
     "name": "openrouter-ling-2.6-flash-free",
+    "lane_state": "green",
+    "required_release": true,
     "method": "POST",
     "url": "https://openrouter.ai/api/v1/chat/completions",
     "headers": {
@@ -37,7 +41,8 @@
   },
   {
     "name": "nous-kimi-k2p6",
-    "auth_provider": "nous",
+    "lane_state": "green",
+    "required_release": true,
     "method": "POST",
     "url": "https://inference-api.nousresearch.com/v1/chat/completions",
     "headers": {
@@ -57,7 +62,7 @@
   },
   {
     "name": "openai-gpt-5.4-mini",
-    "auth_provider": "openai-codex",
+    "lane_state": "quota_blocked",
     "method": "POST",
     "url": "https://api.openai.com/v1/chat/completions",
     "headers": {
@@ -77,7 +82,7 @@
   },
   {
     "name": "nacrof-crof",
-    "auth_provider": "nacrof",
+    "lane_state": "fallback_only",
     "method": "POST",
     "url": "https://crof.ai/v1/chat/completions",
     "headers": {

@@ -599,14 +599,30 @@ def check_governance_doc_drift() -> CheckResult:
 
     try:
         canaries = json.loads((repo_root / "brain" / "evals" / "provider-canaries.json").read_text(encoding="utf-8"))
-        names = {entry.get("name") for entry in canaries if isinstance(entry, dict)}
-        if "nacrof-crof" not in names:
-            add("brain/evals/provider-canaries.json", "missing nacrof-crof canary fixture")
+        from hermesoptimizer.sources.lane_state import LaneState
+        valid_states = {s.value for s in LaneState}
+        seen_names: set[str] = set()
+        if not isinstance(canaries, list) or not canaries:
+            add("brain/evals/provider-canaries.json", "provider canaries must be a non-empty list")
+        for entry in canaries if isinstance(canaries, list) else []:
+            if not isinstance(entry, dict):
+                add("brain/evals/provider-canaries.json", "canary entry must be an object")
+                continue
+            name = entry.get("name")
+            if not isinstance(name, str) or not name:
+                add("brain/evals/provider-canaries.json", f"canary missing name: {entry}")
+                name = "<unknown>"
+            elif name in seen_names:
+                add("brain/evals/provider-canaries.json", f"duplicate canary name: {name}")
+            seen_names.add(name)
+
+            lane_state = entry.get("lane_state")
+            if lane_state not in valid_states:
+                add("brain/evals/provider-canaries.json", f"canary {name} has invalid lane_state: {lane_state}")
+            if entry.get("required_release") and LaneState.from_string(lane_state) is not LaneState.GREEN:
+                add("brain/evals/provider-canaries.json", f"canary {name} required_release=true but lane_state is {lane_state}")
     except Exception as exc:  # noqa: BLE001
         add("brain/evals/provider-canaries.json", f"could not parse provider canaries: {exc}")
-    nacrof_note = (repo_root / "brain" / "providers" / "nacrof-crof.md").read_text(encoding="utf-8")
-    if "not yet present" in nacrof_note or "do not use for required release work unless the canary is green" not in nacrof_note:
-        add("brain/providers/nacrof-crof.md", "nacrof canary/fallback policy is stale or unclear")
 
     import yaml
 

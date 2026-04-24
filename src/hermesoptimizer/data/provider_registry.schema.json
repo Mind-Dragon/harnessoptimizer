@@ -30,7 +30,7 @@
           "name": {"type": "string"},
           "endpoint": {"type": "string"},
           "api_style": {"type": "string"},
-          "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown"]},
+          "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown", "green", "fallback_only", "quota_blocked"]},
           "notes": {"type": "string"},
           "models": {
             "type": "array",
@@ -44,7 +44,7 @@
                 "capabilities": {"type": "array", "items": {"type": "string"}},
                 "context_window": {"type": "integer", "minimum": 0},
                 "max_output_tokens": {"type": "integer", "minimum": 0},
-                "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown"]},
+                "status": {"type": "string", "enum": ["active", "inactive", "quarantined", "unknown", "green", "fallback_only", "quota_blocked"]},
                 "probe": {
                   "type": "object",
                   "additionalProperties": true,

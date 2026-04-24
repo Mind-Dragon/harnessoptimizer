@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from hermesoptimizer.sources.lane_state import LaneState
 from hermesoptimizer.sources.provider_registry import (
     ProviderRegistry,
     RegistryIntegrityError,
@@ -273,3 +274,80 @@ class TestProviderRegistry:
                 expected_signature="sha256:" + "f" * 64,
             )
         assert not cache.exists()
+
+
+class TestLaneState:
+    def test_lane_state_from_string_direct_values(self) -> None:
+        assert LaneState.from_string("green") is LaneState.GREEN
+        assert LaneState.from_string("fallback_only") is LaneState.FALLBACK_ONLY
+        assert LaneState.from_string("quota_blocked") is LaneState.QUOTA_BLOCKED
+        assert LaneState.from_string("quarantined") is LaneState.QUARANTINED
+        assert LaneState.from_string("unknown") is LaneState.UNKNOWN
+
+    def test_lane_state_legacy_aliases(self) -> None:
+        assert LaneState.from_string("active") is LaneState.GREEN
+        assert LaneState.from_string("inactive") is LaneState.UNKNOWN
+
+    def test_lane_state_case_insensitive(self) -> None:
+        assert LaneState.from_string("GREEN") is LaneState.GREEN
+        assert LaneState.from_string("Fallback_Only") is LaneState.FALLBACK_ONLY
+        assert LaneState.from_string("Active") is LaneState.GREEN
+
+    def test_lane_state_unknown_for_unrecognized(self) -> None:
+        assert LaneState.from_string("bogus") is LaneState.UNKNOWN
+        assert LaneState.from_string("") is LaneState.UNKNOWN
+        assert LaneState.from_string(None) is LaneState.UNKNOWN
+
+    def test_lane_state_green_is_required_release_eligible(self) -> None:
+        assert LaneState.GREEN.eligible_for_required_release() is True
+        assert LaneState.FALLBACK_ONLY.eligible_for_required_release() is False
+        assert LaneState.QUOTA_BLOCKED.eligible_for_required_release() is False
+        assert LaneState.QUARANTINED.eligible_for_required_release() is False
+        assert LaneState.UNKNOWN.eligible_for_required_release() is False
+
+
+class TestProviderRegistryLaneState:
+    def test_required_release_providers_returns_only_green(self) -> None:
+        data = {
+            "providers": [
+                {"id": "a", "name": "A", "endpoint": "https://a.invalid/v1", "api_style": "openai-compatible", "status": "green", "models": []},
+                {"id": "b", "name": "B", "endpoint": "https://b.invalid/v1", "api_style": "openai-compatible", "status": "fallback_only", "models": []},
+                {"id": "c", "name": "C", "endpoint": "https://c.invalid/v1", "api_style": "openai-compatible", "status": "quota_blocked", "models": []},
+                {"id": "d", "name": "D", "endpoint": "https://d.invalid/v1", "api_style": "openai-compatible", "status": "quarantined", "models": []},
+                {"id": "e", "name": "E", "endpoint": "https://e.invalid/v1", "api_style": "openai-compatible", "status": "unknown", "models": []},
+            ]
+        }
+        registry = ProviderRegistry.from_data(data, source="unit")
+        required = registry.required_release_providers()
+        assert required == ["a"]
+
+    def test_required_release_providers_normalizes_legacy_active_alias(self) -> None:
+        data = {
+            "providers": [
+                {"id": "legacy", "name": "Legacy", "endpoint": "https://legacy.invalid/v1", "api_style": "openai-compatible", "status": "active", "models": []},
+            ]
+        }
+        registry = ProviderRegistry.from_data(data, source="unit")
+        assert registry.required_release_providers() == ["legacy"]
+
+    def test_required_release_providers_excludes_legacy_inactive_alias(self) -> None:
+        data = {
+            "providers": [
+                {"id": "legacy", "name": "Legacy", "endpoint": "https://legacy.invalid/v1", "api_style": "openai-compatible", "status": "inactive", "models": []},
+            ]
+        }
+        registry = ProviderRegistry.from_data(data, source="unit")
+        assert registry.required_release_providers() == []
+
+    def test_providers_behavior_unchanged_for_quarantined(self) -> None:
+        data = {
+            "providers": [
+                {"id": "ok", "name": "OK", "endpoint": "https://ok.invalid/v1", "api_style": "openai-compatible", "status": "green", "models": []},
+                {"id": "bad", "name": "Bad", "endpoint": "https://bad.invalid/v1", "api_style": "openai-compatible", "status": "quarantined", "models": []},
+            ]
+        }
+        registry = ProviderRegistry.from_data(data, source="unit")
+        assert registry.providers() == ["ok"]
+        assert registry.providers(include_quarantined=True) == ["bad", "ok"]
+        assert registry.quarantined_providers() == ["bad"]
+        assert registry.required_release_providers() == ["ok"]
