@@ -61,3 +61,23 @@ def test_no_duplicate_ids() -> None:
     entries = build_registry(repo_root / "extensions")
     ids = [e.id for e in entries]
     assert len(ids) == len(set(ids)), f"Duplicate ids found: {ids}"
+
+
+def test_packaged_manifests_parity_with_root() -> None:
+    """Each root extensions/*.yaml must have an identical packaged counterpart."""
+    repo_root = Path(__file__).resolve().parents[1]
+    root_dir = repo_root / "extensions"
+    packaged_dir = repo_root / "src" / "hermesoptimizer" / "extensions" / "data"
+
+    root_files = sorted(root_dir.glob("*.yaml"))
+    assert root_files, "expected root extension manifests"
+
+    for root_file in root_files:
+        packaged_file = packaged_dir / root_file.name
+        assert packaged_file.exists(), f"packaged manifest missing for {root_file.name}"
+        root_text = root_file.read_text()
+        packaged_text = packaged_file.read_text()
+        assert root_text == packaged_text, (
+            f"manifest drift between root and packaged for {root_file.name}\n"
+            f"--- root ---\n{root_text}\n--- packaged ---\n{packaged_text}"
+        )

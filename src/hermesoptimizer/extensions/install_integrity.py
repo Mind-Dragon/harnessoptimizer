@@ -103,13 +103,6 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _compute_file_digest(path: Path) -> str:
-    """Compute a simple content digest for comparison."""
-    if path.is_file():
-        return hash(path.read_bytes())
-    return ""
-
-
 # ---------------------------------------------------------------------------
 # Pre-install checks
 # ---------------------------------------------------------------------------
