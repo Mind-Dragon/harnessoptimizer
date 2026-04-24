@@ -76,7 +76,7 @@ Lower-layer failures stop the gate first. Unit failures are not masked by higher
 | `tests/test_loop.py` | 40 | L1 |
 | `tests/test_validator.py` | 2 | L1 |
 | `tests/test_router.py` | 2 | L1 |
-| `tests/test_routing_diagnosis.py` | 6 | L1 |
+| `tests/test_route_diagnosis.py` | 6 | L1 |
 | `tests/test_reports.py` | 18 | L1 |
 | `tests/test_run_standalone.py` | 38 | L1 |
 | `tests/test_e2e_workflow.py` | 21 | L2 |
@@ -137,7 +137,7 @@ Lower-layer failures stop the gate first. Unit failures are not masked by higher
 | `tests/test_vault_writeback_cli.py` | 11 | L1 |
 | `tests/test_vault_rotation_hooks.py` | 39 | L1 |
 | `tests/test_vault_providers.py` | 15 | L1 |
-| `tests/test_vault_providers_http.py` | 11 | L1 |
+| `tests/test_vault_http_provider.py` | 11 | L1 |
 | `tests/test_vault_session.py` | 13 | L1 |
 | `tests/test_vault_conversion.py` | 12 | L1 |
 | `tests/test_vault_regex_filter.py` | 10 | L1 |
@@ -235,7 +235,7 @@ Modules: `sources/`, `catalog.py`, `loop.py`, `validate/`, `route/`, `report/`
 | `test_loop.py` | 40 | discover→parse→diagnose→enrich→rank→report pipeline |
 | `test_validator.py` | 2 | Input validation |
 | `test_router.py` | 2 | Route dispatch |
-| `test_routing_diagnosis.py` | 6 | Lane-aware diagnosis ranking |
+| `test_route_diagnosis.py` | 6 | Lane-aware diagnosis ranking |
 | `test_reports.py` | 18 | JSON/Markdown export, actionability |
 | `test_run_standalone.py` | 38 | CLI entrypoint, internal helpers, vault commands |
 | `test_e2e_workflow.py` | 21 | Full pipeline discover→report, multi-source inventories |
@@ -244,7 +244,7 @@ Modules: `sources/`, `catalog.py`, `loop.py`, `validate/`, `route/`, `report/`
 
 Selector:
 ```
-python3 -m pytest tests/test_discover.py tests/test_inventory.py tests/test_sources.py tests/test_catalog.py tests/test_diagnosis.py tests/test_loop.py tests/test_validator.py tests/test_router.py tests/test_routing_diagnosis.py tests/test_reports.py -q
+python3 -m pytest tests/test_discover.py tests/test_inventory.py tests/test_sources.py tests/test_catalog.py tests/test_diagnosis.py tests/test_loop.py tests/test_validator.py tests/test_router.py tests/test_route_diagnosis.py tests/test_reports.py -q
 ```
 
 ### B. Provider/model/config repair (270 tests)
@@ -335,7 +335,7 @@ Modules: `vault/inventory.py`, `vault/classify.py`, `vault/fingerprint.py`, `vau
 | `test_vault_writeback_cli.py` | 11 | CLI write-back commands |
 | `test_vault_rotation_hooks.py` | 39 | Key rotation, credential lifecycle |
 | `test_vault_providers.py` | 15 | Provider credential mapping |
-| `test_vault_providers_http.py` | 11 | HTTP provider credential flows |
+| `test_vault_http_provider.py` | 11 | HTTP provider credential flows |
 | `test_vault_session.py` | 13 | VaultSession CRUD, atomic writes |
 | `test_vault_conversion.py` | 12 | Vault format conversion, dry-run mode |
 | `test_vault_regex_filter.py` | 10 | Configurable regex credential detection |
@@ -344,7 +344,7 @@ Modules: `vault/inventory.py`, `vault/classify.py`, `vault/fingerprint.py`, `vau
 
 Selector:
 ```
-python3 -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tests/test_vault_classify_entries.py tests/test_vault_fingerprint.py tests/test_vault_crypto.py tests/test_vault_validator.py tests/test_vault_broader_sources.py tests/test_vault_docling.py tests/test_vault_audit.py tests/test_vault_writeback_plan.py tests/test_vault_writeback_exec.py tests/test_vault_writeback_cli.py tests/test_vault_rotation_hooks.py tests/test_vault_providers.py tests/test_vault_providers_http.py tests/test_vault_session.py tests/test_vault_conversion.py tests/test_vault_regex_filter.py -q
+python3 -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tests/test_vault_classify_entries.py tests/test_vault_fingerprint.py tests/test_vault_crypto.py tests/test_vault_validator.py tests/test_vault_broader_sources.py tests/test_vault_docling.py tests/test_vault_audit.py tests/test_vault_writeback_plan.py tests/test_vault_writeback_exec.py tests/test_vault_writeback_cli.py tests/test_vault_rotation_hooks.py tests/test_vault_providers.py tests/test_vault_http_provider.py tests/test_vault_session.py tests/test_vault_conversion.py tests/test_vault_regex_filter.py -q
 ```
 
 ### F. Plugin-backed surfaces (21 tests)
@@ -525,7 +525,7 @@ python3 -m pytest -q
 
 **Domain A — Core analysis (10 files, 139 tests):**
 ```
-python3 -m pytest tests/test_discover.py tests/test_inventory.py tests/test_sources.py tests/test_catalog.py tests/test_diagnosis.py tests/test_loop.py tests/test_validator.py tests/test_router.py tests/test_routing_diagnosis.py tests/test_reports.py -q
+python3 -m pytest tests/test_discover.py tests/test_inventory.py tests/test_sources.py tests/test_catalog.py tests/test_diagnosis.py tests/test_loop.py tests/test_validator.py tests/test_router.py tests/test_route_diagnosis.py tests/test_reports.py -q
 ```
 
 **Domain B — Provider/model/config (9 files, 270 tests):**
@@ -545,7 +545,7 @@ python3 -m pytest tests/test_tool_surface_schema.py tests/test_tool_surface_regi
 
 **Domain E — Vault (18 files, 227 tests):**
 ```
-python3 -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tests/test_vault_classify_entries.py tests/test_vault_fingerprint.py tests/test_vault_crypto.py tests/test_vault_validator.py tests/test_vault_broader_sources.py tests/test_vault_docling.py tests/test_vault_audit.py tests/test_vault_writeback_plan.py tests/test_vault_writeback_exec.py tests/test_vault_writeback_cli.py tests/test_vault_rotation_hooks.py tests/test_vault_providers.py tests/test_vault_providers_http.py tests/test_vault_session.py tests/test_vault_conversion.py tests/test_vault_regex_filter.py -q
+python3 -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tests/test_vault_classify_entries.py tests/test_vault_fingerprint.py tests/test_vault_crypto.py tests/test_vault_validator.py tests/test_vault_broader_sources.py tests/test_vault_docling.py tests/test_vault_audit.py tests/test_vault_writeback_plan.py tests/test_vault_writeback_exec.py tests/test_vault_writeback_cli.py tests/test_vault_rotation_hooks.py tests/test_vault_providers.py tests/test_vault_http_provider.py tests/test_vault_session.py tests/test_vault_conversion.py tests/test_vault_regex_filter.py -q
 ```
 
 **Domain F — Plugins (4 files, 46 tests):**
@@ -582,6 +582,207 @@ python3 -m pytest tests/test_budget_profile.py tests/test_budget_analyzer.py tes
 | `TESTPLAN.md` | This file. Canonical test strategy, layers, selectors, coverage matrix |
 | `TODO.md` | Active execution queue and closeout state for the current release |
 | `VERSION0.8.1.md` | Version goal, scope, release gate |
+| `VERSION0.8.0.md` | Archived v0.8.0 completed queue |
+| `GUIDELINE.md` | Success rules, release gates, workflow contracts |
+| `ARCHITECTURE.md` | System shape, module boundaries, data flow |
+| `ROADMAP.md` | Broader release sequence |
+## v0.9.4 selector cheat sheet
+
+Full copy-paste selectors by domain (use `PYTHONPATH=src python -m pytest …`):
+
+**Governance / release gate:**
+```
+PYTHONPATH=src python -m pytest tests/test_governance_docs.py tests/test_release_readiness.py -q
+```
+
+**Extensions (sync, loader, schema, drift, contracts, commands, status, integration):**
+```
+PYTHONPATH=src python -m pytest tests/test_extensions_sync.py tests/test_extensions_loader.py tests/test_extensions_schema.py tests/test_extensions_drift.py tests/test_extensions_verify_contracts.py tests/test_extensions_commands.py tests/test_extensions_status.py tests/test_extensions_integration.py -q
+```
+
+**CLI surface:**
+```
+PYTHONPATH=src python -m pytest tests/test_cli_dispatch.py tests/test_cli_integration.py tests/test_cli_smoke.py tests/test_cli_unified.py -q
+```
+
+**Provider / model:**
+```
+PYTHONPATH=src python -m pytest tests/test_provider_truth.py tests/test_provider_truth_rework.py tests/test_provider_catalog.py tests/test_provider_model_refresh.py tests/test_provider_management.py tests/test_provider_registry.py tests/test_model_catalog.py tests/test_model_validation_rework.py tests/test_model_evaluator.py tests/test_model_plan_truth.py -q
+```
+
+**Tool-surface layer:**
+```
+PYTHONPATH=src python -m pytest tests/test_tool_surface_schema.py tests/test_tool_surface_registry.py tests/test_tool_surface_audit.py tests/test_tool_surface_presentation.py tests/test_tool_surface_commands.py tests/test_tool_surface_chain.py tests/test_tool_surface_provider_recommend.py -q
+```
+
+**Vault core + write-back safety:**
+```
+PYTHONPATH=src python -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tests/test_vault_classify_entries.py tests/test_vault_fingerprint.py tests/test_vault_crypto.py tests/test_vault_validator.py tests/test_vault_broader_sources.py tests/test_vault_docling.py tests/test_vault_audit.py tests/test_vault_writeback_plan.py tests/test_vault_writeback_exec.py tests/test_vault_writeback_cli.py tests/test_vault_rotation_hooks.py tests/test_vault_providers.py tests/test_vault_http_provider.py tests/test_vault_session.py tests/test_vault_conversion.py tests/test_vault_regex_filter.py -q
+```
+
+**Dreams sidecar:**
+```
+PYTHONPATH=src python -m pytest tests/test_dreams_memory_meta.py tests/test_dreams_decay.py tests/test_dreams_sweep.py tests/test_dreams_fidelity.py tests/test_dreams_recall.py -q
+```
+
+**Budget tuning:**
+```
+PYTHONPATH=src python -m pytest tests/test_budget_profile.py tests/test_budget_analyzer.py tests/test_budget_recommender.py tests/test_budget_tuner.py tests/test_budget_cli.py tests/test_budget_watch.py -q
+```
+
+**Workflow orchestration:**
+```
+PYTHONPATH=src python -m pytest tests/test_workflow_schema.py tests/test_workflow_store.py tests/test_todo_shaper.py tests/test_scheduler.py tests/test_guard.py tests/test_devdo_executor.py tests/test_ux_format.py tests/test_commands.py tests/test_smoke_workflow.py tests/test_cli_smoke.py -q
+```
+
+**Full suite (all tests):**
+```
+PYTHONPATH=src python -m pytest -q
+```
+
+---
+
+## v0.9.4 complete test-file inventory
+
+This section is machine-checked by `tests/test_testplan_inventory.py`. Every test file on disk must appear backticked here.
+
+### tests/ (113 files)
+
+| File | Tests |
+|------|-------|
+| `tests/test_agent_management.py` | 7 |
+| `tests/test_auto_update.py` | 12 |
+| `tests/test_auxiliary_optimizer.py` | 14 |
+| `tests/test_budget_analyzer.py` | 16 |
+| `tests/test_budget_cli.py` | 20 |
+| `tests/test_budget_profile.py` | 58 |
+| `tests/test_budget_recommender.py` | 22 |
+| `tests/test_budget_tuner.py` | 18 |
+| `tests/test_budget_watch.py` | 17 |
+| `tests/test_catalog.py` | 4 |
+| `tests/test_catalog_refresh.py` | 33 |
+| `tests/test_catalog_v091.py` | 12 |
+| `tests/test_caveman.py` | 20 |
+| `tests/test_caveman_cli.py` | 2 |
+| `tests/test_caveman_config.py` | 13 |
+| `tests/test_channel_management.py` | 29 |
+| `tests/test_cli_dispatch.py` | 4 |
+| `tests/test_cli_integration.py` | 4 |
+| `tests/test_cli_smoke.py` | 1 |
+| `tests/test_cli_unified.py` | 4 |
+| `tests/test_commands.py` | 18 |
+| `tests/test_config_fix.py` | 24 |
+| `tests/test_config_maintainer.py` | 17 |
+| `tests/test_config_watcher.py` | 19 |
+| `tests/test_devdo_executor.py` | 27 |
+| `tests/test_diagnosis.py` | 43 |
+| `tests/test_discover.py` | 18 |
+| `tests/test_dreams_decay.py` | 20 |
+| `tests/test_dreams_fidelity.py` | 17 |
+| `tests/test_dreams_memory_meta.py` | 20 |
+| `tests/test_dreams_recall.py` | 29 |
+| `tests/test_dreams_sweep.py` | 22 |
+| `tests/test_e2e_workflow.py` | 21 |
+| `tests/test_extensions_commands.py` | 22 |
+| `tests/test_extensions_drift.py` | 6 |
+| `tests/test_extensions_integration.py` | 2 |
+| `tests/test_extensions_loader.py` | 11 |
+| `tests/test_extensions_schema.py` | 8 |
+| `tests/test_extensions_status.py` | 3 |
+| `tests/test_extensions_sync.py` | 10 |
+| `tests/test_extensions_verify_contracts.py` | 4 |
+| `tests/test_governance_docs.py` | 6 |
+| `tests/test_guard.py` | 21 |
+| `tests/test_hot_reload_proof.py` | 8 |
+| `tests/test_install_integrity.py` | 21 |
+| `tests/test_installed_artifacts.py` | 11 |
+| `tests/test_inventory.py` | 14 |
+| `tests/test_lane_a_smoke.py` | 24 |
+| `tests/test_loop.py` | 40 |
+| `tests/test_model_catalog.py` | 34 |
+| `tests/test_model_evaluator.py` | 9 |
+| `tests/test_model_plan_truth.py` | 32 |
+| `tests/test_model_validation_rework.py` | 28 |
+| `tests/test_network_inventory.py` | 19 |
+| `tests/test_network_validator.py` | 12 |
+| `tests/test_package_resources.py` | 7 |
+| `tests/test_paths.py` | 4 |
+| `tests/test_perf.py` | 8 |
+| `tests/test_plugin_deep.py` | 29 |
+| `tests/test_provider_catalog.py` | 44 |
+| `tests/test_provider_management.py` | 53 |
+| `tests/test_provider_model_refresh.py` | 39 |
+| `tests/test_provider_registry.py` | 12 |
+| `tests/test_provider_truth.py` | 12 |
+| `tests/test_provider_truth_rework.py` | 20 |
+| `tests/test_release_readiness.py` | 25 |
+| `tests/test_reports.py` | 18 |
+| `tests/test_request_dump_health_inputs.py` | 1 |
+| `tests/test_route_diagnosis.py` | 6 |
+| `tests/test_router.py` | 2 |
+| `tests/test_run_pipeline.py` | 1 |
+| `tests/test_run_standalone.py` | 38 |
+| `tests/test_scheduler.py` | 23 |
+| `tests/test_smoke_workflow.py` | 8 |
+| `tests/test_sources.py` | 2 |
+| `tests/test_testplan_inventory.py` | — |
+| `tests/test_todo_shaper.py` | 22 |
+| `tests/test_tokens.py` | 14 |
+| `tests/test_tools.py` | 14 |
+| `tests/test_tool_surface_audit.py` | 44 |
+| `tests/test_tool_surface_chain.py` | 30 |
+| `tests/test_tool_surface_commands.py` | 31 |
+| `tests/test_tool_surface_presentation.py` | 97 |
+| `tests/test_tool_surface_provider_recommend.py` | 34 |
+| `tests/test_tool_surface_registry.py` | 15 |
+| `tests/test_tool_surface_schema.py` | 40 |
+| `tests/test_ux_format.py` | 13 |
+| `tests/test_validator.py` | 2 |
+| `tests/test_vault_audit.py` | 7 |
+| `tests/test_vault_broader_sources.py` | 13 |
+| `tests/test_vault_classify.py` | 13 |
+| `tests/test_vault_classify_entries.py` | 8 |
+| `tests/test_vault_conversion.py` | 12 |
+| `tests/test_vault_crypto.py` | 10 |
+| `tests/test_vault_docling.py` | 13 |
+| `tests/test_vault_fingerprint.py` | 12 |
+| `tests/test_vault_http_provider.py` | 16 |
+| `tests/test_vault_integration.py` | 5 |
+| `tests/test_vault_inventory.py` | 16 |
+| `tests/test_vault_plugins.py` | 16 |
+| `tests/test_vault_providers.py` | 20 |
+| `tests/test_vault_regex_filter.py` | 10 |
+| `tests/test_vault_rotation_hooks.py` | 39 |
+| `tests/test_vault_session.py` | 13 |
+| `tests/test_vault_validator.py` | 4 |
+| `tests/test_vault_writeback_cli.py` | 11 |
+| `tests/test_vault_writeback_exec.py` | 11 |
+| `tests/test_vault_writeback_plan.py` | 9 |
+| `tests/test_wave2_wave3_contracts.py` | 6 |
+| `tests/test_wave4_wave7_contracts.py` | 8 |
+| `tests/test_workflow_schema.py` | 10 |
+| `tests/test_workflow_store.py` | 10 |
+| `tests/test_yolo_mode.py` | 11 |
+
+### brain/scripts/ (5 files)
+
+| File | Tests |
+|------|-------|
+| `brain/scripts/test_active_work_lint.py` | 15 |
+| `brain/scripts/test_brain_doctor.py` | 17 |
+| `brain/scripts/test_provider_probe.py` | 9 |
+| `brain/scripts/test_rail_loader_check.py` | 12 |
+| `brain/scripts/test_resolver_audit.py` | 19 |
+
+---
+
+## Source of truth
+
+| Document | Role |
+|----------|------|
+| `TESTPLAN.md` | This file. Canonical test strategy, layers, selectors, coverage matrix |
+| `TODO.md` | Active execution queue and closeout state for the current release |
+| `VERSION0.9.4.md` | Version goal, scope, release gate |
 | `VERSION0.8.0.md` | Archived v0.8.0 completed queue |
 | `GUIDELINE.md` | Success rules, release gates, workflow contracts |
 | `ARCHITECTURE.md` | System shape, module boundaries, data flow |
