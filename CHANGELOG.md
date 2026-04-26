@@ -2,6 +2,39 @@
 
 All notable changes to Hermes Optimizer.
 
+## v0.9.5 — Refactor Audit Remediation + OpenClaw Removal
+
+### Security (P0)
+- SEC-1: Prevent shell injection in `hermes_runtime._run_command`
+  - Changed signature to `command: str | list[str]`; use `shlex.split` for strings;
+  - Enforced `shell=False` (was `shell=True`)
+- SEC-2: Move GCP OAuth2 token from URL query to Authorization header
+  - `vault/providers/http.py` — removed `params={"access_token": token}`
+  - Added `headers={"Authorization": "Bearer {token}"}`
+- SEC-3: Fix syntax errors in `vault/classify.py`
+  - Replaced malformed `***` placeholders with proper Python tuples/dicts/regex
+
+### Performance (P1)
+- PERF-1: O(1) role→model lookup in ModelCatalog
+  - Added `_role_index` dictionary; `best_model(role=)` now direct dict get instead of O(n) scan
+- PERF-2: O(1) region-aware model selection
+  - Added `_region_role_index` (region → {role → [candidates]}); fallback becomes dict lookup
+
+### Quality (P1 — Complexity Reduction)
+- QUAL-1a/1b: Refactor `auto_update.py` — reduce `run_preflight` & `visit` complexity (20 → ~8, 17 → ~8)
+  - Extracted `_handle_dict_dict`, `_handle_scalar_diff` helpers
+  - Flattened nested conditionals; eliminated deeply nested `visit` closure
+  - All 12 auto_update tests pass
+- QUAL-1c: Refactor `loop.py:parse` — reduce complexity (16 → ~5)
+  - Replaced 8-branch if/elif chain with `_CATEGORY_SCANNERS` dispatch table
+  - Created scanner wrappers for gateway/cli special handling
+
+### Other Changes
+- OpenClaw completely removed (all plugins, providers, tests, docs) — committed in v0.9.5 baseline
+- Test suite: ~1,750 tests; all modified modules verified green
+- Release gate: `hermesoptimizer release-readiness --dry-run` PASSED
+
+
 ## v0.9.4 -- Testing and Refactor Hardening
 
 ### Added

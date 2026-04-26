@@ -4,7 +4,7 @@ Current package version: 0.9.5
 Target package version: 0.9.5
 Base release proof: VERSION0.9.5.md
 Current planning contract: VERSION0.9.5.md
-Status: Wave 1 in progress (SEC-1 complete, SEC-2/3 + P1 remaining)
+Status: closed locally; v0.9.5 refactor audit remediation complete.
 
 ## Wave 1 — P0 Security + P1 Performance/Quality (autonomous overnight)
 

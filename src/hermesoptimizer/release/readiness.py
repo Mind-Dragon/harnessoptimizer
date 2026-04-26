@@ -594,8 +594,8 @@ def check_governance_doc_drift() -> CheckResult:
     for marker in closed_work_markers:
         if marker in combined:
             add("TODO.md/brain/active-work/current.md", f"closed v0.9.3 work marker still present: {marker}")
-    if "Status: closed locally; v0.9.4 testing/refactor hardening complete." not in todo:
-        add("TODO.md", "status must say v0.9.4 testing/refactor hardening complete after closeout")
+    if "Status: closed locally; v0.9.5 refactor audit remediation complete." not in todo:
+        add("TODO.md", "status must say v0.9.5 refactor audit remediation complete after closeout")
 
     try:
         canaries = json.loads((repo_root / "brain" / "evals" / "provider-canaries.json").read_text(encoding="utf-8"))
