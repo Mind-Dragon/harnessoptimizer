@@ -147,7 +147,7 @@ def _handle_dict_dict(
 
         if isinstance(current_value, dict) and isinstance(incoming_value, dict):
             _handle_dict_dict(current_value, incoming_value, entry_path, destructive, config_diff, details)
-            return
+            continue
 
         if isinstance(current_value, dict) and not isinstance(incoming_value, dict):
             if incoming_value is None:
@@ -218,7 +218,7 @@ def run_preflight(
     plugin_diff: list[dict[str, Any]] = []
     details: list[str] = []
 
-    _diff_visit(current, incoming, "", destructive, config_diff, details)
+    _handle_dict_dict(current, incoming, "", destructive, config_diff, details)
 
     current_plugins = current.get("plugins") if isinstance(current, dict) else None
     incoming_plugins = incoming.get("plugins") if isinstance(incoming, dict) else None
