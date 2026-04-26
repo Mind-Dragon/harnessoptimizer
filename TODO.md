@@ -23,7 +23,7 @@ Status: Wave 1 in progress (SEC-1 complete, SEC-2/3 + P1 remaining)
   - **Acceptance:** Token no longer in URL; GCP API calls succeed with header auth.
   - **Status:** pending
 
-- [ ] SEC-3: Fix syntax error in `vault/classify.py:13`
+- [x] SEC-3: Fix syntax error in `vault/classify.py:13`
   - **File:** `src/hermesoptimizer/vault/classify.py`
   - **Task:** Replace malformed `***` token with proper tuple/list syntax.
   - **Acceptance:** File parses; py_compile OK.

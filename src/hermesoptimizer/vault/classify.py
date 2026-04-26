@@ -24,7 +24,7 @@ _SECRET_SUFFIX_PATTERNS = (
 )
 
 # Exact secret name matches (case-insensitive)
-_SECRET_EXACT_NAMES = frozenset({
+_SECRET_EXACT_NAMES = {
     "password",
     "secret",
     "token",
@@ -36,7 +36,7 @@ _SECRET_EXACT_NAMES = frozenset({
     "bearer_token",
     "refresh_token",
     "client_secret",
-})
+}
 
 # Metadata patterns: case-insensitive suffix matches
 _METADATA_SUFFIX_PATTERNS = (
