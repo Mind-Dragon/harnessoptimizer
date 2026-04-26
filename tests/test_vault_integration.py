@@ -71,41 +71,6 @@ class TestCrossPluginConsistency:
         assert ocp.get("NEW_URL") == "https://cross.plugin.test/v1"
         assert ocp.get("EXISTING_KEY") == "existing-secret-value"
 
-    def test_openclaw_http_writes_hermes_reads(self, vault_dir: Path) -> None:
-        """OpenClawPlugin HTTP write -> HermesPlugin reads same value."""
-        from hermesoptimizer.vault.plugins.hermes_plugin import HermesPlugin
-        from hermesoptimizer.vault.plugins.openclaw_plugin import OpenClawPlugin
-
-        ocp = OpenClawPlugin(
-            vault_path=str(vault_dir),
-            passphrase="test-passphrase",
-            port=18598,
-            auth_token="test-token-123",
-        )
-
-        server_thread = threading.Thread(target=ocp.start_server, daemon=True)
-        server_thread.start()
-        time.sleep(0.5)
-
-        try:
-            # Write via HTTP
-            data = json.dumps({"key_name": "HTTP_KEY", "value": "sk-via-http", "is_encrypted": True}).encode()
-            req = urllib.request.Request(
-                "http://127.0.0.1:18598/vault/entry",
-                data=data,
-                headers={"Content-Type": "application/json", "Authorization": "Bearer test-token-123"},
-                method="POST",
-            )
-            resp = urllib.request.urlopen(req)
-            assert resp.status == 200
-
-            # Read via HermesPlugin
-            with HermesPlugin(vault_path=str(vault_dir), passphrase="test-passphrase") as hp:
-                val = hp.get("HTTP_KEY")
-                assert val == "sk-via-http"
-        finally:
-            ocp.shutdown()
-
     def test_hermes_delete_opencode_cannot_see(self, vault_dir: Path) -> None:
         """HermesPlugin deletes -> OpenCodePlugin sees entry gone."""
         from hermesoptimizer.vault.plugins.hermes_plugin import HermesPlugin

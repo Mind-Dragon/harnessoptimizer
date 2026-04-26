@@ -22,7 +22,6 @@ Workflow layer:
 
 Harness adapters:
 - Hermes adapter: local logs, sessions, config, provider hygiene, gateway health, CLI health, runtime drift
-- OpenClaw adapter: gateway health, config integrity, provider failures, plugin drift
 - OpenCode adapter: agent config, provider routing, worktree/task behavior, logs
 - future adapters: same shape, new source readers
 
@@ -104,7 +103,6 @@ Scope:
 - SSH bootstrap and tmux session reuse for remote workflows
 - private/VPN IP defaults and port-range conventions
 - install-skill bundles for common environments
-- OpenClaw adapter and health/config probes
 - OpenCode adapter and config/routing parsing
 - later multi-harness correlation after Hermes-side repair flow is mature
 
@@ -125,7 +123,6 @@ Layering:
 - vault management is harness-agnostic (credentials span all adapters)
 - workflow engine is harness-agnostic (plans and runs are generic)
 
-That keeps Hermes, OpenClaw, OpenCode, and vault management from turning into separate projects.
 
 ## Suggested delivery order
 

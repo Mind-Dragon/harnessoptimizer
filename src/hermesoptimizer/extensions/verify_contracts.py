@@ -188,7 +188,6 @@ def verify_vault_plugins() -> int:
     try:
         from hermesoptimizer.vault.plugins import (
             HermesPlugin,
-            OpenClawPlugin,
             OpenCodePlugin,
         )
     except Exception as exc:
@@ -246,18 +245,6 @@ def verify_vault_plugins() -> int:
     except Exception as exc:
         warnings.append(f"OpenCodePlugin check failed: {exc}")
 
-    # 4. OpenClawPlugin sidecar health
-    try:
-        ocp_sidecar = OpenClawPlugin(port=0)  # port 0 lets OS assign
-        st = ocp_sidecar.status()
-        required = {"plugin_name", "vault_path", "entry_count", "encrypted_count"}
-        missing = required - set(st.keys())
-        if missing:
-            errors.append(f"OpenClawPlugin.status() missing keys: {missing}")
-    except Exception as exc:
-        warnings.append(f"OpenClawPlugin status check failed: {exc}")
-
-    for w in warnings:
         print(f"WARN: {w}")
     for e in errors:
         print(f"FAIL: {e}", file=sys.stderr)

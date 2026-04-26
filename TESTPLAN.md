@@ -350,7 +350,6 @@ python3 -m pytest tests/test_vault_inventory.py tests/test_vault_classify.py tes
 
 ### F. Plugin-backed surfaces (21 tests)
 
-Modules: `vault/plugins/base.py`, `vault/plugins/hermes_plugin.py`, `vault/plugins/openclaw_plugin.py`, `vault/plugins/opencode_plugin.py`
 
 | File | Tests | Key surfaces |
 |------|-------|-------------|
@@ -359,7 +358,6 @@ Modules: `vault/plugins/base.py`, `vault/plugins/hermes_plugin.py`, `vault/plugi
 | `test_plugin_deep.py` | 29 | Deep plugin contract, cross-plugin edge cases |
 | `test_installed_artifacts.py` | 12 | Installed script/skill smoke, sandbox isolation, plugin fixture sanity |
 
-**v0.8.1 focus**: This is its own matrix, not a vault footnote. Verify: (1) per-plugin contract, (2) cross-plugin consistency on shared temp vault, (3) read-only vs mutating boundaries, (4) installed-artifact presence and structure in sandbox. HTTP auth for OpenClaw sidecar.
 
 Selector:
 ```

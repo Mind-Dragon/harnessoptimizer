@@ -220,12 +220,10 @@ All notable changes to Hermes Optimizer.
 - `vault/session.py`: VaultSession context manager with get/set/delete/list_entries, real-value write-back, and atomic writes (temp+rename)
 - `vault/plugins/base.py`: VaultPlugin ABC with abstract CRUD methods, status helper, and context manager protocol
 - `vault/plugins/hermes_plugin.py`: HermesPlugin — direct Python VaultSession wrapper for Hermes Agent
-- `vault/plugins/openclaw_plugin.py`: OpenClawPlugin — HTTP bridge sidecar (http.server, port 8599) with bearer token auth
 - `vault/plugins/opencode_plugin.py`: OpenCodePlugin — read-only plugin with generate_config() and inject_env()
 - `scripts/convert_vault.py`: Conversion script with --dry-run mode; creates backup, encrypts secrets, writes vault.enc.json
 - Dual-type VaultEntry: is_encrypted, encrypted_value, plaintext_value fields with auto-classification
 - 20-char hex fingerprints (80 bits) with migrate_fingerprint() for legacy 12-char support
-- Hermes and OpenClaw provider status providers
 - TOML parser (tomllib) and pyyaml-based YAML parser
 
 ### Changed

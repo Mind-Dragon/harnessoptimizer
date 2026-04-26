@@ -16,7 +16,6 @@ from abc import ABC
 from hermesoptimizer.vault.crypto import generate_master_key
 from hermesoptimizer.vault.plugins import (
     HermesPlugin,
-    OpenClawPlugin,
     OpenCodePlugin,
     VaultPlugin,
 )
@@ -140,88 +139,10 @@ def test_hermes_plugin_multiple_secrets(hermes_plugin: HermesPlugin):
             assert actual == expected_value
 
 
-# --------------------------------------------------------------------------
-# Test OpenClawPlugin
-# --------------------------------------------------------------------------
-
-
-@pytest.fixture
-def openclaw_plugin(temp_vault_root: Path, master_key: bytes) -> OpenClawPlugin:
-    """Create an OpenClawPlugin instance for testing."""
-    import base64
-    os.environ["VAULT_MASTER_KEY"] = base64.b64encode(master_key).decode("ascii")
-    os.environ["VAULT_API_TOKEN"] = "test-token-12345"
-    plugin = OpenClawPlugin(
-        vault_path=str(temp_vault_root),
-        passphrase="test-passphrase",
-        auth_token="test-token-12345",
-    )
-    return plugin
-
-
-def _make_request(method: str, url: str, data: dict | None = None, token: str = "test-token-12345") -> dict:
-    """Make HTTP request with bearer auth."""
-    import urllib.request
-
-    req = urllib.request.Request(url, method=method)
-    req.add_header("Authorization", f"Bearer {token}")
-    if data is not None:
-        req.add_header("Content-Type", "application/json")
-        req.data = json.dumps(data).encode("utf-8")
-
-    with urlopen(req) as resp:
-        return json.loads(resp.read().decode("utf-8"))
-
-
-def test_openclaw_plugin_http_round_trip(openclaw_plugin: OpenClawPlugin):
-    """Test HTTP round-trip via OpenClawPlugin."""
-    # Use context manager which enters session
-    with openclaw_plugin:
-        base_url = f"http://127.0.0.1:{openclaw_plugin._port}"
-
-        # Set a secret directly via the plugin (simulating what HTTP POST would do)
-        openclaw_plugin.set("HTTP_KEY", "http-secret-value", is_encrypted=True)
-
-        # Get it back via direct call (simulating what HTTP GET would do)
-        result = openclaw_plugin.get("HTTP_KEY")
-        assert result == "http-secret-value"
-
-        # List entries
-        entries = openclaw_plugin.list_entries()
-        key_names = {e["key_name"] for e in entries}
-        assert "HTTP_KEY" in key_names
-
-        # Status
-        status = openclaw_plugin.status()
-        assert status["entry_count"] >= 1
-
-        # Delete via direct call
-        openclaw_plugin.delete("HTTP_KEY")
-
-        # Verify it's gone
-        assert openclaw_plugin.get("HTTP_KEY") is None
-
-
-def test_openclaw_plugin_unauthorized(openclaw_plugin: OpenClawPlugin):
-    """Test that unauthorized requests are rejected."""
-    server_thread = threading.Thread(target=openclaw_plugin.start_server, daemon=True)
-    server_thread.start()
-    time.sleep(0.5)
-
-    try:
-        base_url = f"http://127.0.0.1:{openclaw_plugin._port}"
-
-        # Request without token should fail
-        with pytest.raises(HTTPError) as exc_info:
-            _make_request("GET", f"{base_url}/vault/status", token="wrong-token")
-        assert exc_info.value.code == 401
-
-    finally:
-        openclaw_plugin.stop_server()
-
 
 # --------------------------------------------------------------------------
 # Test OpenCodePlugin
+# --------------------------------------------------------------------------
 # --------------------------------------------------------------------------
 
 

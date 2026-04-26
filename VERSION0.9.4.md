@@ -49,7 +49,6 @@ Largest tests by source lines include `tests/test_tool_surface_presentation.py`,
 
 ## Non-goals
 
-- Do not start OpenClaw/OpenCode adapters in v0.9.4.
 - Do not add remote workflow automation in v0.9.4.
 - Do not broaden Hermes core patches beyond the already-scoped hot-reload proof unless explicitly approved.
 - Do not make any provider/model lane required for release while its canary is red, absent, quota-blocked, or fallback-only. MiniMax and crof/nacrof are current examples, not special cases.

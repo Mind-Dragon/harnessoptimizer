@@ -71,7 +71,6 @@ Never use `--force` on external_runtime targets.
 - Cron: tracked but not synced by the registry
 
 ### vault_plugins
-- Plugins: `HermesPlugin`, `OpenClawPlugin`, `OpenCodePlugin`
 - Vault file: `~/.vault/vault.enc.json`
 
 ### tool_surface
