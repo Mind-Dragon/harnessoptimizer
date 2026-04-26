@@ -13,6 +13,7 @@ Also provides a runtime state scanner that checks for:
 from __future__ import annotations
 
 import subprocess
+import shlex
 from pathlib import Path
 
 from hermesoptimizer.catalog import Finding
@@ -48,12 +49,16 @@ def _matches_any(text: str, patterns: list[str]) -> bool:
     return False
 
 
-def _run_command(command: str) -> tuple[int, str, str]:
-    """Run a shell command and return (returncode, stdout, stderr)."""
+def _run_command(command: str | list[str]) -> tuple[int, str, str]:
+    """Run a command safely (no shell=True), return (rc, stdout, stderr).
+
+    Accepts string (shlex.split) or list. shell=False prevents injection.
+    """
     try:
+        args = shlex.split(command) if isinstance(command, str) else command
         proc = subprocess.run(
-            command,
-            shell=True,
+            args,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=10,
