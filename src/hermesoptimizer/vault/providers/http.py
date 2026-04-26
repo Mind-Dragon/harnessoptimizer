@@ -162,10 +162,13 @@ class GCPProvider:
                 message="GCP token not provided",
             )
 
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        } if self.token else {}
         try:
             response = requests.get(
                 self.endpoint,
-                params={"access_token": self.token},
+                headers=headers,
                 timeout=self.timeout,
             )
             if response.status_code == 200:

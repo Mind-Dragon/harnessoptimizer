@@ -17,7 +17,7 @@ Status: Wave 1 in progress (SEC-1 complete, SEC-2/3 + P1 remaining)
   - **Status:** done ✓
   - **Commit:** `fix(SEC-1): prevent shell injection in hermes_runtime._run_command`
 
-- [ ] SEC-2: Move GCP OAuth2 token from query to Authorization header
+- [x] SEC-2: Move GCP OAuth2 token from query to Authorization header
   - **File:** `src/hermesoptimizer/vault/providers/http.py:168`
   - **Task:** Replace `?access_token=...` query param with `Authorization: Bearer <token>` header.
   - **Acceptance:** Token no longer in URL; GCP API calls succeed with header auth.
