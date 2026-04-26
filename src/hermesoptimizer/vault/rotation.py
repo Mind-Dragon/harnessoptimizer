@@ -1,3 +1,5 @@
+"""Vault credential rotation: abstract adapters, executor, and event tracking."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

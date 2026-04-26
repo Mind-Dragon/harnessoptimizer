@@ -1,5 +1,7 @@
 """Extension registry for managed HermesOptimizer surfaces."""
 
+from __future__ import annotations
+
 from hermesoptimizer.extensions.loader import build_registry, load_extension_file, load_registry, validate_registry
 from hermesoptimizer.extensions.schema import ExtensionEntry, ExtensionType, Ownership
 

@@ -1,6 +1,6 @@
-from __future__ import annotations
+"""Tool usage tracking: analysis of missed tool opportunities and optimization recommendations."""
 
-"""Tool usage tracking, missed tool detection, and optimization recommendations."""
+from __future__ import annotations
 
 from hermesoptimizer.tools.models import ToolUsage, ToolMiss, ToolRecommendation
 from hermesoptimizer.tools.analyzer import ToolAnalyzer

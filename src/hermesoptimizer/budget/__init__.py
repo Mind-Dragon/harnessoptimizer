@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Turn-budget tuning for Hermes agent and subagents."""
+
+from __future__ import annotations
 
 from hermesoptimizer.budget.analyzer import BudgetSignal
 from hermesoptimizer.budget.profile import (

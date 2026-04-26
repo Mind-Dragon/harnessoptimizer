@@ -1,3 +1,5 @@
+"""Exa web scraper adapter: minimal stub for web content extraction."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

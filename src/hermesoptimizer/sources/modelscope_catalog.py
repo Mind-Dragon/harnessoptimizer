@@ -1,3 +1,5 @@
+"""ModelScope catalog loader: stub for ModelScope model registry access."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

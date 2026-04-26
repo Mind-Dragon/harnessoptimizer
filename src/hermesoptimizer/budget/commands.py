@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
@@ -11,6 +12,8 @@ from hermesoptimizer.budget.analyzer import parse_session_directory, parse_sessi
 from hermesoptimizer.budget.profile import PRESET_ORDER, ProfileLevel, get_profile
 from hermesoptimizer.budget.recommender import recommend
 from hermesoptimizer.budget.tuner import set_profile
+
+logger = logging.getLogger(__name__)
 
 
 def _expand_path(path: str) -> Path:
@@ -33,6 +36,7 @@ def handle_budget_review(args: argparse.Namespace) -> int:
     session_dir = _expand_path(args.session_dir)
 
     if not session_dir.exists():
+        logger.error("Session directory does not exist: %s", session_dir)
         print(f"Error: session directory does not exist: {session_dir}", file=sys.stderr)
         return 1
 
@@ -41,6 +45,7 @@ def handle_budget_review(args: argparse.Namespace) -> int:
         get_profile(current_level)  # validate profile exists
     except KeyError:
         valid = ", ".join(PRESET_ORDER)
+        logger.error("Invalid profile '%s'. Valid levels: %s", args.profile, valid)
         print(f"Error: invalid profile '{args.profile}'. Valid levels: {valid}", file=sys.stderr)
         return 1
 
@@ -53,6 +58,7 @@ def handle_budget_review(args: argparse.Namespace) -> int:
         for f in recent_files:
             signals.extend(parse_session_file(f))
     except Exception as e:
+        logger.error("Error reading session files: %s", e)
         print(f"Error reading session files: {e}", file=sys.stderr)
         return 1
 
@@ -60,22 +66,23 @@ def handle_budget_review(args: argparse.Namespace) -> int:
     recommendation = recommend(signals, current_level)
 
     # Human-readable output
-    print(f"Budget Review")
+    logger.info("Budget Review")
+    print("Budget Review")
     print(f"  Profile compared: {current_level}")
     print(f"  Signals analyzed: {recommendation.signals_used}")
     print(f"  Current profile: {recommendation.current_profile}")
     print(f"  Recommended profile: {recommendation.recommended_profile}")
     print(f"  Confidence: {recommendation.confidence:.0%}")
     print()
-    print(f"Reasoning:")
+    print("Reasoning:")
     print(f"  {recommendation.reasoning}")
     print()
-    print(f"Recommended settings:")
+    print("Recommended settings:")
     print(f"  main_turns: {recommendation.main_turns}")
     print(f"  subagent_turns: {recommendation.subagent_turns}")
 
     if recommendation.axis_overrides:
-        print(f"  axis_overrides:")
+        print("  axis_overrides:")
         for key, value in recommendation.axis_overrides.items():
             print(f"    {key}: {value}")
 
@@ -104,6 +111,7 @@ def handle_budget_set(args: argparse.Namespace) -> int:
         get_profile(level)  # validate profile exists
     except KeyError:
         valid = ", ".join(PRESET_ORDER)
+        logger.error("Invalid profile '%s'. Valid levels: %s", args.profile, valid)
         print(f"Error: invalid profile '{args.profile}'. Valid levels: {valid}", file=sys.stderr)
         return 1
 
@@ -117,12 +125,14 @@ def handle_budget_set(args: argparse.Namespace) -> int:
     result = set_profile(config_path, level, role_overrides=role_overrides, dry_run=dry_run)
 
     if dry_run:
+        logger.info("Dry-run: would write profile '%s' to %s", level, config_path)
         print(f"Dry-run: would write profile '{level}' to {config_path}")
     else:
+        logger.info("Wrote profile '%s' to %s", level, config_path)
         print(f"Wrote profile '{level}' to {config_path}")
 
     if result["changes"]:
-        print(f"Changes:")
+        print("Changes:")
         for key, value in result["changes"].items():
             print(f"  {key}: {value}")
     else:
@@ -131,7 +141,7 @@ def handle_budget_set(args: argparse.Namespace) -> int:
     return 0
 
 
-def add_budget_review_subparser(subparsers) -> argparse.ArgumentParser:
+def add_budget_review_subparser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentParser:
     """Add the budget-review subcommand to an argparse subparsers group."""
     parser = subparsers.add_parser(
         "budget-review",
@@ -156,7 +166,7 @@ def add_budget_review_subparser(subparsers) -> argparse.ArgumentParser:
     return parser
 
 
-def add_budget_set_subparser(subparsers) -> argparse.ArgumentParser:
+def add_budget_set_subparser(subparsers: argparse._SubParsersAction) -> argparse.ArgumentParser:
     """Add the budget-set subcommand to an argparse subparsers group."""
     parser = subparsers.add_parser(
         "budget-set",

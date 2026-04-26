@@ -1,7 +1,7 @@
 """Family-specific verification contracts for managed extensions.
 
 Each verify_* function returns exit code 0 on pass, 1 on fail,
-and prints structured diagnostic output to stdout/stderr.
+and logs structured diagnostic output at appropriate levels.
 
 Intended for use via CLI:
     python -m hermesoptimizer.extensions.verify_contracts <family>
@@ -9,6 +9,7 @@ Intended for use via CLI:
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import sys
@@ -17,6 +18,8 @@ from pathlib import Path
 from hermesoptimizer.extensions.resolver import _repo_root
 from hermesoptimizer.extensions import build_registry
 from hermesoptimizer.extensions import resolver
+
+logger = logging.getLogger(__name__)
 
 
 def _config_path() -> Path:
@@ -49,7 +52,7 @@ def verify_caveman() -> int:
     try:
         from hermesoptimizer.caveman import compress, is_enabled, toggle
     except Exception as exc:
-        print(f"FAIL: caveman module not importable: {exc}", file=sys.stderr)
+        logger.error("FAIL: caveman module not importable: %s", exc)
         return 1
 
     # 2. Config readable
@@ -93,13 +96,13 @@ def verify_caveman() -> int:
         warnings.append(f"caveman skill not installed at {skill_path}")
 
     for w in warnings:
-        print(f"WARN: {w}")
+        logger.warning("WARN: %s", w)
     for e in errors:
-        print(f"FAIL: {e}", file=sys.stderr)
+        logger.error("FAIL: %s", e)
 
     if errors:
         return 1
-    print("PASS: caveman verification OK")
+    logger.info("PASS: caveman verification OK")
     return 0
 
 
@@ -111,7 +114,7 @@ def verify_caveman() -> int:
 def verify_dreams() -> int:
     """Verify dreams sidecar: DB, external scripts, cron-linked surfaces."""
     if not _extension_selected("dreams"):
-        print("SKIP: dreams not selected")
+        logger.info("SKIP: dreams not selected")
         return 0
 
     errors: list[str] = []
@@ -121,7 +124,7 @@ def verify_dreams() -> int:
     try:
         from hermesoptimizer.dreams.sweep import run_sweep
     except Exception as exc:
-        print(f"FAIL: dreams module not importable: {exc}", file=sys.stderr)
+        logger.error("FAIL: dreams module not importable: %s", exc)
         return 1
 
     # 2. memory_meta.db presence
@@ -164,13 +167,13 @@ def verify_dreams() -> int:
         errors.append(f"run_sweep failed: {exc}")
 
     for w in warnings:
-        print(f"WARN: {w}")
+        logger.warning("WARN: %s", w)
     for e in errors:
-        print(f"FAIL: {e}", file=sys.stderr)
+        logger.error("FAIL: %s", e)
 
     if errors:
         return 1
-    print("PASS: dreams verification OK")
+    logger.info("PASS: dreams verification OK")
     return 0
 
 
@@ -191,7 +194,7 @@ def verify_vault_plugins() -> int:
             OpenCodePlugin,
         )
     except Exception as exc:
-        print(f"FAIL: vault plugins not importable: {exc}", file=sys.stderr)
+        logger.error("FAIL: vault plugins not importable: %s", exc)
         return 1
 
     # 2. HermesPlugin status shape
@@ -245,13 +248,13 @@ def verify_vault_plugins() -> int:
     except Exception as exc:
         warnings.append(f"OpenCodePlugin check failed: {exc}")
 
-        print(f"WARN: {w}")
+        logger.warning("WARN: %s", exc)
     for e in errors:
-        print(f"FAIL: {e}", file=sys.stderr)
+        logger.error("FAIL: %s", e)
 
     if errors:
         return 1
-    print("PASS: vault_plugins verification OK")
+    logger.info("PASS: vault_plugins verification OK")
     return 0
 
 
@@ -274,7 +277,7 @@ def verify_tool_surface() -> int:
             list_commands,
         )
     except Exception as exc:
-        print(f"FAIL: tool_surface module not importable: {exc}", file=sys.stderr)
+        logger.error("FAIL: tool_surface module not importable: %s", exc)
         return 1
 
     # 2. Commands are available
@@ -308,13 +311,13 @@ def verify_tool_surface() -> int:
             errors.append(f"command {cmd} raised: {exc}")
 
     for w in warnings:
-        print(f"WARN: {w}")
+        logger.warning("WARN: %s", w)
     for e in errors:
-        print(f"FAIL: {e}", file=sys.stderr)
+        logger.error("FAIL: %s", e)
 
     if errors:
         return 1
-    print("PASS: tool_surface verification OK")
+    logger.info("PASS: tool_surface verification OK")
     return 0
 
 
@@ -334,15 +337,15 @@ def main(argv: list[str] | None = None) -> int:
     """Run a verification contract by family name."""
     argv = argv or sys.argv[1:]
     if not argv:
-        print(f"Usage: python -m hermesoptimizer.extensions.verify_contracts <family>")
-        print(f"Families: {', '.join(_FAMILIES.keys())}")
+        logger.info("Usage: python -m hermesoptimizer.extensions.verify_contracts <family>")
+        logger.info("Families: %s", ", ".join(_FAMILIES.keys()))
         return 1
 
     family = argv[0]
     fn = _FAMILIES.get(family)
     if fn is None:
-        print(f"Unknown family: {family}", file=sys.stderr)
-        print(f"Known families: {', '.join(_FAMILIES.keys())}", file=sys.stderr)
+        logger.error("Unknown family: %s", family)
+        logger.error("Known families: %s", ", ".join(_FAMILIES.keys()))
         return 1
 
     return fn()

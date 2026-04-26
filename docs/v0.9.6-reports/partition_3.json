@@ -1,0 +1,36 @@
+{
+  "partition": 3,
+  "files_touched": [
+    "src/hermesoptimizer/__init__.py",
+    "src/hermesoptimizer/brain_doctor.py",
+    "src/hermesoptimizer/budget/__init__.py",
+    "src/hermesoptimizer/budget/commands.py",
+    "src/hermesoptimizer/budget/profile.py",
+    "src/hermesoptimizer/budget/recommender.py",
+    "src/hermesoptimizer/budget/tuner.py",
+    "src/hermesoptimizer/extensions/__init__.py",
+    "src/hermesoptimizer/extensions/verify_contracts.py",
+    "src/hermesoptimizer/scrape/exa_scraper.py",
+    "src/hermesoptimizer/sources/modelscope_catalog.py",
+    "src/hermesoptimizer/tool_surface/provider_recommend.py",
+    "src/hermesoptimizer/tools/__init__.py",
+    "src/hermesoptimizer/vault/rotation.py",
+    "src/hermesoptimizer/vault/session.py",
+    "tests/test_v096_partition3_qual4.py",
+    "tests/test_v096_partition3_qual3.py",
+    "tests/test_v096_partition3_qual2.py",
+    "tests/test_v096_partition3_security.py"
+  ],
+  "tests": {
+    "total": 200,
+    "passed": 200,
+    "failed": 0
+  },
+  "issues": [
+    "test_loop.py, test_e2e_workflow.py, test_lane_a_smoke.py failures are pre-existing (_scan_config signature mismatch in loop.py, not in partition 3)",
+    "test_agent_management.py failures are config-dependent (model catalog returns zai/glm-5.1 instead of qwen/qwen3.6-plus)",
+    "test_diagnosis.py Phase0Loop failures stem from same loop.py _scan_config issue",
+    "CLI modules (brain_doctor, budget/commands, verify_contracts) retain print() for stdout/stderr CLI output alongside logging; non-CLI modules are print()-free"
+  ],
+  "status": "complete"
+}

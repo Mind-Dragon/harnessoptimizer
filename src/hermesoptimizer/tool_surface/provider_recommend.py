@@ -58,12 +58,15 @@ SCORE_DEPRECATION_PENALTY = 0.3
 class ModelCatalogReader(Protocol):
     """Minimal protocol for model catalog access."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
     def list_all_models(self) -> list[dict[str, Any]]: ...
 
 
 @runtime_checkable
 class EndpointCatalogReader(Protocol):
     """Minimal protocol for endpoint catalog access."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
 
     @property
     def provider_slugs(self) -> list[str]: ...
@@ -77,6 +80,7 @@ class EndpointCatalogReader(Protocol):
 class TruthStoreReader(Protocol):
     """Minimal protocol for truth store access."""
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
     def all_records(self) -> list[Any]: ...
 
 

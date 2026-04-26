@@ -10,9 +10,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import sys
 from pathlib import Path
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
 ALL_CHECKS = ["rail_loader", "request_dump", "provider_probe"]
 
@@ -40,7 +43,9 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.output).expanduser()
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
+    # Emit to both stdout (for CLI consumers) and logging
     print(text)
+    logger.info(text)
     return 0
 
 

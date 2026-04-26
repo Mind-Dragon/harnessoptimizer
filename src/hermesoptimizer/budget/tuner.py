@@ -1,3 +1,5 @@
+"""Budget tuner: write budget profile changes to Hermes config files."""
+
 from __future__ import annotations
 
 from pathlib import Path

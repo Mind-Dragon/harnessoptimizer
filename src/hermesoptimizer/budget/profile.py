@@ -1,3 +1,5 @@
+"""Budget profile definitions and presets for Hermes agent run tiers."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

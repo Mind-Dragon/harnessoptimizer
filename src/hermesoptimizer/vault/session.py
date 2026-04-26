@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import base64
+import logging
 import os
+import stat
+import tempfile
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -14,6 +17,8 @@ import yaml
 from .crypto import VaultCrypto, generate_master_key
 from .fingerprint import fingerprint_secret
 from .inventory import VaultEntry
+
+logger = logging.getLogger(__name__)
 
 
 class VaultLockedError(Exception):
@@ -35,9 +40,10 @@ def atomic_write(path: Path, content: str) -> None:
     """
     Write content to path atomically using rename.
 
-    Writes to path.with_suffix('.tmp'), fsyncs, then renames over target.
-    This ensures crash safety - either the old file or new file exists,
-    never a partial write.
+    Uses tempfile.NamedTemporaryFile for secure, unpredictable temp file
+    creation (CWE-377). Fsyncs, then renames over target. This ensures
+    crash safety - either the old file or new file exists, never a partial
+    write.
 
     Args:
         path: Target file path
@@ -45,20 +51,30 @@ def atomic_write(path: Path, content: str) -> None:
     """
     import os
 
-    tmp_path = path.with_suffix(".tmp")
+    # Use secure tempfile (CWE-377: unpredictable name, not .tmp)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(path.parent),
+        prefix=".vault_tmp_",
+        suffix=".new",
+    )
+    tmp_path = Path(tmp_name)
 
-    # Write to temporary file
-    tmp_path.write_text(content, encoding="utf-8")
-
-    # Ensure data is flushed to disk
-    fd = os.open(tmp_path, os.O_RDONLY)
     try:
-        os.fsync(fd)
-    finally:
-        os.close(fd)
+        # Write content
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+            f.flush()
+            os.fsync(f.fileno())
 
-    # Rename over target (atomic on POSIX)
-    os.replace(tmp_path, path)
+        # Rename over target (atomic on POSIX)
+        os.replace(tmp_path, path)
+    except BaseException:
+        # Clean up temp file on any error
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +105,7 @@ class VaultSession:
         self,
         vault_root: Path,
         master_key: bytes | None = None,
-    ):
+    ) -> None:
         """
         Initialize VaultSession.
 
@@ -106,7 +122,10 @@ class VaultSession:
         self._audit_fd: Any = None
 
     def _resolve_master_key(self, master_key: bytes | None) -> bytes | None:
-        """Resolve master key from parameter, env var, or file."""
+        """Resolve master key from parameter, env var, or file.
+
+        Enforces 0o600 permission on key file (CWE-522).
+        """
         if master_key is not None:
             return master_key
 
@@ -121,6 +140,17 @@ class VaultSession:
         # Try ~/.vault/.master_key file (raw bytes, base64 encoded)
         key_file = Path.home() / ".vault" / ".master_key"
         if key_file.exists():
+            # CWE-522: check key file permissions
+            file_mode = key_file.stat().st_mode & 0o777
+            if file_mode != 0o600:
+                logger.warning(
+                    "Key file %s has insecure permissions %s (expected 0o600). "
+                    "Refusing to load. Fix with: chmod 600 %s",
+                    key_file,
+                    oct(file_mode),
+                    key_file,
+                )
+                return None
             try:
                 content = key_file.read_text().strip()
                 return base64.b64decode(content)
@@ -371,9 +401,46 @@ class VaultSession:
         atomic_write(file_path, content)
 
     def _remove_entry_file(self, key_name: str) -> None:
-        """Remove the YAML file for a deleted entry."""
+        """Remove the YAML file for a deleted entry.
+
+        Validates the resolved path is under the vault root (CWE-59).
+        Rejects key names containing path traversal sequences.
+        """
+        # Reject path traversal attempts (CWE-59)
+        if ".." in key_name or "/" in key_name or "\\" in key_name:
+            logger.warning(
+                "Rejected path-traversal key name in _remove_entry_file: %s",
+                key_name,
+            )
+            return
+
         file_name = f"{key_name}.yaml"
-        file_path = self._vault_root / file_name
+        file_path = (self._vault_root / file_name).resolve()
+
+        # Verify resolved path is under vault root
+        try:
+            file_path.relative_to(self._vault_root.resolve())
+        except ValueError:
+            logger.warning(
+                "Rejected file path outside vault root: %s (vault: %s)",
+                file_path,
+                self._vault_root.resolve(),
+            )
+            return
+
+        # Check for symlink escape (CWE-59)
+        if file_path.is_symlink():
+            target = file_path.resolve()
+            try:
+                target.relative_to(self._vault_root.resolve())
+            except ValueError:
+                logger.warning(
+                    "Rejected symlink escaping vault root: %s -> %s",
+                    file_path,
+                    target,
+                )
+                return
+
         if file_path.exists():
             file_path.unlink()
 
