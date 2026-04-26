@@ -261,6 +261,8 @@ class ProviderModelCatalog:
     def __init__(self) -> None:
         self._entries: list[ModelCatalogEntry] = []
         self._by_provider: dict[str, list[ModelCatalogEntry]] = {}
+        self._role_index: dict[str, ModelCatalogEntry] = {}  # PERF-1: role -> best model
+        self._region_role_index: dict[str, dict[str, list[ModelCatalogEntry]]] = {}  # PERF-2: region -> role -> candidates
 
     def add(self, entry: ModelCatalogEntry) -> None:
         """Add a model entry to the catalog. Raises CatalogValidationError on duplicate."""
@@ -272,6 +274,30 @@ class ProviderModelCatalog:
         self._entries.append(entry)
         provider_list = self._by_provider.setdefault(entry.provider, [])
         provider_list.append(entry)
+        # Invalidate indexes — they'll be rebuilt on first use or after catalog load
+        self._role_index.clear()
+        self._region_role_index.clear()
+
+    def _build_indexes(self) -> None:
+        """Populate _role_index and _region_role_index after catalog changes."""
+        # Role index: role -> the model designated as best for that role
+        self._role_index.clear()
+        for entry in self._entries:
+            if entry.is_best_for:
+                for role, target_name in entry.is_best_for.items():
+                    target = self.get(entry.provider, target_name)
+                    if target:
+                        self._role_index[role] = target
+
+        # Region-role index: region -> {role -> [candidate models]}
+        self._region_role_index.clear()
+        for entry in self._entries:
+            if entry.region_availability:
+                for region in entry.region_availability:
+                    rd = self._region_role_index.setdefault(region, {})
+                    if entry.is_best_for:
+                        for role in entry.is_best_for:
+                            rd.setdefault(role, []).append(entry)
 
     def _known_names(self) -> set[tuple[str, str]]:
         return {(e.provider, e.name) for e in self._entries}
@@ -317,15 +343,15 @@ class ProviderModelCatalog:
         Priority: role > capability.
         """
         if role:
-            # Use is_best_for map to find the recommended model
-            candidates = self.list_models(provider) if provider else self._entries
-            for entry in candidates:
-                if entry.is_best_for and role in entry.is_best_for:
-                    target_name = entry.is_best_for[role]
-                    # Look up the target model
-                    found = self.get(entry.provider, target_name)
-                    if found:
-                        return found
+            # Ensure indexes are built (deferred until after catalog load)
+            if not self._role_index:
+                self._build_indexes()
+            # Direct O(1) lookup
+            entry = self._role_index.get(role)
+            if entry:
+                if provider and entry.provider != provider.lower().strip():
+                    return None
+                return entry
             return None
 
         if capability:
@@ -355,13 +381,15 @@ class ProviderModelCatalog:
             return candidate
         if region in candidate.region_availability:
             return candidate
-        # Fallback: search for other models with same role that are available in region
-        for entry in self._entries:
-            if entry.is_best_for and role in entry.is_best_for:
-                target_name = entry.is_best_for[role]
-                found = self.get(entry.provider, target_name)
-                if found and found.region_availability is not None and region in found.region_availability:
-                    return found
+        # Fallback: use region_role_index for O(1) lookup
+        if not self._region_role_index:
+            self._build_indexes()
+        region_dict = self._region_role_index.get(region, {})
+        candidates = region_dict.get(role, [])
+        for entry in candidates:
+            found = self.get(entry.provider, entry.is_best_for[role])
+            if found and found.region_availability and region in found.region_availability:
+                return found
         return None
 
     def validate(self) -> list[str]:
@@ -1229,6 +1257,7 @@ def _build_model_catalog() -> ProviderModelCatalog:
         auth_key_env="ZAI_API_KEY",
     ))
 
+    catalog._build_indexes()
     return catalog
 
 
