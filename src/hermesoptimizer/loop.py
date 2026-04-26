@@ -154,35 +154,63 @@ def discover(state: LoopState, config: LoopConfig) -> LoopState:
     return _clone_state(state, discovered_paths=live)
 
 
+
+# Scanner dispatch for parse() — maps category to callable
+def _scan_config(path: Path) -> list[Finding]:
+    return scan_config_paths([path])
+
+def _scan_session(path: Path) -> list[Finding]:
+    return scan_session_files([path])
+
+def _scan_log(path: Path) -> list[Finding]:
+    return scan_log_paths([path])
+
+def _scan_runtime(path: Path) -> list[Finding]:
+    return scan_runtime_paths([path])
+
+def _scan_auth(path: Path) -> list[Finding]:
+    return scan_auth_files([path])
+
+def _scan_gateway(entry: Any, path: Path) -> list[Finding]:
+    findings: list[Finding] = []
+    # First-class gateway_state.json scanner
+    if path.exists() and path.suffix == ".json" and "gateway_state" in path.name:
+        findings.extend(scan_gateway_state_file(path))
+    # Fallback: command-based health check
+    if entry.command:
+        findings.extend(scan_gateway_health([entry.command]))
+    return findings
+
+def _scan_cli(entry: Any, path: Path) -> list[Finding]:
+    if entry.command:
+        return scan_cli_status([entry.command])
+    return []
+
+_CATEGORY_SCANNERS: dict[str, Callable[[Any, Path], list[Finding]]] = {
+    "config": _scan_config,
+    "session": _scan_session,
+    "log": _scan_log,
+    "runtime": _scan_runtime,
+    "auth": _scan_auth,
+    "gateway": _scan_gateway,
+    "cli": _scan_cli,
+}
+
 def parse(state: LoopState, config: LoopConfig) -> LoopState:
     state.record_step("parse")
     findings: list[Finding] = list(state.findings)
 
     for category, entries in state.discovered_paths.items():
+        scanner = _CATEGORY_SCANNERS.get(category)
+        if not scanner:
+            continue
         for entry in entries:
             if not entry.exists:
                 continue
             path = _expand(entry.expand_path())
-            if category == "config":
-                findings.extend(scan_config_paths([path]))
-            elif category == "session":
-                findings.extend(scan_session_files([path]))
-            elif category == "log":
-                findings.extend(scan_log_paths([path]))
-            elif category == "runtime":
-                findings.extend(scan_runtime_paths([path]))
-            elif category == "auth":
-                findings.extend(scan_auth_files([path]))
-            elif category == "gateway":
-                expanded = _expand(entry.expand_path())
-                # First-class gateway_state.json scanner
-                if expanded.exists() and expanded.suffix == ".json" and "gateway_state" in expanded.name:
-                    findings.extend(scan_gateway_state_file(expanded))
-                # Fallback: command-based health check
-                if entry.command:
-                    findings.extend(scan_gateway_health([entry.command]))
-            elif category == "cli" and entry.command:
-                findings.extend(scan_cli_status([entry.command]))
+            # All scanners take (entry, path) except those that only need path;
+            # but we unified signature to (entry, path) for uniformity
+            findings.extend(scanner(entry, path))
 
     return _clone_state(state, findings=findings)
 

@@ -100,6 +100,112 @@ def resolve_prompt(prompt: UpdatePrompt, config: UpdateConfig) -> tuple[Any, str
     return answer, "interactive"
 
 
+
+def _handle_dict_dict(
+    current_dict: dict[str, Any],
+    incoming_dict: dict[str, Any],
+    path: str,
+    destructive: list[bool],
+    config_diff: list[dict[str, Any]],
+    details: list[str],
+) -> None:
+    """Both nodes are dicts — recurse into each key."""
+    current_keys = set(current_dict)
+    incoming_keys = set(incoming_dict)
+
+    for key in sorted(current_keys - incoming_keys):
+        entry_path = _join_path(path, key)
+        removed_value = current_dict[key]
+        config_diff.append(
+            {
+                "path": entry_path,
+                "change": "preserved_missing",
+                "destructive": False,
+                "current": removed_value,
+                "incoming": None,
+            }
+        )
+        details.append(f"preserves omitted key: {entry_path}")
+
+    for key in sorted(incoming_keys - current_keys):
+        entry_path = _join_path(path, key)
+        config_diff.append(
+            {
+                "path": entry_path,
+                "change": "added",
+                "destructive": False,
+                "current": None,
+                "incoming": incoming_dict[key],
+            }
+        )
+        details.append(f"adds key: {entry_path}")
+
+    for key in sorted(current_keys & incoming_keys):
+        entry_path = _join_path(path, key)
+        current_value = current_dict[key]
+        incoming_value = incoming_dict[key]
+
+        if isinstance(current_value, dict) and isinstance(incoming_value, dict):
+            _handle_dict_dict(current_value, incoming_value, entry_path, destructive, config_diff, details)
+            return
+
+        if isinstance(current_value, dict) and not isinstance(incoming_value, dict):
+            if incoming_value is None:
+                destructive[0] = True
+                config_diff.append(
+                    {
+                        "path": entry_path,
+                        "change": "section_removed",
+                        "destructive": True,
+                        "current": current_value,
+                        "incoming": None,
+                    }
+                )
+                details.append(f"removes section: {entry_path}")
+            else:
+                config_diff.append(
+                    {
+                        "path": entry_path,
+                        "change": "preserved_missing",
+                        "destructive": False,
+                        "current": current_value,
+                        "incoming": incoming_value,
+                    }
+                )
+                details.append(f"preserves section via merge: {entry_path}")
+            return
+
+        # scalar diff
+        _handle_scalar_diff(entry_path, current_value, incoming_value, destructive, config_diff, details)
+
+
+def _handle_scalar_diff(
+    path: str,
+    current_value: Any,
+    incoming_value: Any,
+    destructive: list[bool],
+    config_diff: list[dict[str, Any]],
+    details: list[str],
+) -> None:
+    """Compare scalar values and record change."""
+    if current_value != incoming_value:
+        is_downgrade = _is_model_downgrade(path, current_value, incoming_value)
+        destructive[0] = destructive[0] or is_downgrade
+        change = "model_downgrade" if is_downgrade else "changed"
+        config_diff.append(
+            {
+                "path": path,
+                "change": change,
+                "destructive": is_downgrade,
+                "current": current_value,
+                "incoming": incoming_value,
+            }
+        )
+        if is_downgrade:
+            details.append(f"downgrades model at {path}: {current_value} -> {incoming_value}")
+        else:
+            details.append(f"changes value: {path}: {current_value!r} -> {incoming_value!r}")
+
 def run_preflight(
     current_config: dict[str, Any] | None,
     incoming_config: dict[str, Any] | None,
@@ -107,122 +213,31 @@ def run_preflight(
     current = current_config or {}
     incoming = incoming_config or {}
 
-    destructive = False
+    destructive = [False]  # mutable flag for nested calls
     config_diff: list[dict[str, Any]] = []
     plugin_diff: list[dict[str, Any]] = []
     details: list[str] = []
 
-    def visit(current_node: Any, incoming_node: Any, path: str = "") -> None:
-        nonlocal destructive
+    _diff_visit(current, incoming, "", destructive, config_diff, details)
 
-        if isinstance(current_node, dict) and isinstance(incoming_node, dict):
-            current_keys = set(current_node)
-            incoming_keys = set(incoming_node)
+    current_plugins = current.get("plugins") if isinstance(current, dict) else None
+    incoming_plugins = incoming.get("plugins") if isinstance(incoming, dict) else None
+    if current_plugins != incoming_plugins:
+        plugin_diff.append(
+            {
+                "path": "plugins",
+                "current": current_plugins,
+                "incoming": incoming_plugins,
+            }
+        )
 
-            for key in sorted(current_keys - incoming_keys):
-                entry_path = _join_path(path, key)
-                removed_value = current_node[key]
-                # Merge-based updates preserve omitted keys; don't flag as destructive.
-                config_diff.append(
-                    {
-                        "path": entry_path,
-                        "change": "preserved_missing",
-                        "destructive": False,
-                        "current": removed_value,
-                        "incoming": None,
-                    }
-                )
-                details.append(f"preserves omitted key: {entry_path}")
-
-            for key in sorted(incoming_keys - current_keys):
-                entry_path = _join_path(path, key)
-                config_diff.append(
-                    {
-                        "path": entry_path,
-                        "change": "added",
-                        "destructive": False,
-                        "current": None,
-                        "incoming": incoming_node[key],
-                    }
-                )
-                details.append(f"adds key: {entry_path}")
-
-            for key in sorted(current_keys & incoming_keys):
-                entry_path = _join_path(path, key)
-                current_value = current_node[key]
-                incoming_value = incoming_node[key]
-
-                if isinstance(current_value, dict) and isinstance(incoming_value, dict):
-                    visit(current_value, incoming_value, entry_path)
-                    continue
-
-                if isinstance(current_value, dict) and not isinstance(incoming_value, dict):
-                    if incoming_value is None:
-                        destructive = True
-                        config_diff.append(
-                            {
-                                "path": entry_path,
-                                "change": "section_removed",
-                                "destructive": True,
-                                "current": current_value,
-                                "incoming": None,
-                            }
-                        )
-                        details.append(f"removes section: {entry_path}")
-                    else:
-                        config_diff.append(
-                            {
-                                "path": entry_path,
-                                "change": "preserved_missing",
-                                "destructive": False,
-                                "current": current_value,
-                                "incoming": incoming_value,
-                            }
-                        )
-                        details.append(f"preserves section via merge: {entry_path}")
-                    continue
-
-                if current_value != incoming_value:
-                    is_downgrade = _is_model_downgrade(entry_path, current_value, incoming_value)
-                    destructive = destructive or is_downgrade
-                    change = "model_downgrade" if is_downgrade else "changed"
-                    config_diff.append(
-                        {
-                            "path": entry_path,
-                            "change": change,
-                            "destructive": is_downgrade,
-                            "current": current_value,
-                            "incoming": incoming_value,
-                        }
-                    )
-                    if is_downgrade:
-                        details.append(
-                            f"downgrades model at {entry_path}: {current_value} -> {incoming_value}"
-                        )
-                    else:
-                        details.append(
-                            f"changes value: {entry_path}: {current_value!r} -> {incoming_value!r}"
-                        )
-            return
-
-        if current_node != incoming_node:
-            is_downgrade = _is_model_downgrade(path, current_node, incoming_node)
-            destructive = destructive or is_downgrade
-            config_diff.append(
-                {
-                    "path": path,
-                    "change": "model_downgrade" if is_downgrade else "changed",
-                    "destructive": is_downgrade,
-                    "current": current_node,
-                    "incoming": incoming_node,
-                }
-            )
-            if is_downgrade:
-                details.append(f"downgrades model at {path}: {current_node} -> {incoming_node}")
-            else:
-                details.append(f"changes value: {path}: {current_node!r} -> {incoming_node!r}")
-
-    visit(current, incoming)
+    return PreflightResult(
+        destructive=destructive[0],
+        config_diff=config_diff,
+        plugin_diff=plugin_diff,
+        test_gate_passed=True,
+        details=details,
+    )
 
     current_plugins = current.get("plugins") if isinstance(current, dict) else None
     incoming_plugins = incoming.get("plugins") if isinstance(incoming, dict) else None
